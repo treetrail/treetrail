@@ -1,0 +1,22 @@
+name: Security alert issues
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  # Shared job, see https://github.com/christoph-sens/ci-workflows
+  sync:
+    uses: christoph-sens/ci-workflows/.github/workflows/security-alert-issues.yml@4558cd434b64221a062b172e7096eaa33ef0124f # v1.3.0
+    permissions:
+      issues: write
+    secrets:
+      alerts-token: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
