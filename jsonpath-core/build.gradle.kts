@@ -1,36 +1,25 @@
 plugins {
-    `java-library`
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-    withSourcesJar()
-    withJavadocJar()
-}
-
-// Compile with the JDK 25 toolchain, but stay usable on Java 17.
-tasks.withType<JavaCompile>().configureEach {
-    options.release = 17
-    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    `java-test-fixtures`
 }
 
 dependencies {
     // The core has no runtime dependencies on purpose.
+
+    // Test fixtures: the Compliance Test Suite runner, shared with the adapter modules.
+    testFixturesApi(platform(libs.junit.bom))
+    testFixturesApi(libs.junit.jupiter.api)
+    testFixturesImplementation(libs.assertj)
+    // Only used to read the compliance test suite.
+    testFixturesImplementation(libs.jackson2.databind)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
-    // Only used to read the compliance test suite.
-    testImplementation(libs.jackson.databind)
+    testImplementation(libs.jackson2.databind)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
-}
-
-tasks.javadoc {
-    // The module only exports the API package, so javadoc only documents that package.
-    (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all,-missing", true)
-}
+// The test fixtures are for this build only and are never published.
+val javaComponent = components["java"] as AdhocComponentWithVariants
+javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) { skip() }
+javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) { skip() }

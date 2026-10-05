@@ -33,8 +33,26 @@ nodes.paths();  // ["$['store']['book'][0]['title']", "$['store']['book'][2]['ti
 `Number`, `Boolean` and `null`. That is what most JSON libraries produce when asked for untyped
 output, for example Jackson's `objectMapper.readValue(json, Object.class)`.
 
-For other object models, implement `JsonModel<N>` and call `query(document, model)`.
-Ready-made adapters for Jackson 2, Jackson 3, Gson and Jakarta JSON-P are planned.
+### Jackson, Gson and other JSON libraries
+
+Adapters let you query a library's own tree directly, without converting it. The query returns
+the original nodes, so you can keep working with them.
+
+| Module | Tree type | Model |
+| --- | --- | --- |
+| `jsonpath-jackson2` | `com.fasterxml.jackson.databind.JsonNode` | `Jackson2Model.INSTANCE` |
+| `jsonpath-jackson3` | `tools.jackson.databind.JsonNode` | `Jackson3Model.INSTANCE` |
+| `jsonpath-gson` | `com.google.gson.JsonElement` | `GsonModel.INSTANCE` |
+
+```java
+JsonNode document = objectMapper.readTree(json);
+NodeList<JsonNode> books = JsonPath.compile("$.store.book[?@.price < 10]")
+        .query(document, Jackson2Model.INSTANCE);
+```
+
+Each adapter passes the full Compliance Test Suite with documents parsed by its own library at
+default settings. For other object models, implement `JsonModel<N>` (nine small methods) and call
+`query(document, model)`. An adapter for Jakarta JSON-P is planned.
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
 Invalid queries throw a `JsonPathSyntaxException` with the position of the problem.

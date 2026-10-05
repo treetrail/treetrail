@@ -6,5 +6,5 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The test sources include the JSONPath Compliance Test Suite
 (https://github.com/jsonpath-standard/jsonpath-compliance-test-suite),
 Copyright 2020 VMware, Inc., licensed under the BSD-2 license
-(see jsonpath-core/src/test/resources/cts/LICENSE). It is used for testing only
+(see jsonpath-core/src/testFixtures/resources/cts/LICENSE). It is used for testing only
 and is not part of the published artifacts.

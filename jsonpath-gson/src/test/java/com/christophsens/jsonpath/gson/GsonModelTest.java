@@ -1,0 +1,52 @@
+package com.christophsens.jsonpath.gson;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.christophsens.jsonpath.JsonPath;
+import com.christophsens.jsonpath.NodeList;
+import com.christophsens.jsonpath.testing.ComplianceSuite;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
+
+class GsonModelTest {
+
+    @TestFactory
+    Stream<DynamicTest> complianceTestSuite() {
+        return ComplianceSuite.tests(GsonModel.INSTANCE, JsonParser::parseString, JsonElement::toString);
+    }
+
+    @Test
+    void returnsTheOriginalElements() {
+        JsonElement document = JsonParser.parseString(
+                "{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
+
+        NodeList<JsonElement> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, GsonModel.INSTANCE);
+
+        assertThat(nodes.values()).containsExactly(
+                document.getAsJsonObject().getAsJsonObject("store").getAsJsonArray("book").get(0));
+    }
+
+    @Test
+    void comparesNumbersByValue() {
+        JsonElement document = JsonParser.parseString("[{\"n\":1},{\"n\":1.0},{\"n\":10e-1},{\"n\":2}]");
+
+        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, GsonModel.INSTANCE)).hasSize(3);
+    }
+
+    @Test
+    void treatsJavaNullAsJsonNull() {
+        // Gson's tree API accepts Java null and stores JsonNull, but hand-built trees may contain null.
+        JsonObject document = new JsonObject();
+        JsonArray array = new JsonArray();
+        array.add((JsonElement) null);
+        document.add("a", array);
+
+        assertThat(JsonPath.compile("$.a[?@ == null]").query(document, GsonModel.INSTANCE)).hasSize(1);
+    }
+}
