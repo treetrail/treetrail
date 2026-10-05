@@ -5,6 +5,7 @@ jackson2 = "2.22.3"
 jackson3 = "3.2.3"
 gson = "2.14.0"
 jayway = "3.0.0"
+jmh = "1.37"
 
 [libraries]
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
@@ -16,3 +17,5 @@ jackson2-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ve
 jackson3-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson3" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jayway" }
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }

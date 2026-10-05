@@ -15,6 +15,8 @@ JSONPath for Java that behaves the same everywhere: an implementation of
   without backtracking, so matching takes time linear in the input length. A pattern like
   `(a*)*b` on 100,000 characters finishes in milliseconds instead of hanging.
   Expression nesting and regex size are limited.
+- **Fast:** on par with or faster than Jayway JsonPath in every query benchmark, up to 1.8× for
+  wildcards; see [docs/benchmarks.md](docs/benchmarks.md).
 - **Java 17+**, a named JPMS module (`com.christophsens.jsonpath`).
 
 > **Status:** pre-release, not yet published to Maven Central. The API may still change.
@@ -89,6 +91,7 @@ Each expression gets one outcome: `SAME`, `SAME_VALUES_DIFFERENT_ORDER`, `DIFFER
 
 [docs/jayway-vs-rfc9535.md](docs/jayway-vs-rfc9535.md) compares Jayway JsonPath 3.0.0 with the
 Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it).
+
 
 ## Design notes
 

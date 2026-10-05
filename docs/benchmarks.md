@@ -1,0 +1,53 @@
+# Benchmarks
+
+This library compared with Jayway JsonPath 3.0.0 (default configuration), measured with JMH.
+Lower is better; "Jayway / this" above 1 means this library is faster.
+
+Environment: Apple M5 Pro (18 cores), 48 GB RAM, macOS, Temurin 25.0.3+9-LTS, JMH 1.37,
+1 fork, 3 × 1 s warmup, 5 × 1 s measurement (hostile regex: 2 × 1 s / 3 × 1 s), average time per operation.
+Raw results: [jmh-results-2026-10-05.json](benchmarks/jmh-results-2026-10-05.json). Reproduce with
+`./gradlew :jsonpath-benchmarks:jmh`.
+
+## Queries
+
+Bookstore document with 1,000 books as plain Java objects. Both libraries get the same document and
+a precompiled expression, and the benchmark setup checks that both select the same values.
+This library's time includes building the node list with locations.
+
+| Query | Expression | This library (µs) | Jayway (µs) | Jayway / this |
+| --- | --- | --- | --- | --- |
+| definite | `$.store.bicycle.color` | 0.081 ± 0.001 | 0.079 ± 0.002 | 0.98× |
+| wildcard | `$.store.book[*].title` | 27.3 ± 0.6 | 48.5 ± 1.5 | 1.77× |
+| filter | `$.store.book[?(@.price < 10 && @.category == 'fiction')].title` | 97.0 ± 0.3 | 120.2 ± 0.7 | 1.24× |
+| descendant | `$..price` | 148.1 ± 0.6 | 146.2 ± 2.6 | 0.99× |
+| regex | `match(@.author, 'H.*')` / `=~ /H.*/` | 58.3 ± 1.2 | 71.2 ± 1.1 | 1.22× |
+
+## Compiling an expression
+
+`$.store.book[?(@.price < 10 && @.category == 'fiction')].title`, for code that does not cache compiled paths.
+
+| This library (µs) | Jayway (µs) | Jayway / this |
+| --- | --- | --- |
+| 0.270 ± 0.009 | 0.460 ± 0.038 | 1.70× |
+
+## Hostile regular expression
+
+`((a+)+)+b` matched against n × `a` followed by `!`, through `match()` here and `=~` in Jayway
+(which uses `java.util.regex`). A backtracking engine needs time exponential in n; this library's
+automaton needs linear time. Since JDK 9, `java.util.regex` defuses many textbook cases such as
+`(a|a)*b` or `(a+)+b`, so those are no longer a fair demonstration; triply nested quantifiers are
+still exponential on JDK 25.
+
+| n | This library (µs) | Jayway (µs) | Jayway / this |
+| --- | --- | --- | --- |
+| 10 | 0.064 ± 0.002 | 27.7 ± 0.1 | 434× |
+| 15 | 0.068 ± 0.002 | 798.9 ± 3.8 | 11 732× |
+| 20 | 0.070 ± 0.003 | 24 659 ± 102 | 350 215× |
+| 24 | 0.073 ± 0.002 | 412 961 ± 3 609 | 5 641 374× |
+
+## Caveats
+
+- One machine, one JDK, one run. Treat differences under about 10 % as noise.
+- Jayway reads the plain-Java document through its default json-smart provider; with other providers
+  (Jackson, Gson) its numbers differ.
+- The regex query benefits from this library's cached automaton (a lazy DFA, see `IRegexp`).

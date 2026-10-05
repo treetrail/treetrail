@@ -1,11 +1,10 @@
 package com.christophsens.jsonpath.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * I-Regexp (RFC 9485), the interoperable regular expression format used by the {@code match()}
@@ -15,6 +14,11 @@ import java.util.Optional;
  * nondeterministic automaton that is simulated without backtracking (Thompson's construction).
  * Matching therefore takes time linear in the length of the input for a given expression, so
  * expressions from untrusted sources cannot cause catastrophic backtracking.
+ *
+ * <p>For speed, sets of automaton states are turned into deterministic states on first use and
+ * their transitions are cached (a lazy DFA, as in RE2), so a cached step costs one array lookup.
+ * If an expression creates more than {@link #MAX_DFA_STATES} such states, matching falls back to
+ * the plain set-of-states simulation, which is slower but still linear.
  *
  * <p>Expressions that expand into more than {@link #MAX_PROGRAM_SIZE} instructions, for example
  * through large counted repetitions such as {@code (a{1000}){1000}}, are rejected like invalid
@@ -30,15 +34,11 @@ public final class IRegexp {
 
     private static final int CACHE_SIZE = 256;
 
-    private static final Map<String, Optional<IRegexp>> CACHE = Collections.synchronizedMap(
-            new LinkedHashMap<>(16, 0.75f, true) {
-                private static final long serialVersionUID = 1L;
+    /** Maximum number of cached deterministic states per expression and mode. */
+    static final int MAX_DFA_STATES = 2_000;
 
-                @Override
-                protected boolean removeEldestEntry(Map.Entry<String, Optional<IRegexp>> eldest) {
-                    return size() > CACHE_SIZE;
-                }
-            });
+    /** Compiled expressions; reads are lock-free because filters call match() once per node. */
+    private static final Map<String, Optional<IRegexp>> CACHE = new ConcurrentHashMap<>();
 
     // Instructions of the compiled automaton.
     private static final int CHAR = 0;
@@ -52,6 +52,8 @@ public final class IRegexp {
     private final int[] next;
     private final int[] alt;
     private final CharSet[] sets;
+    private final LazyDfa matchDfa;
+    private final LazyDfa searchDfa;
 
     private IRegexp(Program program) {
         int size = program.ops.size();
@@ -65,11 +67,23 @@ public final class IRegexp {
             alt[i] = program.alt.get(i);
             sets[i] = program.sets.get(i);
         }
+        matchDfa = new LazyDfa(false);
+        searchDfa = new LazyDfa(true);
     }
 
     /** Returns the compiled expression, or empty if {@code regexp} is not a valid I-Regexp. */
     public static Optional<IRegexp> compile(String regexp) {
-        return CACHE.computeIfAbsent(regexp, IRegexp::doCompile);
+        Optional<IRegexp> cached = CACHE.get(regexp);
+        if (cached != null) {
+            return cached;
+        }
+        Optional<IRegexp> compiled = doCompile(regexp);
+        if (CACHE.size() >= CACHE_SIZE) {
+            // Expressions usually come from a handful of queries; a full cache means unusual input.
+            CACHE.clear();
+        }
+        CACHE.put(regexp, compiled);
+        return compiled;
     }
 
     private static Optional<IRegexp> doCompile(String regexp) {
@@ -86,12 +100,258 @@ public final class IRegexp {
 
     /** Whether the whole input matches ({@code match()}). */
     public boolean matches(String input) {
-        return run(input, false);
+        Boolean result = input.isEmpty() ? null : matchDfa.run(input);
+        return result != null ? result : run(input, false);
     }
 
     /** Whether some substring of the input matches ({@code search()}). */
     public boolean find(String input) {
-        return run(input, true);
+        Boolean result = input.isEmpty() ? null : searchDfa.run(input);
+        return result != null ? result : run(input, true);
+    }
+
+    /**
+     * Lazily built deterministic automaton for non-empty inputs. Each state is a set of CHAR
+     * instructions waiting for the next code point, plus END instructions that only pass at the end
+     * of the input, plus whether MATCH was reached. States and transitions are shared between threads:
+     * states are immutable apart from their transition caches, whose entries are published racily but
+     * safely (all fields of a state are final).
+     */
+    private final class LazyDfa {
+        private final boolean search;
+        private final Map<StateKey, State> states = new ConcurrentHashMap<>();
+        private final State start;
+
+        LazyDfa(boolean search) {
+            this.search = search;
+            this.start = closureState(null, -1, true);
+        }
+
+        /** Returns the result, or null if the state budget is exhausted. */
+        Boolean run(String input) {
+            State state = start;
+            if (state == null) {
+                return null;
+            }
+            if (search && state.match) {
+                return true;
+            }
+            int length = input.length();
+            int pos = 0;
+            while (pos < length) {
+                char c = input.charAt(pos);
+                int cp;
+                if (c < 0x80) {
+                    cp = c;
+                    pos++;
+                } else {
+                    cp = input.codePointAt(pos);
+                    pos += Character.charCount(cp);
+                }
+                State following = state.transition(cp);
+                if (following == null) {
+                    following = closureState(state, cp, false);
+                    if (following == null) {
+                        return null;
+                    }
+                    state.cache(cp, following);
+                }
+                state = following;
+                if (search && state.match) {
+                    return true;
+                }
+                if (!search && state.dead) {
+                    return false;
+                }
+            }
+            return state.match || state.acceptsAtEnd();
+        }
+
+        /**
+         * Computes the state after reading {@code cp} in {@code from}, or the start state if
+         * {@code from} is null. Returns null if the state budget is exhausted.
+         */
+        private State closureState(State from, int cp, boolean atStart) {
+            boolean[] visited = new boolean[ops.length];
+            int[] chars = new int[ops.length];
+            int[] ends = new int[ops.length];
+            int[] counts = new int[3]; // chars, ends, match
+            int[] stack = new int[2 * ops.length + 2];
+            if (from == null) {
+                closure(0, atStart, visited, chars, ends, counts, stack);
+            } else {
+                for (int pc : from.chars) {
+                    if (sets[pc].matches(cp)) {
+                        closure(next[pc], false, visited, chars, ends, counts, stack);
+                    }
+                }
+                if (search) {
+                    closure(0, false, visited, chars, ends, counts, stack);
+                }
+            }
+            StateKey key = new StateKey(sorted(chars, counts[0]), sorted(ends, counts[1]), counts[2] > 0);
+            State state = states.get(key);
+            if (state != null) {
+                return state;
+            }
+            if (states.size() >= MAX_DFA_STATES) {
+                return null;
+            }
+            State created = new State(key.chars, key.ends, key.match);
+            State existing = states.putIfAbsent(key, created);
+            return existing != null ? existing : created;
+        }
+
+        private void closure(int startPc, boolean atStart, boolean[] visited, int[] chars, int[] ends,
+                int[] counts, int[] stack) {
+            int top = 0;
+            stack[top++] = startPc;
+            while (top > 0) {
+                int pc = stack[--top];
+                if (visited[pc]) {
+                    continue;
+                }
+                visited[pc] = true;
+                switch (ops[pc]) {
+                    case CHAR:
+                        chars[counts[0]++] = pc;
+                        break;
+                    case END:
+                        ends[counts[1]++] = pc;
+                        break;
+                    case MATCH:
+                        counts[2] = 1;
+                        break;
+                    case BEGIN:
+                        if (atStart) {
+                            stack[top++] = next[pc];
+                        }
+                        break;
+                    case SPLIT:
+                        stack[top++] = alt[pc];
+                        stack[top++] = next[pc];
+                        break;
+                    case JUMP:
+                        stack[top++] = next[pc];
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+            }
+        }
+
+        private int[] sorted(int[] values, int count) {
+            int[] copy = java.util.Arrays.copyOf(values, count);
+            java.util.Arrays.sort(copy);
+            return copy;
+        }
+
+        /** Whether MATCH is reachable from a pending END instruction once the input is exhausted. */
+        private boolean reachesMatchAtEnd(int startPc) {
+            boolean[] visited = new boolean[ops.length];
+            int[] stack = new int[2 * ops.length + 2];
+            int top = 0;
+            stack[top++] = startPc;
+            while (top > 0) {
+                int pc = stack[--top];
+                if (visited[pc]) {
+                    continue;
+                }
+                visited[pc] = true;
+                switch (ops[pc]) {
+                    case MATCH:
+                        return true;
+                    case END:
+                    case JUMP:
+                        stack[top++] = next[pc];
+                        break;
+                    case SPLIT:
+                        stack[top++] = alt[pc];
+                        stack[top++] = next[pc];
+                        break;
+                    default:
+                        // CHAR needs input; BEGIN fails because the input is not empty.
+                        break;
+                }
+            }
+            return false;
+        }
+
+        private final class State {
+            final int[] chars;
+            final int[] ends;
+            final boolean match;
+            final boolean dead;
+            final State[] ascii = new State[0x80];
+            final Map<Integer, State> other = new ConcurrentHashMap<>();
+            volatile Boolean acceptsAtEnd;
+
+            State(int[] chars, int[] ends, boolean match) {
+                this.chars = chars;
+                this.ends = ends;
+                this.match = match;
+                this.dead = chars.length == 0 && ends.length == 0 && !match;
+            }
+
+            State transition(int cp) {
+                return cp < 0x80 ? ascii[cp] : other.get(cp);
+            }
+
+            void cache(int cp, State state) {
+                if (cp < 0x80) {
+                    ascii[cp] = state;
+                } else if (other.size() < MAX_DFA_STATES) {
+                    other.put(cp, state);
+                }
+            }
+
+            boolean acceptsAtEnd() {
+                Boolean cached = acceptsAtEnd;
+                if (cached == null) {
+                    boolean accepts = false;
+                    for (int pc : ends) {
+                        if (reachesMatchAtEnd(next[pc])) {
+                            accepts = true;
+                            break;
+                        }
+                    }
+                    cached = accepts;
+                    acceptsAtEnd = cached;
+                }
+                return cached;
+            }
+        }
+    }
+
+    /** Identity of a deterministic state. */
+    private static final class StateKey {
+        final int[] chars;
+        final int[] ends;
+        final boolean match;
+        private final int hash;
+
+        StateKey(int[] chars, int[] ends, boolean match) {
+            this.chars = chars;
+            this.ends = ends;
+            this.match = match;
+            this.hash = 31 * (31 * java.util.Arrays.hashCode(chars) + java.util.Arrays.hashCode(ends))
+                    + Boolean.hashCode(match);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof StateKey)) {
+                return false;
+            }
+            StateKey other = (StateKey) o;
+            return match == other.match && java.util.Arrays.equals(chars, other.chars)
+                    && java.util.Arrays.equals(ends, other.ends);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
     }
 
     private boolean run(String input, boolean search) {

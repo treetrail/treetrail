@@ -110,6 +110,38 @@ class IRegexpTest {
         assertThat(IRegexp.compile("(".repeat(10_000) + "a" + ")".repeat(10_000))).isEmpty();
     }
 
+    @Test
+    void fallsBackToTheSimulationWhenTheDfaGrowsTooLarge() {
+        // The deterministic automaton for "the 13th character from the end is an a" needs 2^13 states.
+        IRegexp regexp = IRegexp.compile("(a|b)*a(a|b){12}").orElseThrow();
+        Pattern java = Pattern.compile("(?:a|b)*a(?:a|b){12}");
+        Random random = new Random(1);
+        for (int i = 0; i < 200; i++) {
+            StringBuilder input = new StringBuilder();
+            for (int j = 0; j < 40; j++) {
+                input.append(random.nextBoolean() ? 'a' : 'b');
+            }
+            assertThat(regexp.matches(input.toString())).isEqualTo(java.matcher(input).matches());
+        }
+    }
+
+    @Test
+    void canBeSharedBetweenThreads() {
+        IRegexp regexp = IRegexp.compile("[a-c]+x?(d|e)*\\p{Lu}").orElseThrow();
+        Pattern java = Pattern.compile("[a-c]+x?(?:d|e)*\\p{Lu}");
+        java.util.List<String> inputs = new java.util.ArrayList<>();
+        Random random = new Random(2);
+        for (int i = 0; i < 5_000; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = random.nextInt(12); j > 0; j--) {
+                sb.append("abcxdeQ\u00c4\uD83D\uDE00".charAt(random.nextInt(9)));
+            }
+            inputs.add(sb.toString());
+        }
+        assertThat(inputs.parallelStream().filter(regexp::matches).count())
+                .isEqualTo(inputs.stream().filter(s -> java.matcher(s).matches()).count());
+    }
+
     /** Compares the automaton with java.util.regex on random expressions and inputs. */
     @Test
     void agreesWithJavaRegexOnRandomExpressions() {
