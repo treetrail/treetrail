@@ -45,6 +45,7 @@ the original nodes, so you can keep working with them.
 | `jsonpath-jackson2` | `com.fasterxml.jackson.databind.JsonNode` | `Jackson2Model.INSTANCE` |
 | `jsonpath-jackson3` | `tools.jackson.databind.JsonNode` | `Jackson3Model.INSTANCE` |
 | `jsonpath-gson` | `com.google.gson.JsonElement` | `GsonModel.INSTANCE` |
+| `jsonpath-jsonp` | `jakarta.json.JsonValue` (any JSON-P implementation) | `JsonpModel.INSTANCE` |
 
 ```java
 JsonNode document = objectMapper.readTree(json);
@@ -54,7 +55,7 @@ NodeList<JsonNode> books = JsonPath.compile("$.store.book[?@.price < 10]")
 
 Each adapter passes the full Compliance Test Suite with documents parsed by its own library at
 default settings. For other object models, implement `JsonModel<N>` (nine small methods) and call
-`query(document, model)`. An adapter for Jakarta JSON-P is planned.
+`query(document, model)`.
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
 Invalid queries throw a `JsonPathSyntaxException` with the position of the problem.
