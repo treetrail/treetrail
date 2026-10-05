@@ -14,6 +14,6 @@ dependencies {
 
 tasks.jar {
     manifest {
-        attributes("Automatic-Module-Name" to "com.christophsens.jsonpath.rewrite")
+        attributes("Automatic-Module-Name" to "io.github.treetrail.jsonpath.rewrite")
     }
 }

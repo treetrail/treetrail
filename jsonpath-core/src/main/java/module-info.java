@@ -1,6 +1,6 @@
 /**
  * JSONPath (RFC 9535) for Java.
  */
-module com.christophsens.jsonpath {
-    exports com.christophsens.jsonpath;
+module io.github.treetrail.jsonpath {
+    exports io.github.treetrail.jsonpath;
 }

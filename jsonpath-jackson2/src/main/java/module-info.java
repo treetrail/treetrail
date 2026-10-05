@@ -1,9 +1,9 @@
 /**
  * JSONPath (RFC 9535) adapter for Jackson 2 trees ({@code com.fasterxml.jackson.databind.JsonNode}).
  */
-module com.christophsens.jsonpath.jackson2 {
-    requires transitive com.christophsens.jsonpath;
+module io.github.treetrail.jsonpath.jackson2 {
+    requires transitive io.github.treetrail.jsonpath;
     requires transitive com.fasterxml.jackson.databind;
 
-    exports com.christophsens.jsonpath.jackson2;
+    exports io.github.treetrail.jsonpath.jackson2;
 }

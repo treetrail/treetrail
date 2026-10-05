@@ -1,4 +1,4 @@
-# jsonpath (working title)
+# Treetrail
 
 JSONPath for Java that behaves the same everywhere: an implementation of
 [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535), the IETF standard for JSONPath.
@@ -17,9 +17,11 @@ JSONPath for Java that behaves the same everywhere: an implementation of
   Expression nesting and regex size are limited.
 - **Fast:** on par with or faster than Jayway JsonPath in every query benchmark, up to 1.8× for
   wildcards; see [docs/benchmarks.md](docs/benchmarks.md).
-- **Java 17+**, a named JPMS module (`com.christophsens.jsonpath`).
+- **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`).
 
 > **Status:** pre-release, not yet published to Maven Central. The API may still change.
+> Coordinates will be `io.github.treetrail:jsonpath-core` (plus `jsonpath-jackson2`, `jsonpath-jackson3`,
+> `jsonpath-gson`, `jsonpath-jsonp`, `jsonpath-migration`, `jsonpath-rewrite`).
 
 ## Usage
 
@@ -96,7 +98,7 @@ Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it).
 ### Finding every expression in a code base
 
 The `jsonpath-rewrite` module contains the [OpenRewrite](https://docs.openrewrite.org) recipe
-`com.christophsens.jsonpath.rewrite.FindJaywayJsonPathExpressions`. It finds expressions passed to
+`io.github.treetrail.jsonpath.rewrite.FindJaywayJsonPathExpressions`. It finds expressions passed to
 Jayway JsonPath (`JsonPath.read`, `JsonPath.compile`, `ReadContext.read`, the write API) and to
 Spring's `MockMvcResultMatchers.jsonPath`, marks each call site with an assessment and fills the data
 table `JsonPathExpressions` with one row per expression:

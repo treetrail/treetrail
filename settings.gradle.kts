@@ -1,4 +1,4 @@
-rootProject.name = "jsonpath"
+rootProject.name = "treetrail"
 
 include("jsonpath-core")
 include("jsonpath-jackson2")

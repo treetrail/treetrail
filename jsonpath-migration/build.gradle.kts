@@ -31,6 +31,6 @@ val jaywayReport by tasks.registering(Test::class) {
 tasks.jar {
     manifest {
         // Jayway JsonPath is an automatic module, so this module stays on the class path or is automatic too.
-        attributes("Automatic-Module-Name" to "com.christophsens.jsonpath.migration")
+        attributes("Automatic-Module-Name" to "io.github.treetrail.jsonpath.migration")
     }
 }
