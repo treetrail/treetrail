@@ -1,0 +1,75 @@
+# jsonpath (working title)
+
+JSONPath for Java that behaves the same everywhere: an implementation of
+[RFC 9535](https://www.rfc-editor.org/rfc/rfc9535), the IETF standard for JSONPath.
+
+- **Standard-conformant:** passes all 706 cases of the
+  [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
+  (commit `9d1a415`, 2026-09-17). The suite runs on every build; a single failing case fails CI.
+- **No dependencies:** the core depends on nothing but the JDK. It works on any JSON tree through
+  a small `JsonModel` interface, so documents from any JSON library can be queried without conversion.
+- **Predictable results:** a query always returns a node list, and every node carries its
+  normalized path, for example `$['store']['book'][0]`.
+- **Strict input handling:** regular expressions in `match()` and `search()` are restricted to
+  [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485), and expression nesting is limited.
+  They currently run on `java.util.regex`, which backtracks; a linear-time engine is planned
+  before untrusted expressions should be accepted.
+- **Java 17+**, a named JPMS module (`com.christophsens.jsonpath`).
+
+> **Status:** pre-release, not yet published to Maven Central. The API may still change.
+
+## Usage
+
+```java
+JsonPath path = JsonPath.compile("$.store.book[?@.price < 10].title");
+
+NodeList<Object> nodes = path.query(document);
+nodes.values(); // ["Sayings of the Century", "Moby Dick"]
+nodes.paths();  // ["$['store']['book'][0]['title']", "$['store']['book'][2]['title']"]
+```
+
+`query(Object)` works on plain Java objects: `Map` for objects, `List` for arrays, `String`,
+`Number`, `Boolean` and `null`. That is what most JSON libraries produce when asked for untyped
+output, for example Jackson's `objectMapper.readValue(json, Object.class)`.
+
+For other object models, implement `JsonModel<N>` and call `query(document, model)`.
+Ready-made adapters for Jackson 2, Jackson 3, Gson and Jakarta JSON-P are planned.
+
+Compiled queries are immutable and thread-safe. Compile once, reuse often.
+Invalid queries throw a `JsonPathSyntaxException` with the position of the problem.
+
+## Coming from Jayway JsonPath
+
+RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several places, for example:
+
+| | Jayway JsonPath | RFC 9535 |
+| --- | --- | --- |
+| Result of `$.a.b` | a single value or a list, depending on the path and configuration | always a node list |
+| Filters | `[?(@.price < 10)]` | `[?@.price < 10]` (parentheses optional) |
+| Regular expressions | `=~ /regex/` with Java regex | `match()` and `search()` with I-Regexp |
+| Functions | `min()`, `max()`, `sum()`, `avg()`, `length()`, ... at the end of a path | `length()`, `count()`, `match()`, `search()`, `value()` inside filters |
+| Operators | `in`, `nin`, `subsetof`, `size`, `empty`, ... | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `\|\|`, `!` |
+| Write API | `set`, `put`, `add`, `delete` | queries only |
+
+A migration helper that runs your existing expressions against both libraries and reports every
+difference is planned.
+
+## Design notes
+
+- I-Regexp lists `^` and `$` as ordinary characters, but the Compliance Test Suite expects them to
+  act as anchors. This implementation follows the test suite.
+- Numbers are compared by value: `1`, `1L`, `1.0` and `new BigDecimal("1.00")` are equal.
+- Strings are compared by Unicode code points, as the RFC requires (not by UTF-16 code units).
+
+## Building
+
+```bash
+./gradlew build
+```
+
+The build compiles with JDK 25 for Java 17 and runs the unit tests and the compliance suite.
+
+## License
+
+[Apache License 2.0](LICENSE). The vendored Compliance Test Suite (test sources only) is licensed
+under BSD-2, see [NOTICE](NOTICE).

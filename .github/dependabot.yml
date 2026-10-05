@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+    groups:
+      gradle-minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+      # Own reusable workflows (christoph-sens/ci-workflows) need no waiting period.
+      exclude: ["christoph-sens/*"]
+    groups:
+      github-actions-minor-and-patch:
+        update-types: ["minor", "patch"]

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Shared CI, see https://github.com/christoph-sens/ci-workflows
+  # `build` runs the JSONPath Compliance Test Suite; a single failing case fails the build.
+  ci:
+    uses: christoph-sens/ci-workflows/.github/workflows/gradle-ci.yml@4558cd434b64221a062b172e7096eaa33ef0124f # v1.3.0
+    permissions:
+      contents: write        # dependency submission on push to main
+      security-events: write # CodeQL results
+    with:
+      gradle-tasks: build

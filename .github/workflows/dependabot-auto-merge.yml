@@ -1,0 +1,12 @@
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Shared job, see https://github.com/christoph-sens/ci-workflows
+  auto-merge:
+    uses: christoph-sens/ci-workflows/.github/workflows/dependabot-auto-merge.yml@4558cd434b64221a062b172e7096eaa33ef0124f # v1.3.0
