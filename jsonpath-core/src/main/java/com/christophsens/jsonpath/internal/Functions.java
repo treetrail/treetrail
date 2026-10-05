@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * The function extensions defined by RFC 9535, section 2.4.4 to 2.4.8.
@@ -63,11 +62,10 @@ public final class Functions {
                 || regexp.kind() != JsonKind.STRING) {
             return false;
         }
-        Optional<Pattern> pattern = IRegexp.compile(regexp.string());
-        if (pattern.isEmpty()) {
+        Optional<IRegexp> compiled = IRegexp.compile(regexp.string());
+        if (compiled.isEmpty()) {
             return false;
         }
-        var matcher = pattern.get().matcher(subject.string());
-        return fullMatch ? matcher.matches() : matcher.find();
+        return fullMatch ? compiled.get().matches(subject.string()) : compiled.get().find(subject.string());
     }
 }

@@ -10,10 +10,11 @@ JSONPath for Java that behaves the same everywhere: an implementation of
   a small `JsonModel` interface, so documents from any JSON library can be queried without conversion.
 - **Predictable results:** a query always returns a node list, and every node carries its
   normalized path, for example `$['store']['book'][0]`.
-- **Strict input handling:** regular expressions in `match()` and `search()` are restricted to
-  [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485), and expression nesting is limited.
-  They currently run on `java.util.regex`, which backtracks; a linear-time engine is planned
-  before untrusted expressions should be accepted.
+- **No catastrophic backtracking:** regular expressions in `match()` and `search()` follow
+  [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) and run on a built-in automaton
+  without backtracking, so matching takes time linear in the input length. A pattern like
+  `(a*)*b` on 100,000 characters finishes in milliseconds instead of hanging.
+  Expression nesting and regex size are limited.
 - **Java 17+**, a named JPMS module (`com.christophsens.jsonpath`).
 
 > **Status:** pre-release, not yet published to Maven Central. The API may still change.
@@ -58,6 +59,10 @@ difference is planned.
 
 - I-Regexp lists `^` and `$` as ordinary characters, but the Compliance Test Suite expects them to
   act as anchors. This implementation follows the test suite.
+- Regular expressions are compiled into a nondeterministic automaton (Thompson's construction)
+  and simulated with a set of states, like RE2 or Rust's `regex`. Expressions that would expand to
+  more than 20,000 automaton instructions, for example `(a{1000}){1000}`, count as invalid, so
+  `match()` and `search()` return false for them; RFC 9485 allows such limits.
 - Numbers are compared by value: `1`, `1L`, `1.0` and `new BigDecimal("1.00")` are equal.
 - Strings are compared by Unicode code points, as the RFC requires (not by UTF-16 code units).
 
