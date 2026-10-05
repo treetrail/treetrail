@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 /**
  * Suggestions for rewriting Jayway-only expressions in RFC 9535 syntax.
  */
-final class MigrationHints {
+public final class MigrationHints {
 
     private static final Pattern PATH_FUNCTION = Pattern.compile(
             "\\.(min|max|avg|stddev|sum|first|last|index|keys|concat|append)\\(.*\\)\\s*$");
@@ -17,7 +17,13 @@ final class MigrationHints {
     private MigrationHints() {
     }
 
-    static String forInvalidExpression(String expression, String rfcError) {
+    /**
+     * Returns a rewrite hint for an expression that is not valid RFC 9535.
+     *
+     * @param expression the Jayway expression
+     * @param rfcError the parser message, used when no specific hint applies
+     */
+    public static String forInvalidExpression(String expression, String rfcError) {
         if (LENGTH_FUNCTION.matcher(expression).find()) {
             return "Path functions like .length() are not part of RFC 9535. Take the size of the result "
                     + "in Java (values().size()), or filter with length(), e.g. $[?length(@.tags) > 2].";

@@ -93,6 +93,24 @@ Each expression gets one outcome: `SAME`, `SAME_VALUES_DIFFERENT_ORDER`, `DIFFER
 [docs/jayway-vs-rfc9535.md](docs/jayway-vs-rfc9535.md) compares Jayway JsonPath 3.0.0 with the
 Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it).
 
+### Finding every expression in a code base
+
+The `jsonpath-rewrite` module contains the [OpenRewrite](https://docs.openrewrite.org) recipe
+`com.christophsens.jsonpath.rewrite.FindJaywayJsonPathExpressions`. It finds expressions passed to
+Jayway JsonPath (`JsonPath.read`, `JsonPath.compile`, `ReadContext.read`, the write API) and to
+Spring's `MockMvcResultMatchers.jsonPath`, marks each call site with an assessment and fills the data
+table `JsonPathExpressions` with one row per expression:
+
+| Assessment | Meaning |
+| --- | --- |
+| `VALID` | Valid RFC 9535; verify results with `JaywayComparison` |
+| `VALID_SINGLE_VALUE` | Valid RFC 9535, but Jayway returns a single value here: use `NodeList.single()` |
+| `NOT_RFC_9535` | Jayway-only syntax, with a rewrite hint |
+| `WRITE_API` | `set`, `put`, `delete`, ...: RFC 9535 defines queries only |
+| `NOT_A_LITERAL` | Computed at runtime; check with `JaywayComparison` |
+
+The recipe changes no code: whether a call can be migrated automatically depends on how its result
+is used.
 
 ## Design notes
 
