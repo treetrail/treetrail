@@ -48,6 +48,14 @@ public final class ComplianceSuite {
                 test.get("name") + " | " + test.get("selector"), () -> run(test, model, parse, serialize)));
     }
 
+    /**
+     * Returns the raw test cases: maps with {@code name}, {@code selector}, {@code document},
+     * {@code result} or {@code results}, and {@code invalid_selector}.
+     */
+    public static List<Map<String, Object>> cases() {
+        return loadTests();
+    }
+
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> loadTests() {
         try (InputStream in = ComplianceSuite.class.getResourceAsStream("/cts/cts.json")) {

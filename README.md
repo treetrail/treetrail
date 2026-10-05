@@ -70,8 +70,25 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 | Operators | `in`, `nin`, `subsetof`, `size`, `empty`, ... | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `\|\|`, `!` |
 | Write API | `set`, `put`, `add`, `delete` | queries only |
 
-A migration helper that runs your existing expressions against both libraries and reports every
-difference is planned.
+### Checking your expressions before you switch
+
+The `jsonpath-migration` module runs your expressions with Jayway JsonPath and with this library
+and reports every difference, with hints for rewriting Jayway-only syntax. Pass your application's
+Jayway `Configuration` so that options like `DEFAULT_PATH_LEAF_TO_NULL` are taken into account.
+
+```java
+MigrationReport report = JaywayComparison.with(applicationConfiguration)
+        .compareAllJson(List.of("$.store.book[?(@.price < 10)].title", "$.store.book.length()"), sampleJson);
+System.out.println(report);
+assertThat(report.differences()).isEmpty();
+```
+
+Each expression gets one outcome: `SAME`, `SAME_VALUES_DIFFERENT_ORDER`, `DIFFERENT_VALUES`,
+`ONLY_JAYWAY_ACCEPTS` (with a rewrite hint), `ONLY_RFC_ACCEPTS`, `JAYWAY_FAILS_AT_RUNTIME` or
+`BOTH_REJECT`. The report also flags paths where Jayway returns a single value instead of a list.
+
+[docs/jayway-vs-rfc9535.md](docs/jayway-vs-rfc9535.md) compares Jayway JsonPath 3.0.0 with the
+Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it).
 
 ## Design notes
 
