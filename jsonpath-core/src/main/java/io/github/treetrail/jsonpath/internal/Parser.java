@@ -25,6 +25,7 @@ import io.github.treetrail.jsonpath.internal.Ast.Wildcard;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,9 @@ public final class Parser {
     private final Map<String, FunctionDefinition> functions;
     private int pos;
     private int nesting;
+
+    /** Start position of every test expression, so that type errors point at the operand. */
+    private final Map<Test, Integer> testPositions = new IdentityHashMap<>();
 
     private Parser(String src, Map<String, FunctionDefinition> functions) {
         this.src = src;
@@ -289,7 +293,7 @@ public final class Parser {
                 throw error("A comparison must be in parentheses to be negated", save);
             }
             pos = save;
-            return new Not(new Test(operand));
+            return new Not(test(operand, start));
         }
         if (peek() == '(') {
             return parenExpr();
@@ -301,7 +305,7 @@ public final class Parser {
         ComparisonOp op = comparisonOp();
         if (op == null) {
             pos = save;
-            return new Test(left);
+            return test(left, start);
         }
         skipBlanks();
         int rightStart = pos;
@@ -309,6 +313,12 @@ public final class Parser {
         checkComparable(left, start);
         checkComparable(right, rightStart);
         return new Comparison(left, op, right);
+    }
+
+    private Test test(Operand operand, int start) {
+        Test test = new Test(operand);
+        testPositions.put(test, start);
+        return test;
     }
 
     private Expr parenExpr() {
@@ -442,12 +452,13 @@ public final class Parser {
             checkLogical(((Paren) expr).operand());
         } else if (expr instanceof Test) {
             Operand operand = ((Test) expr).operand();
+            int at = testPositions.getOrDefault(expr, pos);
             if (operand instanceof Literal) {
-                throw error("A literal is not a valid test expression", pos);
+                throw error("A literal is not a valid test expression", at);
             }
             if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() == Type.VALUE) {
                 throw error("Function '" + ((FunctionCall) operand).function().name()
-                        + "' returns a value and cannot be used as a test", pos);
+                        + "' returns a value and cannot be used as a test", at);
             }
         }
     }

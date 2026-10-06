@@ -101,14 +101,16 @@ class RobustnessTest {
     @Test
     void rejectsCollectionsWithoutOrderWithAHint() {
         assertThatThrownBy(() -> JsonPath.compile("$.tags[0]").query(Map.of("tags", Set.of("a"))))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("copy them into a List");
+                .isInstanceOfSatisfying(JsonPathEvaluationException.class,
+                        e -> assertThat(e.path()).isEqualTo("$['tags']"))
+                .hasMessageContaining("copy them into a List")
+                .hasCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void rejectsMapKeysThatAreNotStrings() {
         assertThatThrownBy(() -> JsonPath.compile("$.*").query(Map.of(1, "x")))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(JsonPathEvaluationException.class, e -> assertThat(e.path()).isEqualTo("$"))
                 .hasMessageContaining("Map keys must be strings")
                 .hasMessageContaining("java.lang.Integer");
     }
