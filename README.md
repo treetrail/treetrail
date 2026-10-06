@@ -59,8 +59,9 @@ NodeList<JsonNode> books = JsonPath.compile("$.store.book[?@.price < 10]")
 ```
 
 Each adapter passes the full Compliance Test Suite with documents parsed by its own library at
-default settings. For other object models, implement `JsonModel<N>` (nine small methods) and call
-`query(document, model)`.
+default settings. For other object models, implement the ten abstract methods of `JsonModel<N>` and
+call `query(document, model)`; override its default methods, such as `members()`, where your library
+can answer faster.
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
 Invalid queries throw a `JsonPathSyntaxException` with the position of the problem and an excerpt of

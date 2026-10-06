@@ -3,7 +3,6 @@ package io.github.treetrail.jsonpath.internal;
 import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
-import java.math.BigDecimal;
 
 /**
  * A value of the RFC 9535 ValueType: a JSON value (in some model) or the special result Nothing.
@@ -47,9 +46,5 @@ public final class Val {
 
     public String string() {
         return model.stringValue(value);
-    }
-
-    public BigDecimal number() {
-        return model.numberValue(value);
     }
 }

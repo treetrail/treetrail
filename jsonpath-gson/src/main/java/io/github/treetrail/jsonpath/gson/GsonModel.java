@@ -5,6 +5,7 @@ import io.github.treetrail.jsonpath.JsonModel;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * {@link JsonModel} for Gson trees.
@@ -51,6 +52,16 @@ public final class GsonModel implements JsonModel<JsonElement> {
     }
 
     @Override
+    public Iterable<Map.Entry<String, JsonElement>> members(JsonElement object) {
+        return object.getAsJsonObject().entrySet();
+    }
+
+    @Override
+    public JsonElement findMember(JsonElement object, String name) {
+        return object.getAsJsonObject().get(name);
+    }
+
+    @Override
     public boolean hasMember(JsonElement object, String name) {
         return object.getAsJsonObject().has(name);
     }
@@ -88,6 +99,38 @@ public final class GsonModel implements JsonModel<JsonElement> {
             return null;
         }
         return value.getAsBigDecimal();
+    }
+
+    @Override
+    public boolean isLong(JsonElement number) {
+        Number n = number.getAsNumber();
+        if (n instanceof Integer || n instanceof Long || n instanceof Short || n instanceof Byte) {
+            return true;
+        }
+        if (n instanceof Double || n instanceof Float || n instanceof BigDecimal) {
+            return false;
+        }
+        // Parsed numbers keep their text (LazilyParsedNumber): an optional minus and up to 18 digits fit.
+        String text = n.toString();
+        int start = text.startsWith("-") ? 1 : 0;
+        if (text.length() == start || text.length() - start > 18) {
+            return false;
+        }
+        for (int i = start; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c < '0' || c > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public long longValue(JsonElement number) {
+        Number n = number.getAsNumber();
+        return n instanceof Integer || n instanceof Long || n instanceof Short || n instanceof Byte
+                ? n.longValue()
+                : Long.parseLong(n.toString());
     }
 
     @Override

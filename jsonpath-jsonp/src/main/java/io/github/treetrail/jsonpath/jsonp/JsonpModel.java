@@ -6,6 +6,7 @@ import jakarta.json.JsonNumber;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * {@link JsonModel} for Jakarta JSON Processing (JSON-P) trees, with any JSON-P implementation.
@@ -48,6 +49,19 @@ public final class JsonpModel implements JsonModel<JsonValue> {
     public Iterable<String> memberNames(JsonValue object) {
         return object.asJsonObject().keySet();
     }
+
+    @Override
+    public Iterable<Map.Entry<String, JsonValue>> members(JsonValue object) {
+        return object.asJsonObject().entrySet();
+    }
+
+    @Override
+    public JsonValue findMember(JsonValue object, String name) {
+        // Null only for a missing member; JSON null is JsonValue.NULL.
+        return object.asJsonObject().get(name);
+    }
+
+    // isLong() keeps its default: JsonNumber offers no allocation-free test for "fits in a long".
 
     @Override
     public boolean hasMember(JsonValue object, String name) {

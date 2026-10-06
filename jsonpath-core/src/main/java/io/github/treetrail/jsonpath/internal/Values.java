@@ -6,6 +6,7 @@ import io.github.treetrail.jsonpath.internal.Ast.ComparisonOp;
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 
 /**
  * Comparison of values (RFC 9535, section 2.3.5.2.2).
@@ -54,9 +55,7 @@ final class Values {
         JsonKind ka = a.kind();
         JsonKind kb = b.kind();
         if (ka == JsonKind.NUMBER && kb == JsonKind.NUMBER) {
-            BigDecimal na = a.number();
-            BigDecimal nb = b.number();
-            return na != null && nb != null && na.compareTo(nb) < 0;
+            return compareNumbers(a.model(), a.value(), b.model(), b.value()) < 0;
         }
         if (ka == JsonKind.STRING && kb == JsonKind.STRING) {
             return compareCodePoints(a.string(), b.string()) < 0;
@@ -130,17 +129,34 @@ final class Values {
                 if (count > 0 && p.depth >= maxDepth) {
                     throw Evaluator.tooDeep(maxDepth);
                 }
-                for (String name : ma.memberNames(p.a)) {
-                    if (!mb.hasMember(p.b, name)) {
+                for (Map.Entry<String, Object> member : ma.members(p.a)) {
+                    Object other = mb.findMember(p.b, member.getKey());
+                    if (other == null && !mb.hasMember(p.b, member.getKey())) {
                         return false;
                     }
-                    pending.push(new Pending(ma.member(p.a, name), mb.member(p.b, name), p.depth + 1));
+                    pending.push(new Pending(member.getValue(), other, p.depth + 1));
                 }
             } else if (!scalarEqual(kind, ma, p.a, mb, p.b)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /** Result of {@link #compareNumbers} when a number is not finite: neither less, equal nor greater. */
+    private static final int INCOMPARABLE = 2;
+
+    /** Compares two numbers as -1, 0 or 1, or returns {@link #INCOMPARABLE}. */
+    private static int compareNumbers(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
+        if (ma.isLong(a) && mb.isLong(b)) {
+            return Long.compare(ma.longValue(a), mb.longValue(b));
+        }
+        BigDecimal na = ma.numberValue(a);
+        BigDecimal nb = mb.numberValue(b);
+        if (na == null || nb == null) {
+            return INCOMPARABLE;
+        }
+        return Integer.signum(na.compareTo(nb));
     }
 
     private static boolean scalarEqual(JsonKind kind, JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
@@ -150,9 +166,7 @@ final class Values {
             case BOOLEAN:
                 return ma.booleanValue(a) == mb.booleanValue(b);
             case NUMBER:
-                BigDecimal na = ma.numberValue(a);
-                BigDecimal nb = mb.numberValue(b);
-                return na != null && nb != null && na.compareTo(nb) == 0;
+                return compareNumbers(ma, a, mb, b) == 0;
             case STRING:
                 return ma.stringValue(a).equals(mb.stringValue(b));
             default:
