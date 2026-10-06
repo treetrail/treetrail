@@ -4,6 +4,16 @@ dependencies {
     implementation(platform(libs.rewrite.bom))
     implementation(libs.rewrite.java)
 
+    // The OpenRewrite BOM pins Jackson 2.21.6 and rewrite-core pulls Micrometer 1.9.17, both with known
+    // vulnerabilities (GitHub advisories for jackson-core/-databind <= 2.21.6, micrometer-core <= 1.9.17).
+    // Raise them until OpenRewrite ships fixed versions.
+    implementation(platform(libs.jackson2.bom))
+    constraints {
+        implementation(libs.micrometer.core) {
+            because("micrometer-core <= 1.9.17 has a known high-severity vulnerability")
+        }
+    }
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.rewrite.test)
