@@ -158,7 +158,8 @@ is used.
 ./gradlew build
 ```
 
-The build compiles with JDK 25 for Java 17 and runs the unit tests and the compliance suite.
+The build compiles with JDK 25 for Java 17 and runs the unit tests and the compliance suite on
+Java 17, 21 and 25. Gradle downloads the JDKs it does not find.
 
 ## License
 

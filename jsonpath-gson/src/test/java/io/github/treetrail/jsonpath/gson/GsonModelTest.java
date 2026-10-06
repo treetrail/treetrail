@@ -2,9 +2,12 @@ package io.github.treetrail.jsonpath.gson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.NodeList;
 import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,9 +19,23 @@ import org.junit.jupiter.api.TestFactory;
 
 class GsonModelTest {
 
+    private static final Gson GSON = new Gson();
+    /** Writes results back with null members, which Gson drops by default. */
+    private static final Gson GSON_WITH_NULLS = new GsonBuilder().serializeNulls().create();
+
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
         return ComplianceSuite.tests(GsonModel.INSTANCE, JsonParser::parseString, JsonElement::toString);
+    }
+
+    /**
+     * Gson's untyped output ({@code fromJson(json, Object.class)}) as plain Java objects: LinkedTreeMap for
+     * objects and Double for every number, including integers.
+     */
+    @TestFactory
+    Stream<DynamicTest> complianceTestSuiteWithUntypedGsonOutput() {
+        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> GSON.fromJson(json, Object.class),
+                GSON_WITH_NULLS::toJson);
     }
 
     @Test
@@ -28,8 +45,9 @@ class GsonModelTest {
 
         NodeList<JsonElement> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, GsonModel.INSTANCE);
 
-        assertThat(nodes.values()).containsExactly(
-                document.getAsJsonObject().getAsJsonObject("store").getAsJsonArray("book").get(0));
+        // Identity, not equality: the query hands back the library's own node objects.
+        assertThat(nodes.values()).hasSize(1);
+        assertThat(nodes.values().get(0)).isSameAs(document.getAsJsonObject().getAsJsonObject("store").getAsJsonArray("book").get(0));
     }
 
     @Test

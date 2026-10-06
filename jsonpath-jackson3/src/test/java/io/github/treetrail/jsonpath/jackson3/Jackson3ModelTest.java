@@ -34,7 +34,9 @@ class Jackson3ModelTest {
 
         NodeList<JsonNode> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, Jackson3Model.INSTANCE);
 
-        assertThat(nodes.values()).containsExactly(document.get("store").get("book").get(0));
+        // Identity, not equality: the query hands back the library's own node objects.
+        assertThat(nodes.values()).hasSize(1);
+        assertThat(nodes.values().get(0)).isSameAs(document.get("store").get("book").get(0));
     }
 
     @Test

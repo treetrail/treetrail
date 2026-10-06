@@ -1,3 +1,8 @@
+plugins {
+    // Downloads the JDKs for the test runs on Java 17 and 21 when they are not installed.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 rootProject.name = "treetrail"
 
 include("jsonpath-core")
