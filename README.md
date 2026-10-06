@@ -135,7 +135,8 @@ assertThatJson(body).doesNotHaveJsonPath("$.store.music");
 ```
 
 `jsonpath-spring-test` replaces Spring's Jayway-based `jsonPath(...)` matchers for MockMvc and
-`WebTestClient`. It uses the Spring version of your project (tested with Spring Framework 6.2 and 7.0).
+`WebTestClient`. It uses the Spring version of your project; it is tested with Spring Framework 7.0 and
+also passed its tests once with 6.2.19, whose line no longer gets public security fixes.
 
 ```java
 import static io.github.treetrail.jsonpath.spring.TreetrailResultMatchers.jsonPath;

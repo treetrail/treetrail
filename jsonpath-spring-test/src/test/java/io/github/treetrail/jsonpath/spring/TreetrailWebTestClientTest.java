@@ -19,7 +19,6 @@ class TreetrailWebTestClientTest {
 
     @Test
     void checksValuesOfTheResponseBody() {
-        // No expectStatus(): its return type differs between Spring 6 and 7, and the test runs on both.
         client.get().uri("/store").exchange()
                 .expectBody()
                 .consumeWith(jsonPath("$.store.bicycle.color").value("red"))
