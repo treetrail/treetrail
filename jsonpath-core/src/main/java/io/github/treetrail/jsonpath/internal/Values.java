@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Comparison of values (RFC 9535, section 2.3.5.2.2).
  */
-final class Values {
+public final class Values {
 
     private Values() {
     }
@@ -90,6 +90,14 @@ final class Values {
             this.b = b;
             this.depth = depth;
         }
+    }
+
+    /**
+     * Whether two values are equal as JSON values, the semantics of {@code ==} in filters: numbers by value,
+     * strings by content, arrays element by element, objects member by member regardless of order.
+     */
+    public static boolean jsonEquals(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b, int maxDepth) {
+        return deepEqual(ma, a, mb, b, maxDepth);
     }
 
     /** Structural equality, with an explicit stack so that deep values cannot overflow the call stack. */

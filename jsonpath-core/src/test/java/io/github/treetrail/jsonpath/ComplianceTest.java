@@ -26,6 +26,11 @@ class ComplianceTest {
     }
 
     @TestFactory
+    Stream<DynamicTest> complianceTestSuiteWithTheBuiltInParser() {
+        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, JavaObjectModel::parse, ComplianceTest::serialize);
+    }
+
+    @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithBigDecimals() {
         return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json), ComplianceTest::serialize);
     }

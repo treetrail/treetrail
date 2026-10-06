@@ -19,7 +19,7 @@ plugins {
 /** The modules published to Maven Central; jsonpath-benchmarks is a build tool. */
 val publishedModules = setOf(
     "jsonpath-core", "jsonpath-jackson2", "jsonpath-jackson3", "jsonpath-gson", "jsonpath-jsonp",
-    "jsonpath-migration", "jsonpath-rewrite",
+    "jsonpath-migration", "jsonpath-rewrite", "jsonpath-assertj", "jsonpath-spring-test",
 )
 
 allprojects {

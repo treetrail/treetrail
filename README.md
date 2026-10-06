@@ -48,7 +48,7 @@ dependencies {
 ```
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-migration` and `jsonpath-rewrite`. Every release is signed, ships a CycloneDX SBOM per module and
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration` and `jsonpath-rewrite`. Every release is signed, ships a CycloneDX SBOM per module and
 has a build provenance attestation; see [docs/releasing.md](docs/releasing.md#what-a-release-contains).
 
 ## Usage
@@ -64,6 +64,13 @@ nodes.paths();  // ["$['store']['book'][0]['title']", "$['store']['book'][2]['ti
 `query(Object)` works on plain Java objects: `Map` for objects, `List` for arrays, `String`,
 `Number`, `Boolean` and `null`. That is what most JSON libraries produce when asked for untyped
 output, for example Jackson's `objectMapper.readValue(json, Object.class)`.
+
+JSON text needs no JSON library: `queryJson` parses it with a small, strict parser built into the core
+(`JavaObjectModel.parse`), which keeps exact numbers and rejects duplicate member names.
+
+```java
+List<Object> titles = JsonPath.compile("$.store.book[*].title").queryJson(responseBody).values();
+```
 
 ### Jackson, Gson and other JSON libraries
 
@@ -114,6 +121,39 @@ stops with a `JsonPathEvaluationException` and leaves the interrupt status set, 
 can bound a query by time. Compiling is bounded as well: filters nest at most 64 levels deep, and
 regular expressions are limited in size (see [docs/conformance.md](docs/conformance.md#limits)).
 
+### Testing with AssertJ and Spring
+
+`jsonpath-assertj` adds AssertJ assertions on JSON text. Values compare as JSON values, so `399`,
+`399L` and `399.0` all match a JSON number `399`, and objects match regardless of member order.
+
+```java
+import static io.github.treetrail.jsonpath.assertj.JsonPathAssertions.assertThatJson;
+
+assertThatJson(body).jsonPath("$.store.book[?@.price < 10].title").containsExactly("Sayings", "Moby Dick");
+assertThatJson(body).jsonPath("$.store.bicycle.price").singleValue().isEqualTo(399);
+assertThatJson(body).doesNotHaveJsonPath("$.store.music");
+```
+
+`jsonpath-spring-test` replaces Spring's Jayway-based `jsonPath(...)` matchers for MockMvc and
+`WebTestClient`. It uses the Spring version of your project (tested with Spring Framework 6.2 and 7.0).
+
+```java
+import static io.github.treetrail.jsonpath.spring.TreetrailResultMatchers.jsonPath;
+
+mockMvc.perform(get("/store"))
+        .andExpect(jsonPath("$.store.bicycle.color").value("red"))
+        .andExpect(jsonPath("$.store.book[?@.price < 10].title").values("Sayings", "Moby Dick"))
+        .andExpect(jsonPath("$.store.music").doesNotExist());
+
+// WebTestClient: import static io.github.treetrail.jsonpath.spring.TreetrailWebTestClient.jsonPath;
+webTestClient.get().uri("/store").exchange()
+        .expectBody().consumeWith(jsonPath("$.store.bicycle.color").value("red"));
+```
+
+A query always selects a list of nodes, so `value(x)` means exactly one node with value `x` and
+`values(...)` exactly these values in this order. Failures name the expression and show the values found
+with their paths.
+
 ## Coming from Jayway JsonPath
 
 RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several places, for example:
@@ -131,6 +171,7 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 
 | Jayway JsonPath | Treetrail |
 | --- | --- |
+| `MockMvcResultMatchers.jsonPath("$.a").value(1)` | `TreetrailResultMatchers.jsonPath("$.a").value(1)` from `jsonpath-spring-test` |
 | `JsonPath.read(document, "$.a.b")` | `JsonPath.compile("$.a.b").query(document).single()` returns an `Optional<Node>`; `.map(Node::value)` gives the value |
 | `JsonPath.parse(json).read("$.a", Integer.class)` | No type mapping: cast the value of plain Java objects, or use your library's mapping, e.g. `objectMapper.treeToValue(node, Integer.class)` with `Jackson2Model` |
 | `Option.ALWAYS_RETURN_LIST` | Always the case |
