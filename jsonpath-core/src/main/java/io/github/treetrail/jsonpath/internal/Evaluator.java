@@ -155,6 +155,16 @@ public final class Evaluator {
     }
 
     private List<Located> children(Located node) {
+        try {
+            return childrenOf(node);
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
+    }
+
+    private List<Located> childrenOf(Located node) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
         if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY) && node.location().depth() >= maxDepth) {
@@ -188,6 +198,25 @@ public final class Evaluator {
     }
 
     private void select(Selector selector, Located node, List<Located> out) {
+        try {
+            selectFrom(selector, node, out);
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
+    }
+
+    /**
+     * Wraps an exception from the model or a function, typically a value that is not JSON, with the
+     * location of the node being processed. Exceptions of nested queries carry their own, closer node.
+     */
+    private static JsonPathEvaluationException modelFailure(RuntimeException e, Located node) {
+        String reason = e.getMessage() == null ? e.getClass().getName() : e.getMessage();
+        return new JsonPathEvaluationException(reason, node.location().normalizedPath(), e);
+    }
+
+    private void selectFrom(Selector selector, Located node, List<Located> out) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
         if (selector instanceof Name) {
@@ -216,7 +245,15 @@ public final class Evaluator {
         } else if (selector instanceof Filter) {
             Expr expr = ((Filter) selector).expr();
             for (Located child : children(node)) {
-                if (test(expr, child)) {
+                boolean selected;
+                try {
+                    selected = test(expr, child);
+                } catch (JsonPathEvaluationException e) {
+                    throw e;
+                } catch (RuntimeException e) {
+                    throw modelFailure(e, child);
+                }
+                if (selected) {
                     out.add(child);
                 }
             }

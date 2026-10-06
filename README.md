@@ -63,7 +63,9 @@ default settings. For other object models, implement `JsonModel<N>` (nine small 
 `query(document, model)`.
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
-Invalid queries throw a `JsonPathSyntaxException` with the position of the problem.
+Invalid queries throw a `JsonPathSyntaxException` with the position of the problem and an excerpt of
+the expression. If the document contains a value the model rejects, the query throws a
+`JsonPathEvaluationException` with the normalized path of the node and the original exception as cause.
 
 ### Queries from untrusted sources
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.treetrail.jsonpath.JsonPath;
+import io.github.treetrail.jsonpath.JsonPathEvaluationException;
 import io.github.treetrail.jsonpath.NodeList;
 import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,7 +50,8 @@ class Jackson2ModelTest {
         document.putPOJO("pojo", new Object());
 
         assertThatThrownBy(() -> JsonPath.compile("$[?@ == 1]").query(document, Jackson2Model.INSTANCE))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(JsonPathEvaluationException.class,
+                        e -> assertThat(e.path()).isEqualTo("$['pojo']"));
     }
 
     @Test

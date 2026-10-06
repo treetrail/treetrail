@@ -145,7 +145,7 @@ class JsonPathTest {
         Object tree = new ObjectMapper().readTree("{\"a\": 1}");
 
         assertThatThrownBy(() -> JsonPath.compile("$.a").query(tree))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(JsonPathEvaluationException.class)
                 .hasMessageContaining("ObjectNode")
                 .hasMessageContaining("Jackson2Model.INSTANCE");
     }
@@ -153,7 +153,50 @@ class JsonPathTest {
     @Test
     void reportsOtherUnsupportedTypesWithoutHint() {
         assertThatThrownBy(() -> JsonPath.compile("$.a.b").query(Map.of("a", new Object())))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Not a JSON value: java.lang.Object");
+                .isInstanceOf(JsonPathEvaluationException.class)
+                .hasMessage("Not a JSON value: java.lang.Object at $['a']");
+    }
+
+    @Test
+    void showsAnExcerptWithACaretInSyntaxErrors() {
+        assertThatThrownBy(() -> JsonPath.compile("$.store[?@.price <]"))
+                .hasMessage("Expected a query, a literal or a function at position 18:\n"
+                        + "  $.store[?@.price <]\n"
+                        + "                    ^");
+    }
+
+    @Test
+    void shortensLongExpressionsInSyntaxErrors() {
+        String expression = "$." + "a".repeat(200) + "[?@.x <]" + ".b".repeat(100);
+
+        assertThatThrownBy(() -> JsonPath.compile(expression))
+                .isInstanceOfSatisfying(JsonPathSyntaxException.class, e -> {
+                    assertThat(e.expression()).isEqualTo(expression);
+                    assertThat(e.reason()).isEqualTo("Expected a query, a literal or a function");
+                    String[] lines = e.getMessage().split("\n");
+                    assertThat(lines).hasSize(3);
+                    assertThat(lines[1]).startsWith("  ...").endsWith("...").hasSize(2 + 3 + 60 + 3);
+                    assertThat(lines[1].charAt(lines[2].indexOf('^'))).isEqualTo(']');
+                });
+    }
+
+    @Test
+    void keepsTheCaretAlignedWhenTheExpressionContainsLineBreaks() {
+        assertThatThrownBy(() -> JsonPath.compile("$[?@.a ==\n\t]"))
+                .isInstanceOfSatisfying(JsonPathSyntaxException.class, e -> {
+                    String[] lines = e.getMessage().split("\n");
+                    assertThat(lines[1]).isEqualTo("  $[?@.a ==  ]");
+                    assertThat(lines[2].indexOf('^')).isEqualTo(2 + e.position());
+                });
+    }
+
+    @Test
+    void pointsTypeErrorsAtTheOperand() {
+        assertThatThrownBy(() -> JsonPath.compile("$[?length(@.a) && @.b]"))
+                .isInstanceOfSatisfying(JsonPathSyntaxException.class,
+                        e -> assertThat(e.position()).isEqualTo(3));
+        assertThatThrownBy(() -> JsonPath.compile("$[?@.b || !length(@.a)]"))
+                .isInstanceOfSatisfying(JsonPathSyntaxException.class,
+                        e -> assertThat(e.position()).isEqualTo(11));
     }
 }
