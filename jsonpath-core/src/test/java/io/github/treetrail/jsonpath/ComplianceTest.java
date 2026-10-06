@@ -10,21 +10,29 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
 /**
- * Runs the JSONPath Compliance Test Suite against plain Java objects ({@link JavaObjectModel}).
+ * Runs the JSONPath Compliance Test Suite against plain Java objects ({@link JavaObjectModel}): once as
+ * the README recommends, with Jackson's defaults (floating-point numbers become {@code Double}), and once
+ * with {@code BigDecimal} for exact decimals.
  */
 class ComplianceTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
+    private static final ObjectMapper DEFAULTS = new ObjectMapper();
+    private static final ObjectMapper DECIMALS = new ObjectMapper()
             .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     @TestFactory
-    Stream<DynamicTest> complianceTestSuite() {
-        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, ComplianceTest::parse, ComplianceTest::serialize);
+    Stream<DynamicTest> complianceTestSuiteWithJacksonDefaults() {
+        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> parse(DEFAULTS, json), ComplianceTest::serialize);
     }
 
-    private static Object parse(String json) {
+    @TestFactory
+    Stream<DynamicTest> complianceTestSuiteWithBigDecimals() {
+        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json), ComplianceTest::serialize);
+    }
+
+    private static Object parse(ObjectMapper mapper, String json) {
         try {
-            return MAPPER.readValue(json, Object.class);
+            return mapper.readValue(json, Object.class);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -32,7 +40,7 @@ class ComplianceTest {
 
     private static String serialize(Object value) {
         try {
-            return MAPPER.writeValueAsString(value);
+            return DECIMALS.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

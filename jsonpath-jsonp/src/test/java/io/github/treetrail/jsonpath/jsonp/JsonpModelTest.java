@@ -27,8 +27,9 @@ class JsonpModelTest {
 
         NodeList<JsonValue> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, JsonpModel.INSTANCE);
 
-        assertThat(nodes.values()).containsExactly(
-                document.asJsonObject().getJsonObject("store").getJsonArray("book").get(0));
+        // Identity, not equality: the query hands back the library's own node objects.
+        assertThat(nodes.values()).hasSize(1);
+        assertThat(nodes.values().get(0)).isSameAs(document.asJsonObject().getJsonObject("store").getJsonArray("book").get(0));
     }
 
     @Test
