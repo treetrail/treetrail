@@ -51,6 +51,7 @@ public final class Evaluator {
     private final Located root;
     private final long maxVisitedNodes;
     private final int maxResultSize;
+    private final int maxDepth;
     private long visitedNodes;
 
     /** Results of absolute queries inside filters, created on first use. */
@@ -63,6 +64,7 @@ public final class Evaluator {
         this.root = new Located(document, Location.ROOT);
         this.maxVisitedNodes = limits.maxVisitedNodes();
         this.maxResultSize = limits.maxResultSize();
+        this.maxDepth = limits.maxDepth();
     }
 
     public List<Located> run(Query query) {
@@ -85,6 +87,12 @@ public final class Evaluator {
         if (after > maxVisitedNodes || (before >>> INTERRUPT_CHECK_SHIFT) != (after >>> INTERRUPT_CHECK_SHIFT)) {
             checkLimits(after);
         }
+    }
+
+    /** The exception for documents nested deeper than the limit, which includes documents with cycles. */
+    static JsonPathLimitExceededException tooDeep(int maxDepth) {
+        return new JsonPathLimitExceededException("Document is nested more than " + maxDepth
+                + " levels deep; with plain Java objects, it may contain itself");
     }
 
     private void checkLimits(long visited) {
@@ -149,6 +157,9 @@ public final class Evaluator {
     private List<Located> children(Located node) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
+        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY) && node.location().depth() >= maxDepth) {
+            throw tooDeep(maxDepth);
+        }
         if (kind == JsonKind.OBJECT) {
             int count = model.memberCount(value);
             visit(count);
@@ -272,7 +283,7 @@ public final class Evaluator {
         if (expr instanceof Comparison) {
             Comparison comparison = (Comparison) expr;
             return Values.compare(value(comparison.left(), current), comparison.op(),
-                    value(comparison.right(), current));
+                    value(comparison.right(), current), maxDepth);
         }
         Operand operand = ((Test) expr).operand();
         return logical(operand, current);

@@ -36,7 +36,11 @@ public interface JsonModel<N> {
     /** Returns the value of a string. */
     String stringValue(N value);
 
-    /** Returns the value of a number. */
+    /**
+     * Returns the value of a number, or {@code null} if it is not finite (NaN or an infinity). JSON cannot
+     * express such numbers, but parsers produce them, for example for {@code 1e400} as a {@code double}.
+     * Queries treat them as neither equal to nor ordered against any value.
+     */
     BigDecimal numberValue(N value);
 
     /** Returns the value of a boolean. */

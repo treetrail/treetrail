@@ -49,4 +49,16 @@ class GsonModelTest {
 
         assertThat(JsonPath.compile("$.a[?@ == null]").query(document, GsonModel.INSTANCE)).hasSize(1);
     }
+
+    @Test
+    void treatsNumbersThatAreNotFiniteAsIncomparable() {
+        JsonArray document = new JsonArray();
+        document.add(Double.NaN);
+        document.add(Double.POSITIVE_INFINITY);
+        document.add(2);
+
+        assertThat(JsonPath.compile("$[?@ > 1]").query(document, GsonModel.INSTANCE).values())
+                .containsExactly(document.get(2));
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, GsonModel.INSTANCE)).hasSize(2);
+    }
 }

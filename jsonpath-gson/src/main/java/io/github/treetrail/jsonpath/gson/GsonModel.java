@@ -82,6 +82,11 @@ public final class GsonModel implements JsonModel<JsonElement> {
 
     @Override
     public BigDecimal numberValue(JsonElement value) {
+        Number number = value.getAsNumber();
+        // Lenient parsing and new JsonPrimitive(Double.NaN) produce numbers that are not finite.
+        if ((number instanceof Double || number instanceof Float) && !Double.isFinite(number.doubleValue())) {
+            return null;
+        }
         return value.getAsBigDecimal();
     }
 

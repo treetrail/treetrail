@@ -72,8 +72,9 @@ them: each node a selector produces, each node a descendant segment walks throug
 filter tests. Absolute queries inside filters, such as `$.limit` in `$.items[?@.price < $.limit]`,
 are evaluated once per run, so nesting them does not multiply the work.
 
-By default a run may visit 100,000,000 nodes, which took 1.8 seconds on the benchmark machine. For
-queries from untrusted sources, set limits that fit your documents:
+By default a run may visit 100,000,000 nodes, which took 1.8 seconds on the benchmark machine, and
+walk or compare at most 1,000 levels deep, which also stops plain Java maps that contain themselves.
+For queries from untrusted sources, set limits that fit your documents:
 
 ```java
 JsonPath path = JsonPath.compile(untrustedExpression)
