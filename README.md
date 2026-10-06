@@ -15,6 +15,9 @@ JSONPath for Java that behaves the same everywhere: an implementation of
   without backtracking, so matching takes time linear in the input length. A pattern like
   `(a*)*b` on 100,000 characters finishes in milliseconds instead of hanging.
   Expression nesting and regex size are limited.
+- **Bounded work:** absolute queries inside filters are evaluated once per run, and every run has a
+  budget of visited nodes, so a hostile query cannot keep a thread busy indefinitely; see
+  [Queries from untrusted sources](#queries-from-untrusted-sources).
 - **Fast:** on par with or faster than Jayway JsonPath in every query benchmark, up to 1.8× for
   wildcards; see [docs/benchmarks.md](docs/benchmarks.md).
 - **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`).
@@ -61,6 +64,26 @@ default settings. For other object models, implement `JsonModel<N>` (nine small 
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
 Invalid queries throw a `JsonPathSyntaxException` with the position of the problem.
+
+### Queries from untrusted sources
+
+A query needs time and memory roughly in proportion to the nodes it visits, so every run counts
+them: each node a selector produces, each node a descendant segment walks through and each node a
+filter tests. Absolute queries inside filters, such as `$.limit` in `$.items[?@.price < $.limit]`,
+are evaluated once per run, so nesting them does not multiply the work.
+
+By default a run may visit 100,000,000 nodes, which took 1.8 seconds on the benchmark machine. For
+queries from untrusted sources, set limits that fit your documents:
+
+```java
+JsonPath path = JsonPath.compile(untrustedExpression)
+        .withLimits(EvaluationLimits.DEFAULT.withMaxVisitedNodes(1_000_000).withMaxResultSize(10_000));
+```
+
+A run that exceeds a limit throws a `JsonPathLimitExceededException`. A run on an interrupted thread
+stops with a `JsonPathEvaluationException` and leaves the interrupt status set, so `Future.cancel(true)`
+can bound a query by time. Compiling is bounded as well: filters nest at most 64 levels deep, and
+regular expressions are limited in size (see [Design notes](#design-notes)).
 
 ## Coming from Jayway JsonPath
 

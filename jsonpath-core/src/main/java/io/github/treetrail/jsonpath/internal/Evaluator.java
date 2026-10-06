@@ -1,7 +1,10 @@
 package io.github.treetrail.jsonpath.internal;
 
+import io.github.treetrail.jsonpath.EvaluationLimits;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
+import io.github.treetrail.jsonpath.JsonPathEvaluationException;
+import io.github.treetrail.jsonpath.JsonPathLimitExceededException;
 import io.github.treetrail.jsonpath.internal.Ast.And;
 import io.github.treetrail.jsonpath.internal.Ast.Argument;
 import io.github.treetrail.jsonpath.internal.Ast.Comparison;
@@ -25,29 +28,92 @@ import io.github.treetrail.jsonpath.internal.Ast.Wildcard;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.Type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Executes a parsed query against a document (RFC 9535, sections 2.3 to 2.5).
+ *
+ * <p>An evaluator runs one query once. Absolute queries inside filters ({@code $[?@.a == $.b]}) do not
+ * depend on the current node, so each is evaluated once per run and its result reused; otherwise
+ * nesting them would multiply the work by the document size per level. Every node visit counts
+ * against {@link EvaluationLimits#maxVisitedNodes()}.
  */
 public final class Evaluator {
 
+    /** The thread's interrupt status is checked whenever the visit count passes a multiple of 2^12 = 4,096. */
+    private static final int INTERRUPT_CHECK_SHIFT = 12;
+
     private final JsonModel<Object> model;
     private final Located root;
+    private final long maxVisitedNodes;
+    private final int maxResultSize;
+    private long visitedNodes;
+
+    /** Results of absolute queries inside filters, created on first use. */
+    private Map<Query, List<Located>> absoluteNodes;
+    private Map<Query, List<Val>> absoluteValues;
 
     @SuppressWarnings("unchecked")
-    public Evaluator(Object document, JsonModel<?> model) {
+    public Evaluator(Object document, JsonModel<?> model, EvaluationLimits limits) {
         this.model = (JsonModel<Object>) model;
         this.root = new Located(document, Location.ROOT);
+        this.maxVisitedNodes = limits.maxVisitedNodes();
+        this.maxResultSize = limits.maxResultSize();
     }
 
     public List<Located> run(Query query) {
-        return query(query, root);
+        List<Located> result = evaluate(query, root);
+        if (result.size() > maxResultSize) {
+            throw new JsonPathLimitExceededException("Query selected " + result.size()
+                    + " nodes, more than the limit of " + maxResultSize);
+        }
+        return result;
     }
 
+    /**
+     * Counts node visits against the limit, before the nodes are visited, and checks for interruption
+     * now and then. Kept small so that it inlines into the selection loops.
+     */
+    private void visit(int count) {
+        long before = visitedNodes;
+        long after = before + count;
+        visitedNodes = after;
+        if (after > maxVisitedNodes || (before >>> INTERRUPT_CHECK_SHIFT) != (after >>> INTERRUPT_CHECK_SHIFT)) {
+            checkLimits(after);
+        }
+    }
+
+    private void checkLimits(long visited) {
+        if (visited > maxVisitedNodes) {
+            throw new JsonPathLimitExceededException("Query visited more than " + maxVisitedNodes + " nodes");
+        }
+        if (Thread.currentThread().isInterrupted()) {
+            throw new JsonPathEvaluationException("Query evaluation was interrupted");
+        }
+    }
+
+    /** Runs a query inside a filter; absolute queries are evaluated once per run. */
     private List<Located> query(Query query, Located current) {
-        List<Located> nodes = List.of(query.absolute() ? root : current);
+        if (!query.absolute()) {
+            return evaluate(query, current);
+        }
+        if (absoluteNodes == null) {
+            absoluteNodes = new IdentityHashMap<>();
+        }
+        List<Located> nodes = absoluteNodes.get(query);
+        if (nodes == null) {
+            nodes = evaluate(query, root);
+            absoluteNodes.put(query, nodes);
+        }
+        return nodes;
+    }
+
+    private List<Located> evaluate(Query query, Located current) {
+        List<Located> nodes = List.of(current);
         for (Segment segment : query.segments()) {
             List<Located> out = new ArrayList<>();
             for (Located node : nodes) {
@@ -84,7 +150,9 @@ public final class Evaluator {
         Object value = node.value();
         JsonKind kind = model.kind(value);
         if (kind == JsonKind.OBJECT) {
-            List<Located> children = new ArrayList<>(model.memberCount(value));
+            int count = model.memberCount(value);
+            visit(count);
+            List<Located> children = new ArrayList<>(count);
             for (String name : model.memberNames(value)) {
                 children.add(new Located(model.member(value, name), node.location().child(name)));
             }
@@ -92,6 +160,7 @@ public final class Evaluator {
         }
         if (kind == JsonKind.ARRAY) {
             int size = model.size(value);
+            visit(size);
             List<Located> children = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 children.add(new Located(model.element(value, i), node.location().child(i)));
@@ -113,6 +182,7 @@ public final class Evaluator {
         if (selector instanceof Name) {
             String name = ((Name) selector).name();
             if (kind == JsonKind.OBJECT && model.hasMember(value, name)) {
+                visit(1);
                 out.add(new Located(model.member(value, name), node.location().child(name)));
             }
         } else if (selector instanceof Wildcard) {
@@ -124,6 +194,7 @@ public final class Evaluator {
                 long normalized = index >= 0 ? index : size + index;
                 if (normalized >= 0 && normalized < size) {
                     int i = (int) normalized;
+                    visit(1);
                     out.add(new Located(model.element(value, i), node.location().child(i)));
                 }
             }
@@ -169,6 +240,7 @@ public final class Evaluator {
     }
 
     private void add(Object array, int index, Located parent, List<Located> out) {
+        visit(1);
         out.add(new Located(model.element(array, index), parent.location().child(index)));
     }
 
@@ -232,16 +304,32 @@ public final class Evaluator {
 
     private List<Val> nodes(Operand operand, Located current) {
         if (operand instanceof QueryOperand) {
-            List<Located> nodes = query(((QueryOperand) operand).query(), current);
-            List<Val> values = new ArrayList<>(nodes.size());
-            for (Located node : nodes) {
-                values.add(Val.of(node.value(), model));
+            Query query = ((QueryOperand) operand).query();
+            if (!query.absolute()) {
+                return values(query(query, current));
+            }
+            // Converted once as well, so that count($..*) in a filter costs O(1) per node.
+            if (absoluteValues == null) {
+                absoluteValues = new IdentityHashMap<>();
+            }
+            List<Val> values = absoluteValues.get(query);
+            if (values == null) {
+                values = Collections.unmodifiableList(values(query(query, current)));
+                absoluteValues.put(query, values);
             }
             return values;
         }
         @SuppressWarnings("unchecked")
         List<Val> result = (List<Val>) call((FunctionCall) operand, current);
         return result;
+    }
+
+    private List<Val> values(List<Located> nodes) {
+        List<Val> values = new ArrayList<>(nodes.size());
+        for (Located node : nodes) {
+            values.add(Val.of(node.value(), model));
+        }
+        return values;
     }
 
     private Object call(FunctionCall call, Located current) {
