@@ -51,4 +51,14 @@ class Jackson3ModelTest {
         assertThatThrownBy(() -> JsonPath.compile("$[?@ == 1]").query(document, Jackson3Model.INSTANCE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void treatsInfiniteDoublesAsIncomparable() {
+        // Jackson parses 1e400 into a DoubleNode holding Infinity.
+        JsonNode document = MAPPER.readTree("[1e400, -1e400, 2]");
+
+        assertThat(JsonPath.compile("$[?@ > 1]").query(document, Jackson3Model.INSTANCE).values())
+                .containsExactly(document.get(2));
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson3Model.INSTANCE)).hasSize(2);
+    }
 }

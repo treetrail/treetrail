@@ -3,6 +3,9 @@ package io.github.treetrail.jsonpath.internal;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.internal.Ast.ComparisonOp;
+import java.math.BigDecimal;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Comparison of values (RFC 9535, section 2.3.5.2.2).
@@ -12,30 +15,36 @@ final class Values {
     private Values() {
     }
 
-    static boolean compare(Val left, ComparisonOp op, Val right) {
+    /**
+     * Compares two values. Numbers that are not finite (see {@link JsonModel#numberValue}) are neither
+     * equal to nor ordered against any value; {@code !=} is the negation of {@code ==}.
+     *
+     * @param maxDepth how deep arrays and objects are compared before the comparison fails
+     */
+    static boolean compare(Val left, ComparisonOp op, Val right, int maxDepth) {
         switch (op) {
             case EQ:
-                return equal(left, right);
+                return equal(left, right, maxDepth);
             case NE:
-                return !equal(left, right);
+                return !equal(left, right, maxDepth);
             case LT:
                 return less(left, right);
             case LE:
-                return less(left, right) || equal(left, right);
+                return less(left, right) || equal(left, right, maxDepth);
             case GT:
                 return less(right, left);
             case GE:
-                return less(right, left) || equal(left, right);
+                return less(right, left) || equal(left, right, maxDepth);
             default:
                 throw new IllegalStateException();
         }
     }
 
-    private static boolean equal(Val a, Val b) {
+    private static boolean equal(Val a, Val b, int maxDepth) {
         if (a.isNothing() || b.isNothing()) {
             return a.isNothing() && b.isNothing();
         }
-        return deepEqual(a.model(), a.value(), b.model(), b.value());
+        return deepEqual(a.model(), a.value(), b.model(), b.value(), maxDepth);
     }
 
     private static boolean less(Val a, Val b) {
@@ -45,7 +54,9 @@ final class Values {
         JsonKind ka = a.kind();
         JsonKind kb = b.kind();
         if (ka == JsonKind.NUMBER && kb == JsonKind.NUMBER) {
-            return a.number().compareTo(b.number()) < 0;
+            BigDecimal na = a.number();
+            BigDecimal nb = b.number();
+            return na != null && nb != null && na.compareTo(nb) < 0;
         }
         if (ka == JsonKind.STRING && kb == JsonKind.STRING) {
             return compareCodePoints(a.string(), b.string()) < 0;
@@ -69,41 +80,81 @@ final class Values {
         return Boolean.compare(i < a.length(), j < b.length());
     }
 
-    private static boolean deepEqual(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
+    /** A pair of values still to compare, at a depth below the compared values. */
+    private static final class Pending {
+        final Object a;
+        final Object b;
+        final int depth;
+
+        Pending(Object a, Object b, int depth) {
+            this.a = a;
+            this.b = b;
+            this.depth = depth;
+        }
+    }
+
+    /** Structural equality, with an explicit stack so that deep values cannot overflow the call stack. */
+    private static boolean deepEqual(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b, int maxDepth) {
         JsonKind kind = ma.kind(a);
         if (kind != mb.kind(b)) {
             return false;
         }
+        if (kind != JsonKind.ARRAY && kind != JsonKind.OBJECT) {
+            // Most comparisons in filters are between scalars; they need no stack.
+            return scalarEqual(kind, ma, a, mb, b);
+        }
+        Deque<Pending> pending = new ArrayDeque<>();
+        pending.push(new Pending(a, b, 0));
+        while (!pending.isEmpty()) {
+            Pending p = pending.pop();
+            kind = ma.kind(p.a);
+            if (kind != mb.kind(p.b)) {
+                return false;
+            }
+            if (kind == JsonKind.ARRAY) {
+                int size = ma.size(p.a);
+                if (size != mb.size(p.b)) {
+                    return false;
+                }
+                if (size > 0 && p.depth >= maxDepth) {
+                    throw Evaluator.tooDeep(maxDepth);
+                }
+                for (int i = 0; i < size; i++) {
+                    pending.push(new Pending(ma.element(p.a, i), mb.element(p.b, i), p.depth + 1));
+                }
+            } else if (kind == JsonKind.OBJECT) {
+                int count = ma.memberCount(p.a);
+                if (count != mb.memberCount(p.b)) {
+                    return false;
+                }
+                if (count > 0 && p.depth >= maxDepth) {
+                    throw Evaluator.tooDeep(maxDepth);
+                }
+                for (String name : ma.memberNames(p.a)) {
+                    if (!mb.hasMember(p.b, name)) {
+                        return false;
+                    }
+                    pending.push(new Pending(ma.member(p.a, name), mb.member(p.b, name), p.depth + 1));
+                }
+            } else if (!scalarEqual(kind, ma, p.a, mb, p.b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean scalarEqual(JsonKind kind, JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
         switch (kind) {
             case NULL:
                 return true;
             case BOOLEAN:
                 return ma.booleanValue(a) == mb.booleanValue(b);
             case NUMBER:
-                return ma.numberValue(a).compareTo(mb.numberValue(b)) == 0;
+                BigDecimal na = ma.numberValue(a);
+                BigDecimal nb = mb.numberValue(b);
+                return na != null && nb != null && na.compareTo(nb) == 0;
             case STRING:
                 return ma.stringValue(a).equals(mb.stringValue(b));
-            case ARRAY:
-                int size = ma.size(a);
-                if (size != mb.size(b)) {
-                    return false;
-                }
-                for (int i = 0; i < size; i++) {
-                    if (!deepEqual(ma, ma.element(a, i), mb, mb.element(b, i))) {
-                        return false;
-                    }
-                }
-                return true;
-            case OBJECT:
-                if (ma.memberCount(a) != mb.memberCount(b)) {
-                    return false;
-                }
-                for (String name : ma.memberNames(a)) {
-                    if (!mb.hasMember(b, name) || !deepEqual(ma, ma.member(a, name), mb, mb.member(b, name))) {
-                        return false;
-                    }
-                }
-                return true;
             default:
                 throw new IllegalStateException();
         }

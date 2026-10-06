@@ -14,10 +14,17 @@ public final class Location {
 
     private final Location parent;
     private final Object step;
+    private final int depth;
 
     private Location(Location parent, Object step) {
         this.parent = parent;
         this.step = step;
+        this.depth = parent == null ? 0 : parent.depth + 1;
+    }
+
+    /** Returns the number of steps from the root; the root has depth 0. */
+    public int depth() {
+        return depth;
     }
 
     public Location child(String name) {

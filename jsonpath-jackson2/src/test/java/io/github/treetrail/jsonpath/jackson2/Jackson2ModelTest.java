@@ -52,6 +52,16 @@ class Jackson2ModelTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void treatsInfiniteDoublesAsIncomparable() {
+        // Jackson parses 1e400 into a DoubleNode holding Infinity.
+        JsonNode document = parse("[1e400, -1e400, 2]");
+
+        assertThat(JsonPath.compile("$[?@ > 1]").query(document, Jackson2Model.INSTANCE).values())
+                .containsExactly(document.get(2));
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson2Model.INSTANCE)).hasSize(2);
+    }
+
     private static JsonNode parse(String json) {
         try {
             return MAPPER.readTree(json);
