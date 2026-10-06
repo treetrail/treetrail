@@ -3,7 +3,7 @@ description = "Compares JSONPath expressions between Jayway JsonPath and Treetra
 dependencies {
     api(project(":jsonpath-core"))
     // Users bring their own Jayway JsonPath, so that the comparison runs against the version their
-    // application uses. Tested against 3.0.0 (test) and 2.9.0 (testJayway2).
+    // application uses. Tested against Jayway 3.x (test) and 2.x (testJayway2).
     compileOnly(libs.jayway.jsonpath)
 
     testImplementation(libs.jayway.jsonpath)
@@ -12,6 +12,12 @@ dependencies {
     testImplementation(libs.assertj)
     testImplementation(libs.jackson2.databind)
     testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+// Dependabot updates both catalog entries of json-path to the same version (see libs.versions.toml).
+check(libs.versions.jayway.get().startsWith("3.") && libs.versions.jayway2.get().startsWith("2.")) {
+    "jayway must be a Jayway JsonPath 3.x version and jayway2 a 2.x version, " +
+        "but they are ${libs.versions.jayway.get()} and ${libs.versions.jayway2.get()}"
 }
 
 tasks.test {
@@ -38,14 +44,6 @@ val jayway2TestRuntimeClasspath = configurations.resolvable("jayway2TestRuntimeC
     resolutionStrategy.force(libs.jayway2.jsonpath.get().toString())
 }
 
-dependencies {
-    constraints {
-        // Only for the Jayway 2 test runs: json-path 2.9.0 asks for json-smart 2.5.0.
-        add("jayway2TestRuntimeClasspath", libs.json.smart) {
-            because("json-smart < 2.5.2 has a high-severity vulnerability (GHSA-pq2g-wx69-c263)")
-        }
-    }
-}
 
 val testJayway2 by tasks.registering(Test::class) {
     description = "Runs the tests against Jayway JsonPath ${libs.versions.jayway2.get()}."

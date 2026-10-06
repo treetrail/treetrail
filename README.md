@@ -127,7 +127,7 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 
 The `jsonpath-migration` module runs your expressions with Jayway JsonPath and with this library
 and reports every difference, with hints for rewriting Jayway-only syntax. Add it as a test
-dependency; it uses the Jayway JsonPath version your project already depends on (tested with 2.9.0 and
+dependency; it uses the Jayway JsonPath version your project already depends on (tested with 2.10.0 and
 3.0.0) and adds none of its own. Pass your application's Jayway `Configuration` so that options like
 `DEFAULT_PATH_LEAF_TO_NULL` are taken into account.
 
@@ -143,7 +143,7 @@ Each expression gets one outcome: `SAME`, `SAME_VALUES_DIFFERENT_ORDER`, `DIFFER
 `BOTH_REJECT`. The report also flags paths where Jayway returns a single value instead of a list.
 
 [docs/jayway-vs-rfc9535.md](docs/jayway-vs-rfc9535.md) compares Jayway JsonPath 3.0.0 with the
-Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it). Jayway 2.9.0 gives exactly
+Compliance Test Suite case by case (`./gradlew jaywayReport` regenerates it). Jayway 2.10.0 gives exactly
 the same results (`./gradlew jaywayReport2`).
 
 ### Finding every expression in a code base
