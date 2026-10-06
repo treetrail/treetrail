@@ -2,6 +2,8 @@ package io.github.treetrail.jsonpath;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +42,35 @@ public final class JavaObjectModel implements JsonModel<Object> {
         if (value instanceof Boolean) {
             return JsonKind.BOOLEAN;
         }
-        throw new IllegalArgumentException("Not a JSON value: " + value.getClass().getName());
+        throw new IllegalArgumentException(
+                "Not a JSON value: " + value.getClass().getName() + adapterHint(value.getClass()));
+    }
+
+    /** Tree types of JSON libraries that have an adapter, by fully qualified name of a supertype. */
+    private static final Map<String, String> ADAPTERS = Map.of(
+            "com.fasterxml.jackson.databind.JsonNode", "Jackson 2 trees, use Jackson2Model.INSTANCE from jsonpath-jackson2",
+            "tools.jackson.databind.JsonNode", "Jackson 3 trees, use Jackson3Model.INSTANCE from jsonpath-jackson3",
+            "com.google.gson.JsonElement", "Gson trees, use GsonModel.INSTANCE from jsonpath-gson",
+            "jakarta.json.JsonValue", "JSON-P values, use JsonpModel.INSTANCE from jsonpath-jsonp");
+
+    /** Suggests the adapter when a tree of a known JSON library was passed as plain Java objects. */
+    private static String adapterHint(Class<?> type) {
+        Deque<Class<?>> pending = new ArrayDeque<>();
+        pending.push(type);
+        while (!pending.isEmpty()) {
+            Class<?> c = pending.pop();
+            String adapter = ADAPTERS.get(c.getName());
+            if (adapter != null) {
+                return ". For " + adapter + ": query(document, model)";
+            }
+            if (c.getSuperclass() != null) {
+                pending.push(c.getSuperclass());
+            }
+            for (Class<?> i : c.getInterfaces()) {
+                pending.push(i);
+            }
+        }
+        return "";
     }
 
     @Override
