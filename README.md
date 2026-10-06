@@ -1,25 +1,30 @@
 # Treetrail
 
-JSONPath for Java that behaves the same everywhere: an implementation of
-[RFC 9535](https://www.rfc-editor.org/rfc/rfc9535), the IETF standard for JSONPath.
+JSONPath queries for Java that return the same results as other standard implementations, in any
+language: Treetrail implements [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535), the IETF standard
+for JSONPath.
 
+- **One kind of result:** every query returns a list of nodes, whether it selects one value or many,
+  and every node carries its normalized path, for example `$['store']['book'][0]`. There is no
+  configuration that changes what a query returns.
+- **Works on the JSON tree you already have:** Jackson 2 and 3, Gson, JSON-P or plain Java objects,
+  without conversion. The core depends on nothing but the JDK; other object models plug in through
+  the small `JsonModel` interface.
+- **Safe with untrusted queries:** regular expressions in `match()` and `search()` follow
+  [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) and run on an automaton without
+  backtracking, in time linear in the input: `(a*)*b` on 100,000 characters finishes in milliseconds.
+  Every run has a budget of visited nodes and a depth limit; see
+  [Queries from untrusted sources](#queries-from-untrusted-sources).
+- **A way off Jayway JsonPath:** a comparison module reports every expression whose result would
+  change, and an OpenRewrite recipe finds every expression in a code base; see
+  [Coming from Jayway JsonPath](#coming-from-jayway-jsonpath).
 - **Standard-conformant:** passes all 706 cases of the
   [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
-  (commit `9d1a415`, 2026-09-17). The suite runs on every build; a single failing case fails CI.
-- **No dependencies:** the core depends on nothing but the JDK. It works on any JSON tree through
-  a small `JsonModel` interface, so documents from any JSON library can be queried without conversion.
-- **Predictable results:** a query always returns a node list, and every node carries its
-  normalized path, for example `$['store']['book'][0]`.
-- **No catastrophic backtracking:** regular expressions in `match()` and `search()` follow
-  [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) and run on a built-in automaton
-  without backtracking, so matching takes time linear in the input length. A pattern like
-  `(a*)*b` on 100,000 characters finishes in milliseconds instead of hanging.
-  Expression nesting and regex size are limited.
-- **Bounded work:** absolute queries inside filters are evaluated once per run, and every run has a
-  budget of visited nodes, so a hostile query cannot keep a thread busy indefinitely; see
-  [Queries from untrusted sources](#queries-from-untrusted-sources).
-- **Fast:** on par with or faster than Jayway JsonPath in every query benchmark, up to 1.8× for
-  wildcards; see [docs/benchmarks.md](docs/benchmarks.md).
+  (commit `9d1a415`, 2026-09-17) on Java 17, 21 and 25; a single failing case fails the build.
+  [docs/conformance.md](docs/conformance.md) lists deviations, decisions and limits.
+- **Fast:** on plain Java objects, on par with or faster than Jayway JsonPath in every query benchmark,
+  up to 1.8× for wildcards; see [docs/benchmarks.md](docs/benchmarks.md). Jackson trees have their own
+  benchmark but no comparison with Jayway yet.
 - **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`).
 
 > **Status:** pre-release, not yet published to Maven Central. The API may still change.
@@ -87,7 +92,7 @@ JsonPath path = JsonPath.compile(untrustedExpression)
 A run that exceeds a limit throws a `JsonPathLimitExceededException`. A run on an interrupted thread
 stops with a `JsonPathEvaluationException` and leaves the interrupt status set, so `Future.cancel(true)`
 can bound a query by time. Compiling is bounded as well: filters nest at most 64 levels deep, and
-regular expressions are limited in size (see [Design notes](#design-notes)).
+regular expressions are limited in size (see [docs/conformance.md](docs/conformance.md#limits)).
 
 ## Coming from Jayway JsonPath
 
@@ -101,6 +106,22 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 | Functions | `min()`, `max()`, `sum()`, `avg()`, `length()`, ... at the end of a path | `length()`, `count()`, `match()`, `search()`, `value()` inside filters |
 | Operators | `in`, `nin`, `subsetof`, `size`, `empty`, ... | `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `\|\|`, `!` |
 | Write API | `set`, `put`, `add`, `delete` | queries only |
+
+### Jayway idioms and their equivalents
+
+| Jayway JsonPath | Treetrail |
+| --- | --- |
+| `JsonPath.read(document, "$.a.b")` | `JsonPath.compile("$.a.b").query(document).single()` returns an `Optional<Node>`; `.map(Node::value)` gives the value |
+| `JsonPath.parse(json).read("$.a", Integer.class)` | No type mapping: cast the value of plain Java objects, or use your library's mapping, e.g. `objectMapper.treeToValue(node, Integer.class)` with `Jackson2Model` |
+| `Option.ALWAYS_RETURN_LIST` | Always the case |
+| `Option.DEFAULT_PATH_LEAF_TO_NULL` | `single()` is empty for a missing member and holds a node with a `null` value for JSON `null`; `.map(Node::value).orElse(null)` returns `null` in both cases |
+| `Option.SUPPRESS_EXCEPTIONS` | Not needed: missing paths select nothing instead of throwing; only invalid expressions throw, when they are compiled |
+| `$.items.length()` | `JsonPath.compile("$.items[*]").query(document).size()`, or `length(@.items)` inside a filter |
+| `.min()`, `.max()`, `.sum()`, `.avg()` | Select the values and aggregate them in Java, e.g. with `values().stream()` |
+| `[?(@.name =~ /^a.*/i)]` | `[?match(@.name, '[aA].*')]` for a full match, `search()` for a substring; I-Regexp has no flags and no `\d`, `\w`, `\s` |
+| `[?(@.size in ['S', 'M'])]` | `[?@.size == 'S' \|\| @.size == 'M']` |
+| `JsonPath.parse(json).set("$.store.book[*].price", 0)` | Queries are read-only, but adapters return your library's own nodes: `query(document, Jackson2Model.INSTANCE)` and then `((ObjectNode) node.value()).put("price", 0)` on each selected book |
+| `JsonPath.parse(json).delete("$.store.book[*].isbn")` | Select the parents (`$.store.book[*]`) and remove the member with your library, e.g. `((ObjectNode) node.value()).remove("isbn")` |
 
 ### Checking your expressions before you switch
 
@@ -144,16 +165,12 @@ table `JsonPathExpressions` with one row per expression:
 The recipe changes no code: whether a call can be migrated automatically depends on how its result
 is used.
 
-## Design notes
+## Conformance
 
-- I-Regexp lists `^` and `$` as ordinary characters, but the Compliance Test Suite expects them to
-  act as anchors. This implementation follows the test suite.
-- Regular expressions are compiled into a nondeterministic automaton (Thompson's construction)
-  and simulated with a set of states, like RE2 or Rust's `regex`. Expressions that would expand to
-  more than 20,000 automaton instructions, for example `(a{1000}){1000}`, count as invalid, so
-  `match()` and `search()` return false for them; RFC 9485 allows such limits.
-- Numbers are compared by value: `1`, `1L`, `1.0` and `new BigDecimal("1.00")` are equal.
-- Strings are compared by Unicode code points, as the RFC requires (not by UTF-16 code units).
+[docs/conformance.md](docs/conformance.md) describes the details: the one deviation from the RFC
+(`^` and `$` act as anchors in regular expressions, as the Compliance Test Suite expects), how numbers
+and strings are compared, all limits, and what happens with documents that are not I-JSON, such as
+`NaN`, cycles in Java objects or Java types other than `Map` and `List`.
 
 ## Building
 
