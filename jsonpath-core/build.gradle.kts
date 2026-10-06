@@ -2,6 +2,8 @@ plugins {
     `java-test-fixtures`
 }
 
+description = "JSONPath (RFC 9535) for Java: passes the JSONPath Compliance Test Suite, no dependencies, works on any JSON tree through a small JsonModel interface."
+
 dependencies {
     // The core has no runtime dependencies on purpose.
 
@@ -23,3 +25,7 @@ dependencies {
 val javaComponent = components["java"] as AdhocComponentWithVariants
 javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) { skip() }
 javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) { skip() }
+// The sources jar of the test fixtures exists once the publishing plugin adds sources jars.
+configurations.matching { it.name == "testFixturesSourcesElements" }.configureEach {
+    javaComponent.withVariantsFromConfiguration(this) { skip() }
+}

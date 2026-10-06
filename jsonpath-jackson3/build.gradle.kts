@@ -1,3 +1,5 @@
+description = "Treetrail JSONPath (RFC 9535) on Jackson 3 trees (tools.jackson.databind.JsonNode)."
+
 dependencies {
     api(project(":jsonpath-core"))
     api(libs.jackson3.databind)

@@ -1,3 +1,5 @@
+description = "Treetrail JSONPath (RFC 9535) on Gson trees (com.google.gson.JsonElement)."
+
 dependencies {
     api(project(":jsonpath-core"))
     api(libs.gson)
