@@ -36,6 +36,15 @@ val jayway2TestRuntimeClasspath = configurations.resolvable("jayway2TestRuntimeC
     resolutionStrategy.force(libs.jayway2.jsonpath.get().toString())
 }
 
+dependencies {
+    constraints {
+        // Only for the Jayway 2 test runs: json-path 2.9.0 asks for json-smart 2.5.0.
+        add("jayway2TestRuntimeClasspath", libs.json.smart) {
+            because("json-smart < 2.5.2 has a high-severity vulnerability (GHSA-pq2g-wx69-c263)")
+        }
+    }
+}
+
 val testJayway2 by tasks.registering(Test::class) {
     description = "Runs the tests against Jayway JsonPath ${libs.versions.jayway2.get()}."
     group = "verification"
