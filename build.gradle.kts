@@ -47,8 +47,11 @@ subprojects {
     tasks.withType<Javadoc>().configureEach {
         // Each module only exports its API package, so javadoc only documents that package.
         (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all,-missing", true)
-        // No generation date in the HTML, so that the javadoc jar is reproducible.
+        // No generation date and a fixed language (not the system locale), so that the javadoc jar is
+        // reproducible on every machine.
         (options as StandardJavadocDocletOptions).addBooleanOption("notimestamp", true)
+        options.locale = "en"
+        options.jFlags("-Duser.language=en", "-Duser.country=US")
     }
 
     tasks.withType<Test>().configureEach {
