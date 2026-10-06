@@ -78,6 +78,16 @@ subprojects {
     }
 
     if (name in publishedModules) {
+        // Every published jar (classes, sources, javadoc) carries the license and the notice. The javadoc jar
+        // is the publishing plugin's own task type.
+        val legalFiles = listOf("LICENSE", "NOTICE").map { rootProject.layout.projectDirectory.file(it) }
+        tasks.withType<Jar>().configureEach {
+            metaInf { from(legalFiles) }
+        }
+        tasks.withType<com.vanniktech.maven.publish.tasks.JavadocJar>().configureEach {
+            metaInf { from(legalFiles) }
+        }
+
         // A CycloneDX SBOM of the runtime dependencies, published next to the jar (classifier cyclonedx).
         apply(plugin = "org.cyclonedx.bom")
         val sbom = tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
