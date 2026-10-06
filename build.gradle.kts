@@ -3,6 +3,14 @@ import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.cyclonedx.gradle.CyclonedxDirectTask
 
+buildscript {
+    dependencies {
+        // The CycloneDX plugin pulls Jackson 2.22.1 onto the build class path (GHSA-p6pp-m3f8-5c89,
+        // GHSA-7hhh-6rmp-j9qf, fixed in 2.22.3). Build time only; remove when the plugin ships a fixed one.
+        classpath(platform(libs.jackson2.bom))
+    }
+}
+
 plugins {
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.cyclonedx) apply false
