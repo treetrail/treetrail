@@ -4,6 +4,7 @@ import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * {@link JsonModel} for Jackson 2 trees.
@@ -49,6 +50,17 @@ public final class Jackson2Model implements JsonModel<JsonNode> {
     }
 
     @Override
+    public Iterable<Map.Entry<String, JsonNode>> members(JsonNode object) {
+        return object.properties();
+    }
+
+    @Override
+    public JsonNode findMember(JsonNode object, String name) {
+        // Null only for a missing member; JSON null is a NullNode.
+        return object.get(name);
+    }
+
+    @Override
     public boolean hasMember(JsonNode object, String name) {
         return object.has(name);
     }
@@ -85,6 +97,16 @@ public final class Jackson2Model implements JsonModel<JsonNode> {
             return null;
         }
         return value.decimalValue();
+    }
+
+    @Override
+    public boolean isLong(JsonNode number) {
+        return number.isIntegralNumber() && number.canConvertToLong();
+    }
+
+    @Override
+    public long longValue(JsonNode number) {
+        return number.longValue();
     }
 
     @Override

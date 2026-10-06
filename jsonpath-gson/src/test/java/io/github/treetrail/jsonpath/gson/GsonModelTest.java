@@ -61,4 +61,14 @@ class GsonModelTest {
                 .containsExactly(document.get(2));
         assertThat(JsonPath.compile("$[?@ != 2]").query(document, GsonModel.INSTANCE)).hasSize(2);
     }
+
+    @Test
+    void comparesParsedNumbersOfEveryLength() {
+        JsonElement document = JsonParser.parseString(
+                "[-123, 123456789012345678, 1234567890123456789, 12345678901234567890, 1e2, 100, 1.5]");
+
+        assertThat(JsonPath.compile("$[?@ == 100]").query(document, GsonModel.INSTANCE)).hasSize(2);
+        assertThat(JsonPath.compile("$[?@ > 123456789012345678]").query(document, GsonModel.INSTANCE)).hasSize(2);
+        assertThat(JsonPath.compile("$[?@ < 0]").query(document, GsonModel.INSTANCE)).hasSize(1);
+    }
 }

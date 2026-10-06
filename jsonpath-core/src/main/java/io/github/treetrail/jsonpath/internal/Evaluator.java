@@ -174,8 +174,8 @@ public final class Evaluator {
             int count = model.memberCount(value);
             visit(count);
             List<Located> children = new ArrayList<>(count);
-            for (String name : model.memberNames(value)) {
-                children.add(new Located(model.member(value, name), node.location().child(name)));
+            for (Map.Entry<String, Object> member : model.members(value)) {
+                children.add(new Located(member.getValue(), node.location().child(member.getKey())));
             }
             return children;
         }
@@ -221,9 +221,12 @@ public final class Evaluator {
         JsonKind kind = model.kind(value);
         if (selector instanceof Name) {
             String name = ((Name) selector).name();
-            if (kind == JsonKind.OBJECT && model.hasMember(value, name)) {
-                visit(1);
-                out.add(new Located(model.member(value, name), node.location().child(name)));
+            if (kind == JsonKind.OBJECT) {
+                Object member = model.findMember(value, name);
+                if (member != null || model.hasMember(value, name)) {
+                    visit(1);
+                    out.add(new Located(member, node.location().child(name)));
+                }
             }
         } else if (selector instanceof Wildcard) {
             out.addAll(children(node));

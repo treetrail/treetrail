@@ -98,14 +98,45 @@ public final class JavaObjectModel implements JsonModel<Object> {
 
             @Override
             public String next() {
-                Object key = it.next();
-                if (!(key instanceof String)) {
-                    throw new IllegalArgumentException("Map keys must be strings to be JSON object members, found "
-                            + (key == null ? "null" : key.getClass().getName()));
-                }
-                return (String) key;
+                return checkKey(it.next());
             }
         };
+    }
+
+    @Override
+    public Iterable<Map.Entry<String, Object>> members(Object object) {
+        Set<? extends Map.Entry<?, ?>> entries = ((Map<?, ?>) object).entrySet();
+        return () -> new Iterator<Map.Entry<String, Object>>() {
+            private final Iterator<? extends Map.Entry<?, ?>> it = entries.iterator();
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Map.Entry<String, Object> next() {
+                Map.Entry<?, ?> entry = it.next();
+                checkKey(entry.getKey());
+                @SuppressWarnings("unchecked")
+                Map.Entry<String, Object> member = (Map.Entry<String, Object>) entry;
+                return member;
+            }
+        };
+    }
+
+    private static String checkKey(Object key) {
+        if (!(key instanceof String)) {
+            throw new IllegalArgumentException("Map keys must be strings to be JSON object members, found "
+                    + (key == null ? "null" : key.getClass().getName()));
+        }
+        return (String) key;
+    }
+
+    @Override
+    public Object findMember(Object object, String name) {
+        // Null for a missing member and for JSON null; the caller tells them apart with hasMember.
+        return ((Map<?, ?>) object).get(name);
     }
 
     @Override
@@ -158,6 +189,32 @@ public final class JavaObjectModel implements JsonModel<Object> {
             return new BigDecimal(value.toString());
         }
         return new BigDecimal(value.toString());
+    }
+
+    /** Largest absolute value up to which every integer is exactly representable as a {@code double}: 2^53. */
+    private static final double EXACT_DOUBLE_LIMIT = 9_007_199_254_740_992.0;
+
+    @Override
+    public boolean isLong(Object number) {
+        if (number instanceof Integer || number instanceof Long || number instanceof Short || number instanceof Byte) {
+            return true;
+        }
+        if (number instanceof Double || number instanceof Float) {
+            // Integral doubles such as 10.0 have the same value as numberValue() gives them.
+            double d = ((Number) number).doubleValue();
+            return d == Math.rint(d) && Math.abs(d) < EXACT_DOUBLE_LIMIT;
+        }
+        if (number instanceof BigDecimal) {
+            // Integer literals of queries are BigDecimals with scale 0; 18 digits always fit in a long.
+            BigDecimal decimal = (BigDecimal) number;
+            return decimal.scale() == 0 && decimal.precision() <= 18;
+        }
+        return number instanceof BigInteger && ((BigInteger) number).bitLength() < Long.SIZE;
+    }
+
+    @Override
+    public long longValue(Object number) {
+        return ((Number) number).longValue();
     }
 
     @Override

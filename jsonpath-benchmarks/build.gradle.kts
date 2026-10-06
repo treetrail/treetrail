@@ -5,6 +5,7 @@
 
 dependencies {
     implementation(project(":jsonpath-core"))
+    implementation(project(":jsonpath-jackson2"))
     implementation(libs.jayway.jsonpath)
     implementation(libs.jmh.core)
     annotationProcessor(libs.jmh.generator)
