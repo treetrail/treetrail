@@ -1,3 +1,5 @@
+description = "Compares JSONPath expressions between Jayway JsonPath and Treetrail (RFC 9535) and reports every difference, with rewrite hints."
+
 dependencies {
     api(project(":jsonpath-core"))
     // Users bring their own Jayway JsonPath, so that the comparison runs against the version their

@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # Manual run = dry run: verifies and builds the artifacts, never publishes.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The published modules are listed in scripts/collect-release-files.sh.
+  # Everything that goes to Maven Central besides the signatures, built without signing keys.
+  ASSEMBLE_TASKS: jar sourcesJar plainJavadocJar generatePomFileForMavenPublication generateMetadataFileForMavenPublication cyclonedxDirectBom
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: version
+        name: Determine version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Tag $GITHUB_REF_NAME is not a SemVer tag (expected vX.Y.Z)"
+              exit 1
+            fi
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            # Dry run: use a release-style (non-SNAPSHOT) version so the release code path is exercised.
+            echo "version=0.0.0-dryrun" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Build, test and assemble publication
+        # The full build (tests on Java 17, 21 and 25, compliance suite) plus everything that gets published,
+        # without signing: the signing keys only exist in the publish job.
+        run: |
+          read -ra tasks <<< "$ASSEMBLE_TASKS"
+          ./gradlew build "${tasks[@]}" -PreleaseVersion=${{ steps.version.outputs.version }}
+      - name: Collect files
+        run: scripts/collect-release-files.sh "${{ steps.version.outputs.version }}" "$RUNNER_TEMP/release"
+      # Only for inspecting dry runs: a release attaches the files built by the publish job instead.
+      - if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dry-run-files
+          path: ${{ runner.temp }}/release/
+          retention-days: 7
+
+  publish:
+    needs: verify
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Requires manual approval; the Maven Central and signing secrets live only in this environment.
+    environment: maven-central
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: true
+      # Build the published files first and attest them before anything leaves the runner: if the
+      # attestation fails, nothing is published (Maven Central releases cannot be replaced).
+      - name: Assemble publication
+        run: |
+          read -ra tasks <<< "$ASSEMBLE_TASKS"
+          ./gradlew "${tasks[@]}" -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache
+          scripts/collect-release-files.sh "${{ needs.verify.outputs.version }}" "$RUNNER_TEMP/release"
+          (cd "$RUNNER_TEMP/release" && sha256sum -- * > "$RUNNER_TEMP/published.sha256")
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/published.sha256
+      - name: Publish to Maven Central
+        run: ./gradlew publishAndReleaseToMavenCentral -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      - name: Check published files match the attested ones
+        # The builds are reproducible, so publishing must have uploaded exactly the attested files.
+        run: |
+          scripts/collect-release-files.sh "${{ needs.verify.outputs.version }}" "$RUNNER_TEMP/published"
+          cd "$RUNNER_TEMP/published" && sha256sum --check "$RUNNER_TEMP/published.sha256"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files
+          path: ${{ runner.temp }}/release/
+          retention-days: 7
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-files
+          path: release
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" release/* --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

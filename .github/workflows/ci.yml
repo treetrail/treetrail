@@ -23,4 +23,4 @@ jobs:
       contents: write        # dependency submission on push to main
       security-events: write # CodeQL results
     with:
-      gradle-tasks: build
+      gradle-tasks: build publishToMavenLocal

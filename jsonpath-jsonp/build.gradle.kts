@@ -1,3 +1,5 @@
+description = "Treetrail JSONPath (RFC 9535) on Jakarta JSON-P values (jakarta.json.JsonValue), with any JSON-P implementation."
+
 dependencies {
     api(project(":jsonpath-core"))
     api(libs.jakarta.json.api)

@@ -1,3 +1,5 @@
+description = "OpenRewrite recipe that finds Jayway JsonPath expressions in a code base and assesses each one against RFC 9535."
+
 dependencies {
     implementation(project(":jsonpath-core"))
     implementation(project(":jsonpath-migration"))
