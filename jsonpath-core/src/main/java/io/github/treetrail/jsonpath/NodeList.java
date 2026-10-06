@@ -49,14 +49,24 @@ public final class NodeList<N> extends AbstractList<Node<N>> {
     }
 
     /**
-     * Returns the only selected value, or empty if no node was selected.
+     * Returns the only selected node, or empty if no node was selected.
+     *
+     * <p>A node is returned even if its value is JSON {@code null}, which plain Java objects
+     * ({@link JavaObjectModel}) represent as {@code null}. That distinguishes {@code {"a": null}} from a
+     * document without {@code a}. Note that {@code single().map(Node::value)} loses this distinction again,
+     * because {@link Optional#map} turns a {@code null} result into an empty optional.
      *
      * @throws IllegalStateException if more than one node was selected
      */
-    public Optional<N> single() {
+    public Optional<Node<N>> single() {
         if (nodes.size() > 1) {
             throw new IllegalStateException("Expected at most one node but got " + nodes.size());
         }
-        return nodes.isEmpty() ? Optional.empty() : Optional.ofNullable(nodes.get(0).value());
+        return first();
+    }
+
+    /** Returns the first selected node, or empty if no node was selected; see {@link #single()} on null values. */
+    public Optional<Node<N>> first() {
+        return nodes.isEmpty() ? Optional.empty() : Optional.of(nodes.get(0));
     }
 }

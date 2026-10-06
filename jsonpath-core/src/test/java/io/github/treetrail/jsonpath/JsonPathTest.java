@@ -3,10 +3,13 @@ package io.github.treetrail.jsonpath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class JsonPathTest {
@@ -48,7 +51,7 @@ class JsonPathTest {
         NodeList<Object> nodes = JsonPath.compile("$.store.bicycle.color").query(STORE);
 
         assertThat(nodes.values()).containsExactly("red");
-        assertThat(nodes.single()).contains("red");
+        assertThat(nodes.single()).map(Node::value).contains("red");
     }
 
     @Test
@@ -57,6 +60,27 @@ class JsonPathTest {
 
         assertThat(nodes).isEmpty();
         assertThat(nodes.single()).isEmpty();
+        assertThat(nodes.first()).isEmpty();
+    }
+
+    @Test
+    void distinguishesJsonNullFromMissingMember() {
+        Map<String, Object> doc = new HashMap<>();
+        doc.put("a", null);
+
+        Optional<Node<Object>> node = JsonPath.compile("$.a").query(doc).single();
+
+        assertThat(node).isPresent();
+        assertThat(node.get().value()).isNull();
+        assertThat(node.get().path()).isEqualTo("$['a']");
+        assertThat(JsonPath.compile("$.b").query(doc).single()).isEmpty();
+    }
+
+    @Test
+    void returnsTheFirstOfSeveralNodes() {
+        NodeList<Object> nodes = JsonPath.compile("$.store.book[*].title").query(STORE);
+
+        assertThat(nodes.first()).map(Node::value).contains("Sayings of the Century");
     }
 
     @Test
@@ -114,5 +138,22 @@ class JsonPathTest {
                 .isInstanceOf(JsonPathSyntaxException.class);
         assertThatThrownBy(() -> JsonPath.compile("$.book[?@.title =~ /a.*/]"))
                 .isInstanceOf(JsonPathSyntaxException.class);
+    }
+
+    @Test
+    void namesTheAdapterWhenAJacksonTreeIsPassedAsPlainJavaObjects() throws Exception {
+        Object tree = new ObjectMapper().readTree("{\"a\": 1}");
+
+        assertThatThrownBy(() -> JsonPath.compile("$.a").query(tree))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ObjectNode")
+                .hasMessageContaining("Jackson2Model.INSTANCE");
+    }
+
+    @Test
+    void reportsOtherUnsupportedTypesWithoutHint() {
+        assertThatThrownBy(() -> JsonPath.compile("$.a.b").query(Map.of("a", new Object())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Not a JSON value: java.lang.Object");
     }
 }
