@@ -1,6 +1,8 @@
 dependencies {
     implementation(project(":jsonpath-core"))
     implementation(project(":jsonpath-migration"))
+    // The recipe asks Jayway JsonPath whether a path is definite; jsonpath-migration leaves Jayway to its users.
+    implementation(libs.jayway.jsonpath)
     implementation(platform(libs.rewrite.bom))
     implementation(libs.rewrite.java)
 

@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Runs the JSONPath Compliance Test Suite through Jayway JsonPath (default configuration) and writes
- * {@code build/reports/jayway-vs-rfc9535.md}. Not a regression test: run with {@code ./gradlew jaywayReport}.
+ * {@code build/reports/jayway-<version>-vs-rfc9535.md}. Not a regression test: run with
+ * {@code ./gradlew jaywayReport} (Jayway 3.x) or {@code ./gradlew jaywayReport2} (Jayway 2.x).
  *
  * <p>Valid test cases are judged against the suite's expected results, so the report does not depend
  * on this library. Where the suite allows several orders, any of them counts as correct.
@@ -25,8 +26,9 @@ class JaywayConformanceReport {
 
     @Test
     void writeReport() throws IOException {
+        String version = System.getProperty("jayway.version");
         StringBuilder md = new StringBuilder();
-        md.append("# Jayway JsonPath 3.0.0 vs. RFC 9535\n\n");
+        md.append("# Jayway JsonPath ").append(version).append(" vs. RFC 9535\n\n");
         md.append("JSONPath Compliance Test Suite, Jayway default configuration; Jayway parses each document\n");
         md.append("itself (json-smart). Valid queries are judged\n");
         md.append("against the suite's expected results.\n\n");
@@ -37,7 +39,7 @@ class JaywayConformanceReport {
         section(md, false);
         md.append("\n# Part 2: filters wrapped in parentheses for Jayway\n\n");
         section(md, true);
-        Path out = Path.of("build", "reports", "jayway-vs-rfc9535.md");
+        Path out = Path.of("build", "reports", "jayway-" + version + "-vs-rfc9535.md");
         Files.createDirectories(out.getParent());
         Files.writeString(out, md.toString(), StandardCharsets.UTF_8);
     }
