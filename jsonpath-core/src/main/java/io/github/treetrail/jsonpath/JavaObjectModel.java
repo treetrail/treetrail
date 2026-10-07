@@ -1,5 +1,7 @@
 package io.github.treetrail.jsonpath;
 
+import io.github.treetrail.jsonpath.internal.JsonReader;
+import io.github.treetrail.jsonpath.internal.Values;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,6 +31,37 @@ public final class JavaObjectModel implements JsonModel<Object> {
     public static final JavaObjectModel INSTANCE = new JavaObjectModel();
 
     private JavaObjectModel() {
+    }
+
+    /**
+     * Returns whether two plain Java values are equal as JSON values, with the semantics of {@code ==} in
+     * filters: numbers by value ({@code 10}, {@code 10L}, {@code 10.0} and {@code new BigDecimal("10.00")}
+     * are equal), strings by content, lists element by element and maps member by member regardless of
+     * order. Useful to compare query results with expected values in tests.
+     *
+     * @throws JsonPathLimitExceededException if the values are nested more than 1,000 levels deep
+     * @throws IllegalArgumentException if a value is not a JSON value of this model
+     */
+    public static boolean jsonEquals(Object a, Object b) {
+        return Values.jsonEquals(INSTANCE, a, INSTANCE, b, EvaluationLimits.DEFAULT.maxDepth());
+    }
+
+    /**
+     * Parses JSON text (RFC 8259) into plain Java objects for this model: {@link java.util.LinkedHashMap}
+     * for objects (members in document order), {@link java.util.ArrayList} for arrays, {@link String},
+     * {@link Boolean} and {@code null}. Integers become {@link Integer}, {@link Long} or {@link BigInteger},
+     * whichever is the smallest that fits; numbers with a fraction or exponent become {@link BigDecimal}, so
+     * no precision is lost.
+     *
+     * <p>The parser is strict: besides RFC 8259 it rejects duplicate member names and unpaired surrogates
+     * (I-JSON, RFC 7493), and nesting deeper than 1,000 levels. It exists so that a JSON string can be
+     * queried without a JSON library, for example a response body in a test; applications that already use
+     * Jackson, Gson or JSON-P can query their trees directly through the adapters instead.
+     *
+     * @throws InvalidJsonException if {@code json} is not valid JSON text
+     */
+    public static Object parse(String json) {
+        return JsonReader.parse(json);
     }
 
     @Override

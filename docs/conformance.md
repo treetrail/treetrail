@@ -79,3 +79,21 @@ stops with a `JsonPathEvaluationException`; the interrupt status stays set.
 
 Each `JsonPathEvaluationException` from the object model carries the normalized path of the node
 being processed and the original exception as cause.
+
+## Parsing JSON text
+
+`JavaObjectModel.parse` and `JsonPath.queryJson` read JSON text ([RFC 8259](https://www.rfc-editor.org/rfc/rfc8259))
+with a strict parser and additionally enforce the I-JSON rules queries rely on:
+
+| Input | Behaviour |
+| --- | --- |
+| Duplicate member names in an object | `InvalidJsonException` |
+| Unpaired surrogates, escaped (`"\ud800"`) or raw | `InvalidJsonException` |
+| Nesting deeper than 1,000 levels | `InvalidJsonException` |
+| Byte order mark, comments, trailing commas, `NaN`, single quotes | `InvalidJsonException` |
+| Integers | `Integer`, `Long` or `BigInteger`, the smallest that fits |
+| Numbers with fraction or exponent | `BigDecimal`, exact; exponents beyond what `BigDecimal` accepts are rejected |
+| Objects | `LinkedHashMap` in document order |
+
+Every `InvalidJsonException` carries the position of the problem.
+

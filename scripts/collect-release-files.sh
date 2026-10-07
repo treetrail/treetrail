@@ -8,7 +8,8 @@ set -euo pipefail
 
 version="$1"
 target="$2"
-modules=(jsonpath-core jsonpath-jackson2 jsonpath-jackson3 jsonpath-gson jsonpath-jsonp jsonpath-migration jsonpath-rewrite)
+modules=(jsonpath-core jsonpath-jackson2 jsonpath-jackson3 jsonpath-gson jsonpath-jsonp jsonpath-migration jsonpath-rewrite
+  jsonpath-assertj jsonpath-spring-test)
 
 mkdir -p "$target"
 for module in "${modules[@]}"; do

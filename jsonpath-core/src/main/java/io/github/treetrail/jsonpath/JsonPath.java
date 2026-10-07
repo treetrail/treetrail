@@ -65,6 +65,21 @@ public final class JsonPath {
     }
 
     /**
+     * Parses JSON text with {@link JavaObjectModel#parse(String)} and runs the query against it.
+     *
+     * <pre>{@code
+     * List<Object> titles = JsonPath.compile("$.store.book[*].title").queryJson(responseBody).values();
+     * }</pre>
+     *
+     * @throws InvalidJsonException if {@code json} is not valid JSON text
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
+     * @throws JsonPathEvaluationException if the thread is interrupted
+     */
+    public NodeList<Object> queryJson(String json) {
+        return query(JavaObjectModel.parse(json));
+    }
+
+    /**
      * Runs the query against a document in the given object model.
      *
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}

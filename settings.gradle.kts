@@ -11,6 +11,8 @@ include("jsonpath-jackson3")
 include("jsonpath-gson")
 include("jsonpath-jsonp")
 include("jsonpath-migration")
+include("jsonpath-assertj")
+include("jsonpath-spring-test")
 include("jsonpath-rewrite")
 include("jsonpath-benchmarks")
 
