@@ -252,8 +252,8 @@ Besides the Compliance Test Suite, which runs against every JSON model on Java 1
   Java number types.
 - **Differential tests:** 20,000 random regular expressions against `java.util.regex`, and 2,000 random
   queries against Python's [jsonpath-rfc9535](https://github.com/jg-rp/python-jsonpath-rfc9535). The
-  latter found five bugs in the reference, listed in
-  [scripts/differential/README.md](scripts/differential/README.md).
+  latter found five bugs in the reference, and analysing them a sixth, listed in
+  [scripts/differential/README.md](scripts/differential/README.md) and reported upstream.
 - **Concurrency:** 16 threads share compiled queries while the regex automata are being built.
 
 ## Building

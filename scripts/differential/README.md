@@ -34,9 +34,14 @@ checked without replacing the committed one:
 
 ## Known bugs of the reference
 
-Found with this test in jsonpath-rfc9535 1.0.0 and 2.0.0 (October 2026). The generator avoids the first
-two, which concern escapes it would otherwise produce often; the others are listed in
-`known-differences.json`.
+Found with this test in jsonpath-rfc9535 1.0.0 and 2.0.0 (October 2026), except the last one, which
+turned up while analysing the others (the generator writes no supplementary characters in shorthand
+names). The generator avoids the first two, which concern escapes it would otherwise produce often; the
+next three are listed in `known-differences.json`. All are reported upstream:
+[#24](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/24) (escapes),
+[#25](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/25) (shorthand names),
+[#26](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/26) (trailing comma),
+[#27](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/27) (booleans).
 
 | Bug | 1.0.0 | 2.0.0 | RFC 9535 |
 | --- | --- | --- | --- |
@@ -45,3 +50,4 @@ two, which concern escapes it would otherwise produce often; the others are list
 | A trailing comma followed by a blank is accepted: `$[1, ]` | no | yes | invalid |
 | `-` is accepted in member-name shorthands: `$.a-b` | yes | yes | invalid |
 | Booleans are ordered like numbers: `1 > false`, `true >= 0` | yes | yes | false: `<` is only defined for two numbers or two strings (2.3.5.2.2) |
+| Characters above U+FFFF are rejected in member-name shorthands: `$.😀` | yes | yes | valid (`name-first` includes `%xE000-10FFFF`) |

@@ -35,9 +35,12 @@ below is an addition or a fix.
 
 - Fuzzing with Jazzer in every CI build and every night, property tests with jqwik, differential tests
   against `java.util.regex` and against Python's jsonpath-rfc9535, and a concurrency test. The
-  differential test found six bugs in the reference implementation, reported as
-  jg-rp/python-jsonpath-rfc9535#24 to #27. ([#16](https://github.com/treetrail/treetrail/issues/16),
-  [#43](https://github.com/treetrail/treetrail/pull/43))
+  differential test found five bugs in the reference implementation, and analysing them a sixth; all six
+  are reported upstream ([#24](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/24),
+  [#25](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/25),
+  [#26](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/26),
+  [#27](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/27)).
+  ([#16](https://github.com/treetrail/treetrail/issues/16), [#43](https://github.com/treetrail/treetrail/pull/43))
 
 ## 0.1.0 – 2026-10-06
 
