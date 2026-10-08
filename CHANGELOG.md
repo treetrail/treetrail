@@ -3,7 +3,7 @@
 All notable changes to Treetrail. Versions follow [Semantic Versioning](https://semver.org); before 1.0
 a minor version may still change the API, which this file then says.
 
-## 0.2.0 – unreleased
+## 0.2.0 – 2026-10-08
 
 The first announced release. No breaking changes: the public API of 0.1.0 is unchanged, everything
 below is an addition or a fix.
