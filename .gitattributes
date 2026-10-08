@@ -1,0 +1,2 @@
+# Inputs saved by the Jazzer fuzzer are raw bytes: never normalize line endings.
+**/*FuzzTestInputs/** binary

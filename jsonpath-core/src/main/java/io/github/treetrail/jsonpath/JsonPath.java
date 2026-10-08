@@ -39,8 +39,10 @@ public final class JsonPath {
      * Compiles a query.
      *
      * @throws JsonPathSyntaxException if {@code expression} is not a valid RFC 9535 query
+     * @throws NullPointerException if {@code expression} is null
      */
     public static JsonPath compile(String expression) {
+        Objects.requireNonNull(expression, "expression");
         return new JsonPath(expression, Parser.parse(expression, Functions.BUILT_IN), EvaluationLimits.DEFAULT);
     }
 

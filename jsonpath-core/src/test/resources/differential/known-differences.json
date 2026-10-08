@@ -1,0 +1,25 @@
+{
+  "reference": "jsonpath-rfc9535 2.0.0",
+  "differences": [
+    {
+      "query": "$.a [ 1, ]",
+      "bug": "reference accepts a trailing comma followed by a blank in a bracketed selection (jsonpath-rfc9535 2.0.0); RFC 9535 appendix A does not allow it"
+    },
+    {
+      "query": "$.é- [ ?value(@.é['a.b']) <= -0.5 && @ >= count(@.*..b), *,?match(@.é, 'a.*'),'é' ]",
+      "bug": "reference accepts '-' in a member-name shorthand; RFC 9535 name-char is name-first / DIGIT"
+    },
+    {
+      "query": "$[?count(@.*) > false]",
+      "bug": "reference orders booleans like numbers; RFC 9535 2.3.5.2.2 defines < only for two numbers or two strings"
+    },
+    {
+      "query": "$.*['_x', ?count(@['_x',2,-1].é) < length(@[2]._x) || count(@[1]..c) <= value(@)]",
+      "bug": "reference orders booleans like numbers (0 <= true); RFC 9535 2.3.5.2.2"
+    },
+    {
+      "query": "$..[-3,:3]..[?value(@[\"it's\"].a) == true || count(@) > @]",
+      "bug": "reference orders booleans like numbers (1 > false); RFC 9535 2.3.5.2.2"
+    }
+  ]
+}
