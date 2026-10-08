@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -59,9 +60,10 @@ public final class JavaObjectModel implements JsonModel<Object> {
      * Jackson, Gson or JSON-P can query their trees directly through the adapters instead.
      *
      * @throws InvalidJsonException if {@code json} is not valid JSON text
+     * @throws NullPointerException if {@code json} is null
      */
     public static Object parse(String json) {
-        return JsonReader.parse(json);
+        return JsonReader.parse(Objects.requireNonNull(json, "json"));
     }
 
     @Override

@@ -723,6 +723,11 @@ public final class IRegexp {
         }
 
         private void emitRepeat(Repeat repeat) {
+            if (emitsNothing(repeat.atom())) {
+                // Repeating nothing is nothing. Without this, `(){2000000000}` loops two billion times
+                // without growing the program, so the program size limit would never stop it.
+                return;
+            }
             for (int i = 0; i < repeat.min(); i++) {
                 emit(repeat.atom());
             }
@@ -741,6 +746,18 @@ public final class IRegexp {
             for (int split : splits) {
                 alt.set(split, pc());
             }
+        }
+
+        /** Whether a node compiles to no instructions: an empty group, or a repetition of one. */
+        private static boolean emitsNothing(Node node) {
+            if (node instanceof Sequence) {
+                return ((Sequence) node).pieces().stream().allMatch(Program::emitsNothing);
+            }
+            if (node instanceof Repeat) {
+                Repeat repeat = (Repeat) node;
+                return repeat.max() == 0 || emitsNothing(repeat.atom());
+            }
+            return false;
         }
     }
 

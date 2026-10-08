@@ -1,0 +1,54 @@
+name: Fuzz
+
+# Fuzzes every fuzz target of jsonpath-core for longer than the short run in CI. The generated corpus is
+# cached between runs, so each night starts where the last one stopped. Findings are uploaded as an
+# artifact: put a crash file into jsonpath-core/src/test/resources/io/github/treetrail/jsonpath/
+# JsonPathFuzzTestInputs/<target>/ to replay it in every build.
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: Fuzzing time per target, e.g. 10m or 1h
+        default: 10m
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Restore the corpus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: jsonpath-core/build/fuzz/*/.cifuzz-corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: fuzz-corpus-
+      - name: Fuzz
+        run: ./gradlew :jsonpath-core:fuzz --continue "-PfuzzDuration=$DURATION"
+        env:
+          DURATION: ${{ inputs.duration || '10m' }}
+      - name: Upload findings
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-findings
+          path: |
+            jsonpath-core/build/fuzz/*/crash-*
+            jsonpath-core/build/fuzz/*/timeout-*
+            jsonpath-core/build/reports/tests/fuzz*/
+          if-no-files-found: ignore

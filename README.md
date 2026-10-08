@@ -236,6 +236,24 @@ is used.
 and strings are compared, all limits, and what happens with documents that are not I-JSON, such as
 `NaN`, cycles in Java objects or Java types other than `Map` and `List`.
 
+## Testing
+
+Besides the Compliance Test Suite, which runs against every JSON model on Java 17, 21 and 25:
+
+- **Fuzzing** with [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer): compiling expressions,
+  querying documents, matching regular expressions and parsing JSON may only throw the documented
+  exceptions and must finish each input within five seconds. Every CI build fuzzes each target for
+  15 seconds, a nightly workflow for 10 minutes; `./gradlew :jsonpath-core:fuzz -PfuzzDuration=10m`
+  runs it locally.
+- **Property tests** with [jqwik](https://jqwik.net): every normalized path selects exactly its node,
+  `$..*` visits each node once, compiling is deterministic, and comparisons are consistent across
+  Java number types.
+- **Differential tests:** 20,000 random regular expressions against `java.util.regex`, and 2,000 random
+  queries against Python's [jsonpath-rfc9535](https://github.com/jg-rp/python-jsonpath-rfc9535). The
+  latter found five bugs in the reference, listed in
+  [scripts/differential/README.md](scripts/differential/README.md).
+- **Concurrency:** 16 threads share compiled queries while the regex automata are being built.
+
 ## Building
 
 ```bash

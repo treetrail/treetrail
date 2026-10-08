@@ -18,9 +18,10 @@ jobs:
   # Shared CI, see https://github.com/christoph-sens/ci-workflows
   # `build` runs the JSONPath Compliance Test Suite; a single failing case fails the build.
   ci:
-    uses: christoph-sens/ci-workflows/.github/workflows/gradle-ci.yml@33ccf915b62297295c1f6a9e3a2aee70d09cb144 # v1.3.2
+    uses: christoph-sens/ci-workflows/.github/workflows/gradle-ci.yml@063cdb37f96b957adbf89dd1c77cced48d55683f # v1.3.3
     permissions:
       contents: write        # dependency submission on push to main
       security-events: write # CodeQL results
     with:
-      gradle-tasks: build publishToMavenLocal
+      # `fuzz` fuzzes every fuzz target for 15 seconds; .github/workflows/fuzz.yml fuzzes longer every night.
+      gradle-tasks: build publishToMavenLocal fuzz
