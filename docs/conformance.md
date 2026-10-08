@@ -54,7 +54,9 @@ at commit `9d1a415` (2026-09-17), 706 cases, on Java 17, 21 and 25. All cases pa
 | Exponent of number literals | what `BigDecimal` accepts (about ±2^31) | `JsonPathSyntaxException` |
 | Size of a regular expression | 20,000 automaton instructions, e.g. `(a{1000}){1000}` exceeds it | Invalid: `match()` and `search()` return false |
 | Nesting of groups in a regular expression | 100 | Invalid: `match()` and `search()` return false |
-| Cached deterministic states per regular expression and mode | 2,000 | Matching continues without the cache: slower, still linear |
+| Cached deterministic states per regular expression and mode | 2,000, and about 1 MiB of memory | Matching continues without caching further states: slower, still linear |
+| Memory of all cached regex automata together | about 8 MiB | All cached automata are discarded and rebuilt on demand |
+| Cached compiled regular expressions | 256 expressions or 100,000 instructions | The cache is cleared and refilled |
 | Visited nodes per query run | 100,000,000 (configurable) | `JsonPathLimitExceededException` |
 | Nesting depth of the document | 1,000 (configurable) | `JsonPathLimitExceededException` |
 | Nodes in a result | unlimited (configurable) | `JsonPathLimitExceededException` |

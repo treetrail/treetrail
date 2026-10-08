@@ -119,7 +119,9 @@ JsonPath path = JsonPath.compile(untrustedExpression)
 A run that exceeds a limit throws a `JsonPathLimitExceededException`. A run on an interrupted thread
 stops with a `JsonPathEvaluationException` and leaves the interrupt status set, so `Future.cancel(true)`
 can bound a query by time. Compiling is bounded as well: filters nest at most 64 levels deep, and
-regular expressions are limited in size (see [docs/conformance.md](docs/conformance.md#limits)).
+regular expressions are limited in size. Regular expressions may also come from the document, as in
+`match(@.value, @.pattern)`; the caches for them hold about 10 MB at most, however many different
+expressions a document contains (see [docs/conformance.md](docs/conformance.md#limits)).
 
 ### Testing with AssertJ and Spring
 

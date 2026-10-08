@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * I-Regexp (RFC 9485), the interoperable regular expression format used by the {@code match()}
@@ -17,7 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>For speed, sets of automaton states are turned into deterministic states on first use and
  * their transitions are cached (a lazy DFA, as in RE2), so a cached step costs one array lookup.
- * If an expression creates more than {@link #MAX_DFA_STATES} such states, matching falls back to
+ *
+ * <p>Expressions may come from documents ({@code match(@.value, @.pattern)}), so the memory held by
+ * cached automata is bounded: each automaton by {@link #MAX_DFA_BYTES_PER_AUTOMATON}, all of them
+ * together by {@link #MAX_DFA_BYTES}, and the compiled expressions by {@link #MAX_CACHED_INSTRUCTIONS}.
+ * An automaton that reaches its own bound stops growing; when all of them together reach theirs, they
+ * are all discarded and rebuilt on demand, as RE2 does. Without a cached state, matching falls back to
  * the plain set-of-states simulation, which is slower but still linear.
  *
  * <p>Expressions that expand into more than {@link #MAX_PROGRAM_SIZE} instructions, for example
@@ -37,8 +43,35 @@ public final class IRegexp {
     /** Maximum number of cached deterministic states per expression and mode. */
     static final int MAX_DFA_STATES = 2_000;
 
+    /** Approximate memory, in bytes, that one automaton (one expression in one mode) may hold. */
+    static final long MAX_DFA_BYTES_PER_AUTOMATON = 1L << 20;
+
+    /** Approximate memory, in bytes, that all cached automata may hold together. */
+    static final long MAX_DFA_BYTES = 8L << 20;
+
+    /** Maximum number of instructions of all cached compiled expressions together. */
+    static final long MAX_CACHED_INSTRUCTIONS = 100_000;
+
+    /** Code points below this get a transition slot in every deterministic state. */
+    private static final int ASCII = 0x80;
+
+    /** Estimated bytes of a deterministic state besides its arrays: objects, key, map entry. */
+    private static final long STATE_OVERHEAD = 160;
+
+    /** Estimated bytes of one cached transition on a non-ASCII code point. */
+    private static final long TRANSITION_OVERHEAD = 64;
+
     /** Compiled expressions; reads are lock-free because filters call match() once per node. */
     private static final Map<String, Optional<IRegexp>> CACHE = new ConcurrentHashMap<>();
+
+    /** Instructions of the expressions in {@link #CACHE}; changed only while holding the class lock. */
+    private static final AtomicLong CACHED_INSTRUCTIONS = new AtomicLong();
+
+    /** Estimated bytes held by the automata of the current generation. */
+    private static final AtomicLong DFA_BYTES = new AtomicLong();
+
+    /** Generation of the automata; incremented to discard all of them at once. */
+    private static volatile int dfaGeneration;
 
     // Instructions of the compiled automaton.
     private static final int CHAR = 0;
@@ -52,8 +85,8 @@ public final class IRegexp {
     private final int[] next;
     private final int[] alt;
     private final CharSet[] sets;
-    private final LazyDfa matchDfa;
-    private final LazyDfa searchDfa;
+    private volatile LazyDfa matchDfa;
+    private volatile LazyDfa searchDfa;
 
     private IRegexp(Program program) {
         int size = program.ops.size();
@@ -67,8 +100,6 @@ public final class IRegexp {
             alt[i] = program.alt.get(i);
             sets[i] = program.sets.get(i);
         }
-        matchDfa = new LazyDfa(false);
-        searchDfa = new LazyDfa(true);
     }
 
     /** Returns the compiled expression, or empty if {@code regexp} is not a valid I-Regexp. */
@@ -78,12 +109,61 @@ public final class IRegexp {
             return cached;
         }
         Optional<IRegexp> compiled = doCompile(regexp);
-        if (CACHE.size() >= CACHE_SIZE) {
-            // Expressions usually come from a handful of queries; a full cache means unusual input.
-            CACHE.clear();
+        long weight = compiled.map(r -> (long) r.ops.length).orElse(1L);
+        synchronized (IRegexp.class) {
+            if (CACHE.size() >= CACHE_SIZE || CACHED_INSTRUCTIONS.get() + weight > MAX_CACHED_INSTRUCTIONS) {
+                // Expressions usually come from a handful of queries; a full cache means unusual input.
+                // The automata of the evicted expressions are no longer counted, so discard all of them.
+                CACHE.clear();
+                CACHED_INSTRUCTIONS.set(0);
+                discardAutomata(dfaGeneration);
+            }
+            if (CACHE.putIfAbsent(regexp, compiled) == null) {
+                CACHED_INSTRUCTIONS.addAndGet(weight);
+            }
         }
-        CACHE.put(regexp, compiled);
         return compiled;
+    }
+
+    /**
+     * Discards all cached automata unless that already happened since {@code generation} was read.
+     * The cached expressions drop their automata so that the memory can be reclaimed; an automaton in
+     * use by a running match stops growing and is collected when that match ends.
+     */
+    private static synchronized void discardAutomata(int generation) {
+        if (dfaGeneration == generation) {
+            dfaGeneration = generation + 1;
+            DFA_BYTES.set(0);
+            for (Optional<IRegexp> cached : CACHE.values()) {
+                cached.ifPresent(IRegexp::dropAutomata);
+            }
+        }
+    }
+
+    private void dropAutomata() {
+        matchDfa = null;
+        searchDfa = null;
+    }
+
+    /** Estimated bytes held by the cached automata; for tests. */
+    static long cachedDfaBytes() {
+        return DFA_BYTES.get();
+    }
+
+    /** Instructions of the cached compiled expressions; for tests. */
+    static long cachedInstructions() {
+        return CACHED_INSTRUCTIONS.get();
+    }
+
+    /** Generation of the automata, incremented whenever all of them are discarded; for tests. */
+    static int dfaGeneration() {
+        return dfaGeneration;
+    }
+
+    /** Estimated bytes held by this expression's automaton for one mode; for tests. */
+    long automatonBytes(boolean search) {
+        LazyDfa dfa = search ? searchDfa : matchDfa;
+        return dfa == null ? 0 : dfa.bytes.get();
     }
 
     private static Optional<IRegexp> doCompile(String regexp) {
@@ -100,14 +180,35 @@ public final class IRegexp {
 
     /** Whether the whole input matches ({@code match()}). */
     public boolean matches(String input) {
-        Boolean result = input.isEmpty() ? null : matchDfa.run(input);
+        Boolean result = input.isEmpty() ? null : automaton(false).run(input);
         return result != null ? result : run(input, false);
     }
 
     /** Whether some substring of the input matches ({@code search()}). */
     public boolean find(String input) {
-        Boolean result = input.isEmpty() ? null : searchDfa.run(input);
+        Boolean result = input.isEmpty() ? null : automaton(true).run(input);
         return result != null ? result : run(input, true);
+    }
+
+    /** Returns the automaton of the current generation for a mode, creating it if necessary. */
+    private LazyDfa automaton(boolean search) {
+        int generation = dfaGeneration;
+        LazyDfa dfa = search ? searchDfa : matchDfa;
+        if (dfa != null && dfa.generation == generation) {
+            return dfa;
+        }
+        synchronized (this) {
+            dfa = search ? searchDfa : matchDfa;
+            if (dfa == null || dfa.generation != generation) {
+                dfa = new LazyDfa(search, generation);
+                if (search) {
+                    searchDfa = dfa;
+                } else {
+                    matchDfa = dfa;
+                }
+            }
+            return dfa;
+        }
     }
 
     /**
@@ -119,12 +220,43 @@ public final class IRegexp {
      */
     private final class LazyDfa {
         private final boolean search;
+        private final int generation;
+        private final AtomicLong bytes = new AtomicLong();
         private final Map<StateKey, State> states = new ConcurrentHashMap<>();
         private final State start;
 
-        LazyDfa(boolean search) {
+        LazyDfa(boolean search, int generation) {
             this.search = search;
+            this.generation = generation;
             this.start = closureState(null, -1, true);
+        }
+
+        /**
+         * Reserves memory for a new state or transition. Returns false if this automaton is full or
+         * discarded; if all automata together are full, discards them all and returns false.
+         */
+        private boolean reserve(long cost) {
+            if (generation != dfaGeneration) {
+                return false;
+            }
+            if (bytes.addAndGet(cost) > MAX_DFA_BYTES_PER_AUTOMATON) {
+                bytes.addAndGet(-cost);
+                return false;
+            }
+            if (DFA_BYTES.addAndGet(cost) > MAX_DFA_BYTES) {
+                DFA_BYTES.addAndGet(-cost);
+                bytes.addAndGet(-cost);
+                discardAutomata(generation);
+                return false;
+            }
+            return true;
+        }
+
+        private void release(long cost) {
+            bytes.addAndGet(-cost);
+            if (generation == dfaGeneration) {
+                DFA_BYTES.addAndGet(-cost);
+            }
         }
 
         /** Returns the result, or null if the state budget is exhausted. */
@@ -141,7 +273,7 @@ public final class IRegexp {
             while (pos < length) {
                 char c = input.charAt(pos);
                 int cp;
-                if (c < 0x80) {
+                if (c < ASCII) {
                     cp = c;
                     pos++;
                 } else {
@@ -197,9 +329,17 @@ public final class IRegexp {
             if (states.size() >= MAX_DFA_STATES) {
                 return null;
             }
+            long cost = STATE_OVERHEAD + 4L * (key.chars.length + key.ends.length + ASCII);
+            if (!reserve(cost)) {
+                return null;
+            }
             State created = new State(key.chars, key.ends, key.match);
             State existing = states.putIfAbsent(key, created);
-            return existing != null ? existing : created;
+            if (existing != null) {
+                release(cost);
+                return existing;
+            }
+            return created;
         }
 
         private void closure(int startPc, boolean atStart, boolean[] visited, int[] chars, int[] ends,
@@ -282,8 +422,10 @@ public final class IRegexp {
             final int[] ends;
             final boolean match;
             final boolean dead;
-            final State[] ascii = new State[0x80];
-            final Map<Integer, State> other = new ConcurrentHashMap<>();
+            /** Transitions on ASCII characters, indexed directly: one lookup per step. */
+            final State[] ascii = new State[ASCII];
+            /** Transitions on other code points, created on first use. */
+            volatile Map<Integer, State> other;
             volatile Boolean acceptsAtEnd;
 
             State(int[] chars, int[] ends, boolean match) {
@@ -294,14 +436,36 @@ public final class IRegexp {
             }
 
             State transition(int cp) {
-                return cp < 0x80 ? ascii[cp] : other.get(cp);
+                if (cp < ASCII) {
+                    return ascii[cp];
+                }
+                Map<Integer, State> transitions = other;
+                return transitions == null ? null : transitions.get(cp);
             }
 
             void cache(int cp, State state) {
-                if (cp < 0x80) {
+                if (cp < ASCII) {
                     ascii[cp] = state;
-                } else if (other.size() < MAX_DFA_STATES) {
-                    other.put(cp, state);
+                    return;
+                }
+                Map<Integer, State> transitions = other;
+                if (transitions == null) {
+                    synchronized (this) {
+                        transitions = other;
+                        if (transitions == null) {
+                            if (!reserve(TRANSITION_OVERHEAD)) {
+                                return;
+                            }
+                            transitions = new ConcurrentHashMap<>();
+                            other = transitions;
+                        }
+                    }
+                }
+                if (transitions.size() < MAX_DFA_STATES && !transitions.containsKey(cp)
+                        && reserve(TRANSITION_OVERHEAD)) {
+                    if (transitions.putIfAbsent(cp, state) != null) {
+                        release(TRANSITION_OVERHEAD);
+                    }
                 }
             }
 
