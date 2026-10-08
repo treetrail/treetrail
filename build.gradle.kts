@@ -22,6 +22,13 @@ val publishedModules = setOf(
     "jsonpath-migration", "jsonpath-rewrite", "jsonpath-assertj", "jsonpath-spring-test",
 )
 
+/**
+ * The build's timestamp in seconds since the epoch: SOURCE_DATE_EPOCH if set, otherwise the commit time of
+ * HEAD. Used where an output must contain a date, so that two builds of the same commit are identical.
+ */
+val sourceDateEpoch: Provider<String> = providers.environmentVariable("SOURCE_DATE_EPOCH")
+    .orElse(providers.exec { commandLine("git", "log", "-1", "--format=%ct") }.standardOutput.asText.map { it.trim() })
+
 allprojects {
     group = "io.github.treetrail"
     // Set by the release workflow from the Git tag (vX.Y.Z -> X.Y.Z).
@@ -98,6 +105,19 @@ subprojects {
             includeBomSerialNumber.set(false)
             xmlOutput.unsetConvention()
             jsonOutput.set(layout.buildDirectory.file("sbom/${project.name}-cyclonedx.json"))
+
+            // The plugin always writes the current time as metadata.timestamp and has no option for it.
+            // Replace it with the commit time, so that the SBOM is reproducible like the jars.
+            inputs.property("sourceDateEpoch", sourceDateEpoch)
+            val sbomFile = jsonOutput
+            val timestamp = sourceDateEpoch.map { java.time.Instant.ofEpochSecond(it.toLong()).toString() }
+            doLast {
+                val file = sbomFile.get().asFile
+                val json = file.readText()
+                val pattern = Regex("""("metadata" : \{\s*"timestamp" : ")[^"]*(")""")
+                check(pattern.containsMatchIn(json)) { "No metadata.timestamp found in $file" }
+                file.writeText(json.replaceFirst(pattern, "$1${timestamp.get()}$2"))
+            }
         }
 
         apply(plugin = "com.vanniktech.maven.publish")
