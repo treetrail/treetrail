@@ -113,7 +113,9 @@ class JsonPathFuzzTest {
                 Arguments.of("((a+)+)+b", "aaaaaaaaaaaaaaaaaaaaaaaa!"),
                 Arguments.of("^ab|cd$", "abcd"),
                 Arguments.of("[\\p{L}\\p{Nd}_-]{1,64}", "user_42"),
-                Arguments.of("(x{2,3}|y?)*z", "xxyxxxz"));
+                Arguments.of("(x{2,3}|y?)*z", "xxyxxxz"),
+                // Found by fuzzing in CI: took 46 s before repetitions of nothing were skipped.
+                Arguments.of("(a|b)*a(){00000001390468697}", "C"));
     }
 
     private static Stream<Map<String, Object>> validCases() {

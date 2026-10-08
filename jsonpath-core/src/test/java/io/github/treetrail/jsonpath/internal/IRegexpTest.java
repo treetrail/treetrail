@@ -105,6 +105,17 @@ class IRegexpTest {
         assertThat(IRegexp.compile("(a{1000}){1000}")).isEmpty();
     }
 
+    /** Found by the CI fuzzer: repeating an empty group did not grow the program, so nothing stopped it. */
+    @Test
+    void compilesHugeRepetitionsOfNothingQuickly() {
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
+            assertThat(IRegexp.compile("(a|b)*a(){00000001390468697}").orElseThrow().matches("ba")).isTrue();
+            assertThat(IRegexp.compile("((){2000000000}){2000000000}x").orElseThrow().matches("x")).isTrue();
+            assertThat(IRegexp.compile("(a{0}){2000000000}").orElseThrow().matches("")).isTrue();
+            assertThat(IRegexp.compile("(){0,2000000000}y").orElseThrow().find("xy")).isTrue();
+        });
+    }
+
     @Test
     void rejectsDeeplyNestedGroups() {
         assertThat(IRegexp.compile("(".repeat(10_000) + "a" + ")".repeat(10_000))).isEmpty();
