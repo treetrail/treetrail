@@ -33,9 +33,9 @@ Treetrail is on Maven Central. The API may still change before 1.0.
 
 ```kotlin
 dependencies {
-    implementation("io.github.treetrail:jsonpath-core:0.1.0")
+    implementation("io.github.treetrail:jsonpath-core:0.2.0")
     // or an adapter, which brings jsonpath-core along:
-    implementation("io.github.treetrail:jsonpath-jackson2:0.1.0")
+    implementation("io.github.treetrail:jsonpath-jackson2:0.2.0")
 }
 ```
 
@@ -43,13 +43,15 @@ dependencies {
 <dependency>
     <groupId>io.github.treetrail</groupId>
     <artifactId>jsonpath-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration` and `jsonpath-rewrite`. Every release is signed, ships a CycloneDX SBOM per module and
-has a build provenance attestation; see [docs/releasing.md](docs/releasing.md#what-a-release-contains).
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration` and `jsonpath-rewrite`. Every release is
+signed, ships a CycloneDX SBOM per module and has a build provenance attestation; see
+[docs/releasing.md](docs/releasing.md#what-a-release-contains). Changes are listed in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Usage
 
@@ -250,8 +252,8 @@ Besides the Compliance Test Suite, which runs against every JSON model on Java 1
   Java number types.
 - **Differential tests:** 20,000 random regular expressions against `java.util.regex`, and 2,000 random
   queries against Python's [jsonpath-rfc9535](https://github.com/jg-rp/python-jsonpath-rfc9535). The
-  latter found five bugs in the reference, listed in
-  [scripts/differential/README.md](scripts/differential/README.md).
+  latter found five bugs in the reference, and analysing them a sixth, listed in
+  [scripts/differential/README.md](scripts/differential/README.md) and reported upstream.
 - **Concurrency:** 16 threads share compiled queries while the regex automata are being built.
 
 ## Building
