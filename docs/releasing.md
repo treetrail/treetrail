@@ -13,8 +13,9 @@ For each of `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath
 - the POM and the Gradle module metadata
 - a CycloneDX SBOM of the runtime dependencies (classifier `cyclonedx`, extension `json`)
 
-The jars, POMs and module files are reproducible: two builds of the same commit produce identical
-bytes. Before publishing, the workflow attests the build provenance of all files (SLSA, GitHub artifact
+The jars, POMs, module files and SBOMs are reproducible: two builds of the same commit produce identical
+bytes. The SBOM's `metadata.timestamp` is the commit time of `HEAD` (or `SOURCE_DATE_EPOCH`, if set), not
+the build time. Before publishing, the workflow attests the build provenance of all files (SLSA, GitHub artifact
 attestations) and afterwards checks that the published files are the attested ones. The GitHub release
 carries the same files. To verify a downloaded file:
 
