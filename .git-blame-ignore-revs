@@ -1,0 +1,5 @@
+# Commits that only reformat code; `git blame` and GitHub skip them.
+# Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Format all Java sources with palantir-java-format (#54)
+79847776f23d5391d914a20e647e69e10e658170
