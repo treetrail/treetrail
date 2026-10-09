@@ -27,23 +27,15 @@ public final class JsonpModel implements JsonModel<JsonValue> {
 
     @Override
     public JsonKind kind(JsonValue value) {
-        switch (value.getValueType()) {
-            case OBJECT:
-                return JsonKind.OBJECT;
-            case ARRAY:
-                return JsonKind.ARRAY;
-            case STRING:
-                return JsonKind.STRING;
-            case NUMBER:
-                return JsonKind.NUMBER;
-            case TRUE:
-            case FALSE:
-                return JsonKind.BOOLEAN;
-            case NULL:
-                return JsonKind.NULL;
-            default:
-                throw new IllegalArgumentException("Not a JSON value: " + value.getValueType());
-        }
+        return switch (value.getValueType()) {
+            case OBJECT -> JsonKind.OBJECT;
+            case ARRAY -> JsonKind.ARRAY;
+            case STRING -> JsonKind.STRING;
+            case NUMBER -> JsonKind.NUMBER;
+            case TRUE, FALSE -> JsonKind.BOOLEAN;
+            case NULL -> JsonKind.NULL;
+            default -> throw new IllegalArgumentException("Not a JSON value: " + value.getValueType());
+        };
     }
 
     @Override

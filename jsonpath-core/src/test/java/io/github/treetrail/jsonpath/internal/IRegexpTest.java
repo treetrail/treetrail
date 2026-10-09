@@ -238,30 +238,30 @@ class IRegexpTest {
                 kind = 0;
             }
             switch (kind) {
-                case 0:
-                case 1:
+                case 0, 1 -> {
                     String c = random.nextBoolean() ? "a" : "b";
                     iregexp.append(c);
                     java.append(c);
-                    break;
-                case 2:
+                }
+                case 2 -> {
                     iregexp.append('.');
                     java.append("[^\\n\\r]");
-                    break;
-                case 3:
+                }
+                case 3 -> {
                     iregexp.append("[ab]");
                     java.append("[ab]");
-                    break;
-                case 4:
+                }
+                case 4 -> {
                     iregexp.append("[^a]");
                     java.append("[^a]");
-                    break;
-                case 5:
+                }
+                case 5 -> {
                     boolean begin = random.nextBoolean();
                     iregexp.append(begin ? "^" : "$");
                     java.append(begin ? "\\A" : "\\z");
                     continue;
-                default:
+                }
+                default -> {
                     iregexp.append('(');
                     java.append("(?:");
                     randomRegexp(random, depth - 1, iregexp, java);
@@ -272,6 +272,7 @@ class IRegexpTest {
                     }
                     iregexp.append(')');
                     java.append(')');
+                }
             }
             String quantifier = new String[] {"", "", "*", "+", "?", "{2}", "{1,3}", "{0,}"}[random.nextInt(8)];
             iregexp.append(quantifier);

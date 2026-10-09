@@ -53,23 +53,30 @@ public final class JsonReader {
         }
         char c = src.charAt(pos);
         switch (c) {
-            case '{':
+            case '{' -> {
                 return object();
-            case '[':
+            }
+            case '[' -> {
                 return array();
-            case '"':
+            }
+            case '"' -> {
                 return string();
-            case 't':
+            }
+            case 't' -> {
                 return literal("true", true);
-            case 'f':
+            }
+            case 'f' -> {
                 return literal("false", false);
-            case 'n':
+            }
+            case 'n' -> {
                 return literal("null", null);
-            default:
+            }
+            default -> {
                 if (c == '-' || (c >= '0' && c <= '9')) {
                     return number();
                 }
                 throw error("Expected a value");
+            }
         }
     }
 
@@ -195,27 +202,13 @@ public final class JsonReader {
         }
         char c = src.charAt(pos++);
         switch (c) {
-            case '"':
-            case '\\':
-            case '/':
-                sb.append(c);
-                break;
-            case 'b':
-                sb.append('\b');
-                break;
-            case 'f':
-                sb.append('\f');
-                break;
-            case 'n':
-                sb.append('\n');
-                break;
-            case 'r':
-                sb.append('\r');
-                break;
-            case 't':
-                sb.append('\t');
-                break;
-            case 'u':
+            case '"', '\\', '/' -> sb.append(c);
+            case 'b' -> sb.append('\b');
+            case 'f' -> sb.append('\f');
+            case 'n' -> sb.append('\n');
+            case 'r' -> sb.append('\r');
+            case 't' -> sb.append('\t');
+            case 'u' -> {
                 char unit = hex4();
                 if (Character.isHighSurrogate(unit)) {
                     if (!src.startsWith("\\u", pos)) {
@@ -232,9 +225,8 @@ public final class JsonReader {
                 } else {
                     sb.append(unit);
                 }
-                break;
-            default:
-                throw error("Invalid escape", pos - 2);
+            }
+            default -> throw error("Invalid escape", pos - 2);
         }
     }
 

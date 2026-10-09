@@ -355,29 +355,20 @@ public final class IRegexp {
                 }
                 visited[pc] = true;
                 switch (ops[pc]) {
-                    case CHAR:
-                        chars[counts[0]++] = pc;
-                        break;
-                    case END:
-                        ends[counts[1]++] = pc;
-                        break;
-                    case MATCH:
-                        counts[2] = 1;
-                        break;
-                    case BEGIN:
+                    case CHAR -> chars[counts[0]++] = pc;
+                    case END -> ends[counts[1]++] = pc;
+                    case MATCH -> counts[2] = 1;
+                    case BEGIN -> {
                         if (atStart) {
                             stack[top++] = next[pc];
                         }
-                        break;
-                    case SPLIT:
+                    }
+                    case SPLIT -> {
                         stack[top++] = alt[pc];
                         stack[top++] = next[pc];
-                        break;
-                    case JUMP:
-                        stack[top++] = next[pc];
-                        break;
-                    default:
-                        throw new IllegalStateException();
+                    }
+                    case JUMP -> stack[top++] = next[pc];
+                    default -> throw new IllegalStateException();
                 }
             }
         }
@@ -401,19 +392,17 @@ public final class IRegexp {
                 }
                 visited[pc] = true;
                 switch (ops[pc]) {
-                    case MATCH:
+                    case MATCH -> {
                         return true;
-                    case END:
-                    case JUMP:
-                        stack[top++] = next[pc];
-                        break;
-                    case SPLIT:
+                    }
+                    case END, JUMP -> stack[top++] = next[pc];
+                    case SPLIT -> {
                         stack[top++] = alt[pc];
                         stack[top++] = next[pc];
-                        break;
-                    default:
+                    }
+                    default -> {
                         // CHAR needs input; BEGIN fails because the input is not empty.
-                        break;
+                    }
                 }
             }
             return false;
@@ -509,10 +498,10 @@ public final class IRegexp {
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof StateKey)) {
+            if (!(o instanceof StateKey other)) {
                 return false;
             }
-            StateKey other = (StateKey) o;
+
             return match == other.match
                     && java.util.Arrays.equals(chars, other.chars)
                     && java.util.Arrays.equals(ends, other.ends);
@@ -608,37 +597,34 @@ public final class IRegexp {
                 }
                 visited[pc] = generation;
                 switch (ops[pc]) {
-                    case CHAR:
+                    case CHAR -> {
                         if (intoFollowing) {
                             following[followingSize++] = pc;
                         } else {
                             current[currentSize++] = pc;
                         }
-                        break;
-                    case SPLIT:
+                    }
+                    case SPLIT -> {
                         stack[top++] = alt[pc];
                         stack[top++] = next[pc];
-                        break;
-                    case JUMP:
-                        stack[top++] = next[pc];
-                        break;
-                    case BEGIN:
+                    }
+                    case JUMP -> stack[top++] = next[pc];
+                    case BEGIN -> {
                         if (pos == 0) {
                             stack[top++] = next[pc];
                         }
-                        break;
-                    case END:
+                    }
+                    case END -> {
                         if (pos == input.length()) {
                             stack[top++] = next[pc];
                         }
-                        break;
-                    case MATCH:
+                    }
+                    case MATCH -> {
                         if (search || pos == input.length()) {
                             matched = true;
                         }
-                        break;
-                    default:
-                        throw new IllegalStateException();
+                    }
+                    default -> throw new IllegalStateException();
                 }
             }
             return matched;
@@ -691,20 +677,20 @@ public final class IRegexp {
         }
 
         void emit(Node node) {
-            if (node instanceof Sequence) {
-                for (Node piece : ((Sequence) node).pieces()) {
+            if (node instanceof Sequence sequence) {
+                for (Node piece : sequence.pieces()) {
                     emit(piece);
                 }
-            } else if (node instanceof Chars) {
-                add(CHAR, pc() + 1, -1, ((Chars) node).set());
+            } else if (node instanceof Chars chars) {
+                add(CHAR, pc() + 1, -1, chars.set());
             } else if (node instanceof Begin) {
                 add(BEGIN, pc() + 1, -1, NO_SET);
             } else if (node instanceof End) {
                 add(END, pc() + 1, -1, NO_SET);
-            } else if (node instanceof Alternation) {
-                emitAlternation(((Alternation) node).branches());
-            } else if (node instanceof Repeat) {
-                emitRepeat((Repeat) node);
+            } else if (node instanceof Alternation alternation) {
+                emitAlternation(alternation.branches());
+            } else if (node instanceof Repeat repeat) {
+                emitRepeat(repeat);
             } else {
                 throw new IllegalStateException();
             }
@@ -752,11 +738,11 @@ public final class IRegexp {
 
         /** Whether a node compiles to no instructions: an empty group, or a repetition of one. */
         private static boolean emitsNothing(Node node) {
-            if (node instanceof Sequence) {
-                return ((Sequence) node).pieces().stream().allMatch(Program::emitsNothing);
+            if (node instanceof Sequence sequence) {
+                return sequence.pieces().stream().allMatch(Program::emitsNothing);
             }
-            if (node instanceof Repeat) {
-                Repeat repeat = (Repeat) node;
+            if (node instanceof Repeat repeat) {
+
                 return repeat.max() == 0 || emitsNothing(repeat.atom());
             }
             return false;
@@ -850,7 +836,7 @@ public final class IRegexp {
         private Node atom() {
             int c = next();
             switch (c) {
-                case '(':
+                case '(' -> {
                     if (++nesting > MAX_NESTING) {
                         throw new InvalidRegexp();
                     }
@@ -858,25 +844,32 @@ public final class IRegexp {
                     expect(')');
                     nesting--;
                     return inner;
-                case '.':
+                }
+                case '.' -> {
                     // I-Regexp '.' matches any character except line feed and carriage return.
                     return new Chars(CharSet.ranges(true, new int[] {'\n', '\n', '\r', '\r'}));
-                case '\\':
+                }
+                case '\\' -> {
                     return new Chars(escape());
-                case '[':
+                }
+                case '[' -> {
                     return new Chars(charClass());
-                // The I-Regexp grammar lists '^' and '$' as normal characters, but the Compliance
-                // Test Suite ("explicit caret", "explicit dollar") expects them to act as anchors,
-                // as in the regex dialects RFC 9485 section 5 maps to. We follow the test suite.
-                case '^':
+                    // The I-Regexp grammar lists '^' and '$' as normal characters, but the Compliance
+                    // Test Suite ("explicit caret", "explicit dollar") expects them to act as anchors,
+                    // as in the regex dialects RFC 9485 section 5 maps to. We follow the test suite.
+                }
+                case '^' -> {
                     return new Begin();
-                case '$':
+                }
+                case '$' -> {
                     return new End();
-                default:
+                }
+                default -> {
                     if (!isNormalChar(c)) {
                         throw new InvalidRegexp();
                     }
                     return new Chars(CharSet.single(c));
+                }
             }
         }
 
@@ -901,31 +894,13 @@ public final class IRegexp {
         }
 
         private static int singleCharEscape(int c) {
-            switch (c) {
-                case 'n':
-                    return '\n';
-                case 'r':
-                    return '\r';
-                case 't':
-                    return '\t';
-                case '(':
-                case ')':
-                case '*':
-                case '+':
-                case '-':
-                case '.':
-                case '?':
-                case '[':
-                case '\\':
-                case ']':
-                case '^':
-                case '{':
-                case '|':
-                case '}':
-                    return c;
-                default:
-                    throw new InvalidRegexp();
-            }
+            return switch (c) {
+                case 'n' -> '\n';
+                case 'r' -> '\r';
+                case 't' -> '\t';
+                case '(', ')', '*', '+', '-', '.', '?', '[', '\\', ']', '^', '{', '|', '}' -> c;
+                default -> throw new InvalidRegexp();
+            };
         }
 
         private long category() {

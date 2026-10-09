@@ -155,8 +155,6 @@ subprojects {
             disableWarningsInGeneratedCode = true
             // JMH's generated benchmark classes carry no @Generated annotation.
             excludedPaths = ".*/build/generated/.*"
-            // Suggestions for newer Java idioms; the code moves to them in #21.
-            disable("PatternMatchingInstanceof", "StatementSwitchToExpressionSwitch")
         }
     }
 

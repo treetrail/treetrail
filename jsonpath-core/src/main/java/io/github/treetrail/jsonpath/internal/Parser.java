@@ -373,16 +373,12 @@ public final class Parser {
             if (peek() == '(') {
                 return functionCall(name, start);
             }
-            switch (name) {
-                case "true":
-                    return new Literal(true);
-                case "false":
-                    return new Literal(false);
-                case "null":
-                    return new Literal(null);
-                default:
-                    throw error("Unknown literal '" + name + "'", start);
-            }
+            return switch (name) {
+                case "true" -> new Literal(true);
+                case "false" -> new Literal(false);
+                case "null" -> new Literal(null);
+                default -> throw error("Unknown literal '" + name + "'", start);
+            };
         }
         throw error("Expected a query, a literal or a function");
     }
@@ -425,8 +421,8 @@ public final class Parser {
     /** An argument is parsed as a logical expression; a bare operand is unwrapped. */
     private Argument argument() {
         Expr expr = logicalOr();
-        if (expr instanceof Test) {
-            return ((Test) expr).operand();
+        if (expr instanceof Test test) {
+            return test.operand();
         }
         return expr;
     }
@@ -434,68 +430,58 @@ public final class Parser {
     // ---- type checking (RFC 9535, section 2.4.3) ----
 
     private void checkComparable(Operand operand, int at) {
-        if (operand instanceof QueryOperand && !((QueryOperand) operand).query().isSingular()) {
+        if (operand instanceof QueryOperand query && !query.query().isSingular()) {
             throw error("Only singular queries can be compared", at);
         }
-        if (operand instanceof FunctionCall
-                && ((FunctionCall) operand).function().result() != FunctionDefinition.Type.VALUE) {
+        if (operand instanceof FunctionCall call && call.function().result() != FunctionDefinition.Type.VALUE) {
             throw error("Function result cannot be compared", at);
         }
     }
 
     private void checkLogical(Expr expr) {
-        if (expr instanceof Or) {
-            ((Or) expr).operands().forEach(this::checkLogical);
-        } else if (expr instanceof And) {
-            ((And) expr).operands().forEach(this::checkLogical);
-        } else if (expr instanceof Not) {
-            checkLogical(((Not) expr).operand());
-        } else if (expr instanceof Paren) {
-            checkLogical(((Paren) expr).operand());
-        } else if (expr instanceof Test) {
-            Operand operand = ((Test) expr).operand();
+        if (expr instanceof Or or) {
+            or.operands().forEach(this::checkLogical);
+        } else if (expr instanceof And and) {
+            and.operands().forEach(this::checkLogical);
+        } else if (expr instanceof Not not) {
+            checkLogical(not.operand());
+        } else if (expr instanceof Paren paren) {
+            checkLogical(paren.operand());
+        } else if (expr instanceof Test test) {
+            Operand operand = test.operand();
             int at = testPositions.getOrDefault(expr, pos);
             if (operand instanceof Literal) {
                 throw error("A literal is not a valid test expression", at);
             }
-            if (operand instanceof FunctionCall
-                    && ((FunctionCall) operand).function().result() == FunctionDefinition.Type.VALUE) {
+            if (operand instanceof FunctionCall call && call.function().result() == FunctionDefinition.Type.VALUE) {
                 throw error(
-                        "Function '" + ((FunctionCall) operand).function().name()
-                                + "' returns a value and cannot be used as a test",
-                        at);
+                        "Function '" + call.function().name() + "' returns a value and cannot be used as a test", at);
             }
         }
     }
 
     private void checkArgument(Argument argument, FunctionDefinition.Type type, int at) {
-        boolean ok;
-        switch (type) {
-            case VALUE:
-                ok = argument instanceof Literal
-                        || (argument instanceof QueryOperand
-                                && ((QueryOperand) argument).query().isSingular())
-                        || (argument instanceof FunctionCall
-                                && ((FunctionCall) argument).function().result() == FunctionDefinition.Type.VALUE);
-                break;
-            case LOGICAL:
-                if (argument instanceof Expr) {
-                    checkLogical((Expr) argument);
-                    ok = true;
-                } else {
-                    ok = argument instanceof QueryOperand
-                            || (argument instanceof FunctionCall
-                                    && ((FunctionCall) argument).function().result() != FunctionDefinition.Type.VALUE);
+        boolean ok = switch (type) {
+            case VALUE ->
+                argument instanceof Literal
+                        || (argument instanceof QueryOperand query
+                                && query.query().isSingular())
+                        || (argument instanceof FunctionCall call
+                                && call.function().result() == FunctionDefinition.Type.VALUE);
+            case LOGICAL -> {
+                if (argument instanceof Expr expr) {
+                    checkLogical(expr);
+                    yield true;
                 }
-                break;
-            case NODES:
-                ok = argument instanceof QueryOperand
-                        || (argument instanceof FunctionCall
-                                && ((FunctionCall) argument).function().result() == FunctionDefinition.Type.NODES);
-                break;
-            default:
-                throw new IllegalStateException();
-        }
+                yield argument instanceof QueryOperand
+                        || (argument instanceof FunctionCall call
+                                && call.function().result() != FunctionDefinition.Type.VALUE);
+            }
+            case NODES ->
+                argument instanceof QueryOperand
+                        || (argument instanceof FunctionCall call
+                                && call.function().result() == FunctionDefinition.Type.NODES);
+        };
         if (!ok) {
             throw error("Argument does not match parameter type " + type, at);
         }
@@ -584,35 +570,20 @@ public final class Parser {
         }
         char c = src.charAt(pos++);
         switch (c) {
-            case 'b':
-                sb.append('\b');
-                break;
-            case 'f':
-                sb.append('\f');
-                break;
-            case 'n':
-                sb.append('\n');
-                break;
-            case 'r':
-                sb.append('\r');
-                break;
-            case 't':
-                sb.append('\t');
-                break;
-            case '/':
-                sb.append('/');
-                break;
-            case '\\':
-                sb.append('\\');
-                break;
-            case '\'':
-            case '"':
+            case 'b' -> sb.append('\b');
+            case 'f' -> sb.append('\f');
+            case 'n' -> sb.append('\n');
+            case 'r' -> sb.append('\r');
+            case 't' -> sb.append('\t');
+            case '/' -> sb.append('/');
+            case '\\' -> sb.append('\\');
+            case '\'', '"' -> {
                 if (c != quote) {
                     throw error("Invalid escape", pos - 2);
                 }
                 sb.append(c);
-                break;
-            case 'u':
+            }
+            case 'u' -> {
                 int unit = hex4();
                 if (unit >= 0xD800 && unit <= 0xDBFF) {
                     if (!src.startsWith("\\u", pos)) {
@@ -629,9 +600,8 @@ public final class Parser {
                 } else {
                     sb.append((char) unit);
                 }
-                break;
-            default:
-                throw error("Invalid escape", pos - 2);
+            }
+            default -> throw error("Invalid escape", pos - 2);
         }
     }
 

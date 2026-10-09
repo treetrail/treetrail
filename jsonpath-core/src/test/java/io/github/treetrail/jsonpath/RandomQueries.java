@@ -78,21 +78,14 @@ final class RandomQueries {
     }
 
     private Object scalar() {
-        switch (random.nextInt(9)) {
-            case 0:
-                return null;
-            case 1:
-                return random.nextBoolean();
-            case 2:
-            case 3:
-                return random.nextInt(7) - 3;
-            case 4:
-                return new BigDecimal(random.nextInt(601) - 300).movePointLeft(1 + random.nextInt(2));
-            case 5:
-                return random.nextBoolean() ? 1.0 : 1e2;
-            default:
-                return random.nextInt(3) == 0 ? pick(JsonArbitraries.NAMES) : string();
-        }
+        return switch (random.nextInt(9)) {
+            case 0 -> null;
+            case 1 -> random.nextBoolean();
+            case 2, 3 -> random.nextInt(7) - 3;
+            case 4 -> new BigDecimal(random.nextInt(601) - 300).movePointLeft(1 + random.nextInt(2));
+            case 5 -> random.nextBoolean() ? 1.0 : 1e2;
+            default -> random.nextInt(3) == 0 ? pick(JsonArbitraries.NAMES) : string();
+        };
     }
 
     private String string() {
@@ -126,18 +119,13 @@ final class RandomQueries {
 
     private String segment(int depth) {
         String blank = random.nextInt(6) == 0 ? " " : "";
-        switch (random.nextInt(8)) {
-            case 0:
-                return "." + pick(SHORTHAND_NAMES);
-            case 1:
-                return ".*";
-            case 2:
-                return ".." + (random.nextBoolean() ? pick(SHORTHAND_NAMES) : "*");
-            case 3:
-                return "..[" + selectors(depth) + "]";
-            default:
-                return blank + "[" + blank + selectors(depth) + blank + "]";
-        }
+        return switch (random.nextInt(8)) {
+            case 0 -> "." + pick(SHORTHAND_NAMES);
+            case 1 -> ".*";
+            case 2 -> ".." + (random.nextBoolean() ? pick(SHORTHAND_NAMES) : "*");
+            case 3 -> "..[" + selectors(depth) + "]";
+            default -> blank + "[" + blank + selectors(depth) + blank + "]";
+        };
     }
 
     private String selectors(int depth) {
@@ -149,20 +137,14 @@ final class RandomQueries {
     }
 
     private String selector(int depth) {
-        switch (random.nextInt(depth > 0 ? 6 : 5)) {
-            case 0:
-                return name();
-            case 1:
-                return "*";
-            case 2:
-                return String.valueOf(random.nextInt(7) - 3);
-            case 3:
-                return slice();
-            case 4:
-                return name();
-            default:
-                return "?" + logical(depth - 1);
-        }
+        return switch (random.nextInt(depth > 0 ? 6 : 5)) {
+            case 0 -> name();
+            case 1 -> "*";
+            case 2 -> String.valueOf(random.nextInt(7) - 3);
+            case 3 -> slice();
+            case 4 -> name();
+            default -> "?" + logical(depth - 1);
+        };
     }
 
     private String name() {
@@ -191,20 +173,14 @@ final class RandomQueries {
     }
 
     private static String shortEscape(int c) {
-        switch (c) {
-            case '\b':
-                return "\\b";
-            case '\t':
-                return "\\t";
-            case '\n':
-                return "\\n";
-            case '\f':
-                return "\\f";
-            case '\r':
-                return "\\r";
-            default:
-                return null;
-        }
+        return switch (c) {
+            case '\b' -> "\\b";
+            case '\t' -> "\\t";
+            case '\n' -> "\\n";
+            case '\f' -> "\\f";
+            case '\r' -> "\\r";
+            default -> null;
+        };
     }
 
     /** A Unicode escape of one UTF-16 code unit, each hex digit in upper or lower case. */
@@ -236,50 +212,48 @@ final class RandomQueries {
 
     private String logical(int depth) {
         String left = basic(depth);
-        switch (random.nextInt(5)) {
-            case 0:
-                return left + " && " + basic(depth);
-            case 1:
-                return left + " || " + basic(depth);
-            default:
-                return left;
-        }
+        return switch (random.nextInt(5)) {
+            case 0 -> left + " && " + basic(depth);
+            case 1 -> left + " || " + basic(depth);
+            default -> left;
+        };
     }
 
     private String basic(int depth) {
         switch (random.nextInt(9)) {
-            case 0:
+            case 0 -> {
                 return relative(depth);
-            case 1:
+            }
+            case 1 -> {
                 return "!" + relative(depth);
-            case 2:
+            }
+            case 2 -> {
                 return "(" + logical(depth) + ")";
-            case 3:
+            }
+            case 3 -> {
                 return pick(FUNCTIONS_TESTS) + "(" + singular() + ", '" + pick(PATTERNS) + "')";
-            case 4:
+            }
+            case 4 -> {
                 // Booleans are not ordered: only == and != can be true for them (RFC 9535 2.3.5.2.2).
                 String bool = random.nextBoolean() ? "true" : "false";
                 String other = comparable();
                 String operator = pick(OPERATORS);
                 return random.nextBoolean() ? bool + " " + operator + " " + other : other + " " + operator + " " + bool;
-            default:
+            }
+            default -> {
                 return comparable() + " " + pick(OPERATORS) + " " + comparable();
+            }
         }
     }
 
     private String comparable() {
-        switch (random.nextInt(6)) {
-            case 0:
-                return literal();
-            case 1:
-                return "length(" + singular() + ")";
-            case 2:
-                return "count(" + relative(0) + ")";
-            case 3:
-                return "value(" + relative(0) + ")";
-            default:
-                return random.nextInt(4) == 0 ? literal() : singular();
-        }
+        return switch (random.nextInt(6)) {
+            case 0 -> literal();
+            case 1 -> "length(" + singular() + ")";
+            case 2 -> "count(" + relative(0) + ")";
+            case 3 -> "value(" + relative(0) + ")";
+            default -> random.nextInt(4) == 0 ? literal() : singular();
+        };
     }
 
     private String singular() {
@@ -301,18 +275,13 @@ final class RandomQueries {
     }
 
     private String literal() {
-        switch (random.nextInt(6)) {
-            case 0:
-                return "null";
-            case 1:
-                return random.nextBoolean() ? "true" : "false";
-            case 2:
-                return String.valueOf(random.nextInt(7) - 3);
-            case 3:
-                return random.nextBoolean() ? "1.0" : "-0.5";
-            default:
-                return name();
-        }
+        return switch (random.nextInt(6)) {
+            case 0 -> "null";
+            case 1 -> random.nextBoolean() ? "true" : "false";
+            case 2 -> String.valueOf(random.nextInt(7) - 3);
+            case 3 -> random.nextBoolean() ? "1.0" : "-0.5";
+            default -> name();
+        };
     }
 
     /**
@@ -340,27 +309,32 @@ final class RandomQueries {
     private String damageOnce(String query) {
         int at = random.nextInt(query.length());
         switch (random.nextInt(5)) {
-            case 0:
+            case 0 -> {
                 return query.substring(0, at) + query.substring(at + 1);
-            case 1:
+            }
+            case 1 -> {
                 return query.substring(0, at + 1) + query.charAt(at) + query.substring(at + 1);
-            case 2:
+            }
+            case 2 -> {
                 String insertions = "[]().,?@$'\"!=<> -0";
                 return query.substring(0, at)
                         + insertions.charAt(random.nextInt(insertions.length()))
                         + query.substring(at);
-            case 3:
+            }
+            case 3 -> {
                 int close = query.indexOf(']', at);
                 if (close < 0) {
                     close = query.lastIndexOf(']');
                 }
                 return close < 0 ? query : query.substring(0, close) + pick(TRAILING_COMMAS) + query.substring(close);
-            default:
+            }
+            default -> {
                 Matcher shorthand = SHORTHAND.matcher(query);
                 if (!shorthand.find(at) && !shorthand.find(0)) {
                     return query;
                 }
                 return query.substring(0, shorthand.end()) + "-" + query.substring(shorthand.end());
+            }
         }
     }
 

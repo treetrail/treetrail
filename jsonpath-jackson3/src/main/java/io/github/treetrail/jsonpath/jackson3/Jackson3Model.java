@@ -26,22 +26,15 @@ public final class Jackson3Model implements JsonModel<JsonNode> {
 
     @Override
     public JsonKind kind(JsonNode value) {
-        switch (value.getNodeType()) {
-            case OBJECT:
-                return JsonKind.OBJECT;
-            case ARRAY:
-                return JsonKind.ARRAY;
-            case STRING:
-                return JsonKind.STRING;
-            case NUMBER:
-                return JsonKind.NUMBER;
-            case BOOLEAN:
-                return JsonKind.BOOLEAN;
-            case NULL:
-                return JsonKind.NULL;
-            default:
-                throw new IllegalArgumentException("Not a JSON value: " + value.getNodeType());
-        }
+        return switch (value.getNodeType()) {
+            case OBJECT -> JsonKind.OBJECT;
+            case ARRAY -> JsonKind.ARRAY;
+            case STRING -> JsonKind.STRING;
+            case NUMBER -> JsonKind.NUMBER;
+            case BOOLEAN -> JsonKind.BOOLEAN;
+            case NULL -> JsonKind.NULL;
+            default -> throw new IllegalArgumentException("Not a JSON value: " + value.getNodeType());
+        };
     }
 
     @Override

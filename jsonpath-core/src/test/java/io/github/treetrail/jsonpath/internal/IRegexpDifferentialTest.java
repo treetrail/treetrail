@@ -77,8 +77,7 @@ class IRegexpDifferentialTest {
 
     private static void atom(Random random, int depth, StringBuilder iregexp, StringBuilder java) {
         switch (random.nextInt(depth > 0 ? 7 : 6)) {
-            case 0:
-            case 1:
+            case 0, 1 -> {
                 int c = ALPHABET[random.nextInt(ALPHABET.length)];
                 if (c == '$') {
                     // '$' cannot be escaped in I-Regexp, and a bare '$' is an anchor here: use a class.
@@ -91,24 +90,20 @@ class IRegexpDifferentialTest {
                     iregexp.appendCodePoint(c);
                 }
                 java.append(literal(c));
-                break;
-            case 2:
+            }
+            case 2 -> {
                 iregexp.append('.');
                 java.append("[^\\n\\r]");
-                break;
-            case 3:
-                category(random, iregexp, java);
-                break;
-            case 4:
-            case 5:
-                charClass(random, iregexp, java);
-                break;
-            default:
+            }
+            case 3 -> category(random, iregexp, java);
+            case 4, 5 -> charClass(random, iregexp, java);
+            default -> {
                 iregexp.append('(');
                 java.append("(?:");
                 alternation(random, depth - 1, iregexp, java);
                 iregexp.append(')');
                 java.append(')');
+            }
         }
     }
 
@@ -161,27 +156,16 @@ class IRegexpDifferentialTest {
     private static void quantifier(Random random, StringBuilder iregexp, StringBuilder java) {
         String q;
         switch (random.nextInt(9)) {
-            case 0:
-                q = "*";
-                break;
-            case 1:
-                q = "+";
-                break;
-            case 2:
-                q = "?";
-                break;
-            case 3:
-                q = "{" + random.nextInt(3) + "}";
-                break;
-            case 4:
-                q = "{" + random.nextInt(3) + ",}";
-                break;
-            case 5:
+            case 0 -> q = "*";
+            case 1 -> q = "+";
+            case 2 -> q = "?";
+            case 3 -> q = "{" + random.nextInt(3) + "}";
+            case 4 -> q = "{" + random.nextInt(3) + ",}";
+            case 5 -> {
                 int min = random.nextInt(3);
                 q = "{" + min + "," + (min + random.nextInt(3)) + "}";
-                break;
-            default:
-                q = "";
+            }
+            default -> q = "";
         }
         iregexp.append(q);
         java.append(q);

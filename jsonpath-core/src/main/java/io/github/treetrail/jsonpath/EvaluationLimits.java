@@ -103,10 +103,10 @@ public final class EvaluationLimits {
 
     @Override
     public boolean equals(@Nullable Object o) {
-        if (!(o instanceof EvaluationLimits)) {
+        if (!(o instanceof EvaluationLimits other)) {
             return false;
         }
-        EvaluationLimits other = (EvaluationLimits) o;
+
         return maxVisitedNodes == other.maxVisitedNodes
                 && maxResultSize == other.maxResultSize
                 && maxDepth == other.maxDepth;
