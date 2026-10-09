@@ -18,9 +18,10 @@ final class TestJson {
     private static void write(Object value, StringBuilder sb) {
         if (value == null || value instanceof Boolean || value instanceof Number) {
             sb.append(value);
-        } else if (value instanceof String) {
+        } else if (value instanceof String string) {
             sb.append('"');
-            for (char c : ((String) value).toCharArray()) {
+            for (int i = 0; i < string.length(); i++) {
+                char c = string.charAt(i);
                 if (c == '"' || c == '\\') {
                     sb.append('\\').append(c);
                 } else if (c < 0x20) {

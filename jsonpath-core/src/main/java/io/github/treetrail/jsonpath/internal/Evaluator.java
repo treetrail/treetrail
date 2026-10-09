@@ -222,8 +222,8 @@ public final class Evaluator {
     private void selectFrom(Selector selector, Located node, List<Located> out) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
-        if (selector instanceof Name) {
-            String name = ((Name) selector).name();
+        if (selector instanceof Name nameSelector) {
+            String name = nameSelector.name();
             if (kind == JsonKind.OBJECT) {
                 Object member = model.findMember(value, name);
                 if (member != null || model.hasMember(value, name)) {
@@ -233,10 +233,10 @@ public final class Evaluator {
             }
         } else if (selector instanceof Wildcard) {
             out.addAll(children(node));
-        } else if (selector instanceof Index) {
+        } else if (selector instanceof Index indexSelector) {
             if (kind == JsonKind.ARRAY) {
                 int size = model.size(value);
-                long index = ((Index) selector).index();
+                long index = indexSelector.index();
                 long normalized = index >= 0 ? index : size + index;
                 if (normalized >= 0 && normalized < size) {
                     int i = (int) normalized;
@@ -244,12 +244,12 @@ public final class Evaluator {
                     out.add(new Located(model.element(value, i), node.location().child(i)));
                 }
             }
-        } else if (selector instanceof Slice) {
+        } else if (selector instanceof Slice slice) {
             if (kind == JsonKind.ARRAY) {
-                slice((Slice) selector, node, out);
+                slice(slice, node, out);
             }
-        } else if (selector instanceof Filter) {
-            Expr expr = ((Filter) selector).expr();
+        } else if (selector instanceof Filter filter) {
+            Expr expr = filter.expr();
             for (Located child : children(node)) {
                 boolean selected;
                 try {
@@ -301,30 +301,29 @@ public final class Evaluator {
     // ---- logical expressions ----
 
     private boolean test(Expr expr, Located current) {
-        if (expr instanceof Or) {
-            for (Expr operand : ((Or) expr).operands()) {
+        if (expr instanceof Or or) {
+            for (Expr operand : or.operands()) {
                 if (test(operand, current)) {
                     return true;
                 }
             }
             return false;
         }
-        if (expr instanceof And) {
-            for (Expr operand : ((And) expr).operands()) {
+        if (expr instanceof And and) {
+            for (Expr operand : and.operands()) {
                 if (!test(operand, current)) {
                     return false;
                 }
             }
             return true;
         }
-        if (expr instanceof Not) {
-            return !test(((Not) expr).operand(), current);
+        if (expr instanceof Not not) {
+            return !test(not.operand(), current);
         }
-        if (expr instanceof Paren) {
-            return test(((Paren) expr).operand(), current);
+        if (expr instanceof Paren paren) {
+            return test(paren.operand(), current);
         }
-        if (expr instanceof Comparison) {
-            Comparison comparison = (Comparison) expr;
+        if (expr instanceof Comparison comparison) {
             return Values.compare(
                     value(comparison.left(), current), comparison.op(), value(comparison.right(), current), maxDepth);
         }
@@ -334,8 +333,8 @@ public final class Evaluator {
 
     /** Converts a query or function result to a logical value (NodesType: non-empty). */
     private boolean logical(Operand operand, Located current) {
-        if (operand instanceof QueryOperand) {
-            return !query(((QueryOperand) operand).query(), current).isEmpty();
+        if (operand instanceof QueryOperand query) {
+            return !query(query.query(), current).isEmpty();
         }
         FunctionCall call = (FunctionCall) operand;
         Object result = call(call, current);
@@ -346,19 +345,19 @@ public final class Evaluator {
     }
 
     private Val value(Operand operand, Located current) {
-        if (operand instanceof Literal) {
-            return Val.literal(((Literal) operand).value());
+        if (operand instanceof Literal literal) {
+            return Val.literal(literal.value());
         }
-        if (operand instanceof QueryOperand) {
-            List<Located> nodes = query(((QueryOperand) operand).query(), current);
+        if (operand instanceof QueryOperand query) {
+            List<Located> nodes = query(query.query(), current);
             return nodes.isEmpty() ? Val.NOTHING : Val.of(nodes.get(0).value(), model);
         }
         return (Val) call((FunctionCall) operand, current);
     }
 
     private List<Val> nodes(Operand operand, Located current) {
-        if (operand instanceof QueryOperand) {
-            Query query = ((QueryOperand) operand).query();
+        if (operand instanceof QueryOperand queryOperand) {
+            Query query = queryOperand.query();
             if (!query.absolute()) {
                 return values(query(query, current));
             }
@@ -392,20 +391,11 @@ public final class Evaluator {
         for (int i = 0; i < parameters.size(); i++) {
             Argument argument = call.arguments().get(i);
             switch (parameters.get(i)) {
-                case VALUE:
-                    args.add(value((Operand) argument, current));
-                    break;
-                case LOGICAL:
+                case VALUE -> args.add(value((Operand) argument, current));
+                case LOGICAL ->
                     args.add(
-                            argument instanceof Expr
-                                    ? test((Expr) argument, current)
-                                    : logical((Operand) argument, current));
-                    break;
-                case NODES:
-                    args.add(nodes((Operand) argument, current));
-                    break;
-                default:
-                    throw new IllegalStateException();
+                            argument instanceof Expr expr ? test(expr, current) : logical((Operand) argument, current));
+                case NODES -> args.add(nodes((Operand) argument, current));
             }
         }
         return call.function().body().apply(args);

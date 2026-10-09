@@ -30,15 +30,19 @@ public final class Functions {
             return Val.NOTHING;
         }
         switch (v.kind()) {
-            case STRING:
+            case STRING -> {
                 String s = v.string();
                 return Val.literal(BigDecimal.valueOf(s.codePointCount(0, s.length())));
-            case ARRAY:
+            }
+            case ARRAY -> {
                 return Val.literal(BigDecimal.valueOf(v.model().size(v.value())));
-            case OBJECT:
+            }
+            case OBJECT -> {
                 return Val.literal(BigDecimal.valueOf(v.model().memberCount(v.value())));
-            default:
+            }
+            default -> {
                 return Val.NOTHING;
+            }
         }
     }
 

@@ -49,28 +49,27 @@ public class JacksonQueryBenchmark {
         String rfcExpression;
         String jaywayExpression;
         switch (query) {
-            case "definite":
+            case "definite" -> {
                 rfcExpression = "$.store.bicycle.color";
                 jaywayExpression = rfcExpression;
-                break;
-            case "wildcard":
+            }
+            case "wildcard" -> {
                 rfcExpression = "$.store.book[*].title";
                 jaywayExpression = rfcExpression;
-                break;
-            case "filter":
+            }
+            case "filter" -> {
                 rfcExpression = "$.store.book[?(@.price < 10 && @.category == 'fiction')].title";
                 jaywayExpression = rfcExpression;
-                break;
-            case "descendant":
+            }
+            case "descendant" -> {
                 rfcExpression = "$..price";
                 jaywayExpression = rfcExpression;
-                break;
-            case "regex":
+            }
+            case "regex" -> {
                 rfcExpression = "$.store.book[?match(@.author, 'H.*')].title";
                 jaywayExpression = "$.store.book[?(@.author =~ /H.*/)].title";
-                break;
-            default:
-                throw new IllegalArgumentException(query);
+            }
+            default -> throw new IllegalArgumentException(query);
         }
         rfc = JsonPath.compile(rfcExpression);
         jayway = com.jayway.jsonpath.JsonPath.compile(jaywayExpression);

@@ -125,11 +125,11 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
     }
 
     static Assessment assess(Expression argument, boolean write) {
-        if (!(argument instanceof J.Literal) || !(((J.Literal) argument).getValue() instanceof String)) {
+        if (!(argument instanceof J.Literal literal) || !(literal.getValue() instanceof String)) {
             return new Assessment(
                     null, "NOT_A_LITERAL", "The expression is computed at runtime; check it with JaywayComparison.");
         }
-        String expression = (String) ((J.Literal) argument).getValue();
+        String expression = (String) literal.getValue();
         if (write) {
             return new Assessment(
                     expression,

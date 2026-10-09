@@ -171,11 +171,11 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
     }
 
     private static String checkKey(@Nullable Object key) {
-        if (!(key instanceof String)) {
+        if (!(key instanceof String string)) {
             throw new IllegalArgumentException("Map keys must be strings to be JSON object members, found "
                     + (key == null ? "null" : key.getClass().getName()));
         }
-        return (String) key;
+        return string;
     }
 
     @Override
@@ -216,11 +216,11 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
 
     @Override
     public @Nullable BigDecimal numberValue(@Nullable Object value) {
-        if (value instanceof BigDecimal) {
-            return (BigDecimal) value;
+        if (value instanceof BigDecimal bigDecimal) {
+            return bigDecimal;
         }
-        if (value instanceof BigInteger) {
-            return new BigDecimal((BigInteger) value);
+        if (value instanceof BigInteger bigInteger) {
+            return new BigDecimal(bigInteger);
         }
         if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte) {
             return BigDecimal.valueOf(((Number) value).longValue());
@@ -249,12 +249,12 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
             double d = ((Number) number).doubleValue();
             return d == Math.rint(d) && Math.abs(d) < EXACT_DOUBLE_LIMIT;
         }
-        if (number instanceof BigDecimal) {
+        if (number instanceof BigDecimal decimal) {
             // Integer literals of queries are BigDecimals with scale 0; 18 digits always fit in a long.
-            BigDecimal decimal = (BigDecimal) number;
+
             return decimal.scale() == 0 && decimal.precision() <= 18;
         }
-        return number instanceof BigInteger && ((BigInteger) number).bitLength() < Long.SIZE;
+        return number instanceof BigInteger bigInteger && bigInteger.bitLength() < Long.SIZE;
     }
 
     @Override

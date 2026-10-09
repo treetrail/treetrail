@@ -130,17 +130,22 @@ class JsonParseTest {
     private static Object randomValue(Random random, int depth) {
         int kind = random.nextInt(depth > 4 ? 6 : 8);
         switch (kind) {
-            case 0:
+            case 0 -> {
                 return null;
-            case 1:
+            }
+            case 1 -> {
                 return random.nextBoolean();
-            case 2:
+            }
+            case 2 -> {
                 return random.nextInt();
-            case 3:
+            }
+            case 3 -> {
                 return random.nextLong();
-            case 4:
+            }
+            case 4 -> {
                 return new BigDecimal(BigInteger.valueOf(random.nextLong()), random.nextInt(40) - 20);
-            case 5:
+            }
+            case 5 -> {
                 StringBuilder sb = new StringBuilder();
                 for (int i = random.nextInt(8); i > 0; i--) {
                     sb.appendCodePoint(random.nextInt(4) == 0 ? random.nextInt(0x20) : 0x20 + random.nextInt(0x1F000));
@@ -148,18 +153,21 @@ class JsonParseTest {
                 String s = sb.toString();
                 // Drop unpaired surrogates from the random code points; JSON writers produce none either.
                 return s.codePoints().anyMatch(cp -> cp >= 0xD800 && cp <= 0xDFFF) ? "s" : s;
-            case 6:
+            }
+            case 6 -> {
                 List<Object> list = new ArrayList<>();
                 for (int i = random.nextInt(5); i > 0; i--) {
                     list.add(randomValue(random, depth + 1));
                 }
                 return list;
-            default:
+            }
+            default -> {
                 Map<String, Object> map = new LinkedHashMap<>();
                 for (int i = random.nextInt(5); i > 0; i--) {
                     map.put("k" + random.nextInt(10), randomValue(random, depth + 1));
                 }
                 return map;
+            }
         }
     }
 

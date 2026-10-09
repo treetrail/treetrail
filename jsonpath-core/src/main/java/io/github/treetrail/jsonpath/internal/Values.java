@@ -23,22 +23,15 @@ public final class Values {
      * @param maxDepth how deep arrays and objects are compared before the comparison fails
      */
     static boolean compare(Val left, ComparisonOp op, Val right, int maxDepth) {
-        switch (op) {
-            case EQ:
-                return equal(left, right, maxDepth);
-            case NE:
-                return !equal(left, right, maxDepth);
-            case LT:
-                return less(left, right);
-            case LE:
-                return less(left, right) || equal(left, right, maxDepth);
-            case GT:
-                return less(right, left);
-            case GE:
-                return less(right, left) || equal(left, right, maxDepth);
-            default:
-                throw new IllegalStateException();
-        }
+        return switch (op) {
+            case EQ -> equal(left, right, maxDepth);
+            case NE -> !equal(left, right, maxDepth);
+            case LT -> less(left, right);
+            case LE -> less(left, right) || equal(left, right, maxDepth);
+            case GT -> less(right, left);
+            case GE -> less(right, left) || equal(left, right, maxDepth);
+            default -> throw new IllegalStateException();
+        };
     }
 
     private static boolean equal(Val a, Val b, int maxDepth) {
@@ -184,17 +177,12 @@ public final class Values {
             @Nullable Object a,
             JsonModel<@Nullable Object> mb,
             @Nullable Object b) {
-        switch (kind) {
-            case NULL:
-                return true;
-            case BOOLEAN:
-                return ma.booleanValue(a) == mb.booleanValue(b);
-            case NUMBER:
-                return compareNumbers(ma, a, mb, b) == 0;
-            case STRING:
-                return ma.stringValue(a).equals(mb.stringValue(b));
-            default:
-                throw new IllegalStateException();
-        }
+        return switch (kind) {
+            case NULL -> true;
+            case BOOLEAN -> ma.booleanValue(a) == mb.booleanValue(b);
+            case NUMBER -> compareNumbers(ma, a, mb, b) == 0;
+            case STRING -> ma.stringValue(a).equals(mb.stringValue(b));
+            default -> throw new IllegalStateException();
+        };
     }
 }
