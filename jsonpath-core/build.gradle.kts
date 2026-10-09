@@ -82,3 +82,58 @@ tasks.withType<Test>().configureEach {
     // regenerated corpus before replacing it; see scripts/differential/README.md.
     providers.gradleProperty("differentialExpected").orNull?.let { systemProperty("treetrail.differential.expected", it) }
 }
+
+// Mutation testing (PIT): changes the core's bytecode in small ways and checks that some test fails for each
+// change. Too slow for every build, so it runs in its own task, every night and on request:
+//   ./gradlew :jsonpath-core:pitest
+// The report is in build/reports/pitest. The task fails if the mutation score drops below the threshold.
+// PIT runs from its command line: the Gradle plugin uses Gradle API that is deprecated.
+val pitestTool = configurations.dependencyScope("pitestTool")
+val pitestClasspath = configurations.resolvable("pitestClasspath") {
+    extendsFrom(pitestTool.get())
+}
+dependencies {
+    "pitestTool"(libs.pitest.command.line)
+    "pitestTool"(libs.pitest.junit5.plugin)
+}
+tasks.register<JavaExec>("pitest") {
+    description = "Runs mutation testing (PIT) on the core and fails below the mutation threshold."
+    group = "verification"
+    val testClasspath = sourceSets.test.get().runtimeClasspath
+    val mainClasses = sourceSets.main.get().output.classesDirs
+    val sourceDirs = sourceSets.main.get().java.sourceDirectories
+    val reportDir = layout.buildDirectory.dir("reports/pitest")
+    val classpathFile = layout.buildDirectory.file("pitest/classpath.txt")
+    val threads = Runtime.getRuntime().availableProcessors()
+    // PIT runs on its own class path and loads the code and tests from classpathFile; it mutates mainClasses.
+    classpath = pitestClasspath.get()
+    mainClass = "org.pitest.mutationtest.commandline.MutationCoverageReport"
+    inputs.files(testClasspath, mainClasses)
+    outputs.dir(reportDir)
+    doFirst {
+        classpathFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText((testClasspath.files + mainClasses.files).joinToString("\n"))
+        }
+    }
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf(
+            "--classPathFile", classpathFile.get().asFile.path,
+            "--includeLaunchClasspath=false",
+            "--mutableCodePaths", mainClasses.files.joinToString(","),
+            "--reportDir", reportDir.get().asFile.path,
+            "--targetClasses", "io.github.treetrail.jsonpath.*",
+            "--targetTests", "io.github.treetrail.jsonpath.*",
+            // Fuzzing replays and the concurrency stress test add run time but no mutation coverage of their own.
+            "--excludedTestClasses",
+            "io.github.treetrail.jsonpath.JsonPathFuzzTest,io.github.treetrail.jsonpath.ConcurrencyTest",
+            "--sourceDirs", sourceDirs.files.joinToString(","),
+            "--threads", threads.toString(),
+            "--verbosity", "NO_SPINNER",
+            "--outputFormats", "HTML,XML",
+            "--timestampedReports=false",
+            // 87 % when it was introduced (1,399 mutations); raise it when the score has grown.
+            "--mutationThreshold", "85",
+        )
+    })
+}

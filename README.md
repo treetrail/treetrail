@@ -256,6 +256,9 @@ Besides the Compliance Test Suite, which runs against every JSON model on Java 1
   latter found five bugs in the reference, and analysing them a sixth, listed in
   [scripts/differential/README.md](scripts/differential/README.md) and reported upstream.
 - **Concurrency:** 16 threads share compiled queries while the regex automata are being built.
+- **Mutation testing** with [PIT](https://pitest.org) every night: of 1,399 small changes to the core's
+  bytecode, the tests detect 87 %; the run fails below 85 %. `./gradlew :jsonpath-core:pitest` runs it
+  locally, the report is in `jsonpath-core/build/reports/pitest`.
 
 ## Building
 
