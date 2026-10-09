@@ -25,7 +25,6 @@ import io.github.treetrail.jsonpath.internal.Ast.Selector;
 import io.github.treetrail.jsonpath.internal.Ast.Slice;
 import io.github.treetrail.jsonpath.internal.Ast.Test;
 import io.github.treetrail.jsonpath.internal.Ast.Wildcard;
-import io.github.treetrail.jsonpath.internal.FunctionDefinition.Type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,8 +54,8 @@ public final class Evaluator {
     private long visitedNodes;
 
     /** Results of absolute queries inside filters, created on first use. */
-    private Map<Query, List<Located>> absoluteNodes;
-    private Map<Query, List<Val>> absoluteValues;
+    private IdentityHashMap<Query, List<Located>> absoluteNodes;
+    private IdentityHashMap<Query, List<Val>> absoluteValues;
 
     @SuppressWarnings("unchecked")
     public Evaluator(Object document, JsonModel<?> model, EvaluationLimits limits) {
@@ -336,7 +335,7 @@ public final class Evaluator {
         }
         FunctionCall call = (FunctionCall) operand;
         Object result = call(call, current);
-        if (call.function().result() == Type.NODES) {
+        if (call.function().result() == FunctionDefinition.Type.NODES) {
             return !((List<?>) result).isEmpty();
         }
         return (Boolean) result;
@@ -384,7 +383,7 @@ public final class Evaluator {
     }
 
     private Object call(FunctionCall call, Located current) {
-        List<Type> parameters = call.function().parameters();
+        List<FunctionDefinition.Type> parameters = call.function().parameters();
         List<Object> args = new ArrayList<>(parameters.size());
         for (int i = 0; i < parameters.size(); i++) {
             Argument argument = call.arguments().get(i);

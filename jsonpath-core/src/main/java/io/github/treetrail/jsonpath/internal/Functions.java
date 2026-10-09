@@ -1,7 +1,6 @@
 package io.github.treetrail.jsonpath.internal;
 
 import io.github.treetrail.jsonpath.JsonKind;
-import io.github.treetrail.jsonpath.internal.FunctionDefinition.Type;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -12,14 +11,16 @@ import java.util.Optional;
  */
 public final class Functions {
 
+    private static final FunctionDefinition.Type VALUE = FunctionDefinition.Type.VALUE;
+    private static final FunctionDefinition.Type LOGICAL = FunctionDefinition.Type.LOGICAL;
+    private static final FunctionDefinition.Type NODES = FunctionDefinition.Type.NODES;
+
     public static final Map<String, FunctionDefinition> BUILT_IN = Map.of(
-            "length", new FunctionDefinition("length", List.of(Type.VALUE), Type.VALUE, Functions::length),
-            "count", new FunctionDefinition("count", List.of(Type.NODES), Type.VALUE, Functions::count),
-            "match", new FunctionDefinition("match", List.of(Type.VALUE, Type.VALUE), Type.LOGICAL,
-                    args -> regex(args, true)),
-            "search", new FunctionDefinition("search", List.of(Type.VALUE, Type.VALUE), Type.LOGICAL,
-                    args -> regex(args, false)),
-            "value", new FunctionDefinition("value", List.of(Type.NODES), Type.VALUE, Functions::value));
+            "length", new FunctionDefinition("length", List.of(VALUE), VALUE, Functions::length),
+            "count", new FunctionDefinition("count", List.of(NODES), VALUE, Functions::count),
+            "match", new FunctionDefinition("match", List.of(VALUE, VALUE), LOGICAL, args -> regex(args, true)),
+            "search", new FunctionDefinition("search", List.of(VALUE, VALUE), LOGICAL, args -> regex(args, false)),
+            "value", new FunctionDefinition("value", List.of(NODES), VALUE, Functions::value));
 
     private Functions() {
     }
