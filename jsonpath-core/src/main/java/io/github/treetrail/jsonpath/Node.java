@@ -14,6 +14,8 @@ public final class Node<N extends @Nullable Object> {
 
     private final N value;
     private final Location location;
+    // Computed on first use; a race only computes the same path twice.
+    private @Nullable NormalizedPath normalizedPath;
 
     Node(N value, Location location) {
         this.value = value;
@@ -30,7 +32,17 @@ public final class Node<N extends @Nullable Object> {
      * {@code $['store']['book'][0]}.
      */
     public String path() {
-        return location.normalizedPath();
+        return normalizedPath().toString();
+    }
+
+    /** Returns the location of the node as a {@link NormalizedPath}. */
+    public NormalizedPath normalizedPath() {
+        NormalizedPath path = normalizedPath;
+        if (path == null) {
+            path = location.toNormalizedPath();
+            normalizedPath = path;
+        }
+        return path;
     }
 
     /** Returns the location as steps from the root: {@link String} member names and {@link Integer} indices. */
@@ -44,12 +56,13 @@ public final class Node<N extends @Nullable Object> {
             return false;
         }
         Node<?> other = (Node<?>) o;
-        return Objects.equals(value, other.value) && path().equals(other.path());
+        return Objects.equals(value, other.value) && normalizedPath().equals(other.normalizedPath());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value, path());
+        // The path alone: equal nodes have equal paths, and hashing a deep value would be costly.
+        return normalizedPath().hashCode();
     }
 
     @Override
