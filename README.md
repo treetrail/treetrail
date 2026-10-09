@@ -22,9 +22,9 @@ for JSONPath.
   [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
   (commit `9d1a415`, 2026-09-17) on Java 17, 21 and 25; a single failing case fails the build.
   [docs/conformance.md](docs/conformance.md) lists deviations, decisions and limits.
-- **Fast:** on plain Java objects, on par with or faster than Jayway JsonPath in every query benchmark,
-  up to 1.8× for wildcards; see [docs/benchmarks.md](docs/benchmarks.md). Jackson trees have their own
-  benchmark but no comparison with Jayway yet.
+- **Fast:** on par with or faster than Jayway JsonPath in every query benchmark: on plain Java objects
+  up to 1.8× for wildcards, on Jackson trees 1.2× to 2.2× faster in every query; see
+  [docs/benchmarks.md](docs/benchmarks.md).
 - **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`).
 
 ## Installation
