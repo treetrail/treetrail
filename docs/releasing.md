@@ -41,5 +41,18 @@ gh attestation verify jsonpath-core-0.1.0.jar --repo treetrail/treetrail
    uploads the files as a workflow artifact, without publishing.
 3. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`.
 4. Approve the `maven-central` deployment when the workflow asks.
+5. Once the release is on Maven Central, set `apiBaselineVersion` in `build.gradle.kts` to the new version
+   and clear `acceptedApiChanges`, so that the API is compared with the new release from then on.
+
+## API compatibility
+
+`./gradlew build` runs `apiCompatibility` in every published module: [japicmp](https://github.com/siom79/japicmp)
+compares the module's public API with the release named by `apiBaselineVersion` and fails on binary or source
+incompatible changes. The `internal` package is not exported and not compared. A report is written to
+`build/reports/api-compatibility/<module>.html`.
+
+Before 1.0, a minor release may still break the API. An intended incompatible change goes into
+`acceptedApiChanges` in `build.gradle.kts`, in japicmp's exclude syntax
+(`io.github.treetrail.jsonpath.JsonPath#compile(java.lang.String)`), together with a note in `CHANGELOG.md`.
 
 Maven Central releases cannot be changed or deleted. A broken release is fixed with a new version.

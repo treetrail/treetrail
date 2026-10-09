@@ -20,6 +20,7 @@ rewrite-bom = "8.90.4"
 micrometer = "1.17.1"
 maven-publish = "0.37.0"
 cyclonedx = "3.4.1"
+japicmp = "0.26.3"
 
 [libraries]
 jazzer-junit = { module = "com.code-intelligence:jazzer-junit", version.ref = "jazzer" }
@@ -49,6 +50,7 @@ rewrite-java-jdk25 = { module = "org.openrewrite:rewrite-java-25" }
 rewrite-test = { module = "org.openrewrite:rewrite-test" }
 jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+japicmp = { module = "com.github.siom79.japicmp:japicmp", version.ref = "japicmp" }
 
 [plugins]
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
