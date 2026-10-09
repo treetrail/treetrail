@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Strict parser for JSON text (RFC 8259) into the plain Java objects of
@@ -35,7 +36,7 @@ public final class JsonReader {
      *
      * @throws InvalidJsonException if {@code json} is not valid JSON text
      */
-    public static Object parse(String json) {
+    public static @Nullable Object parse(String json) {
         JsonReader reader = new JsonReader(json);
         reader.skipWhitespace();
         Object value = reader.value();
@@ -46,7 +47,7 @@ public final class JsonReader {
         return value;
     }
 
-    private Object value() {
+    private @Nullable Object value() {
         if (pos >= src.length()) {
             throw error("Expected a value");
         }
@@ -312,7 +313,7 @@ public final class JsonReader {
         }
     }
 
-    private Object literal(String word, Object value) {
+    private @Nullable Object literal(String word, @Nullable Object value) {
         if (!src.startsWith(word, pos)) {
             throw error("Expected a value");
         }

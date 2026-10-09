@@ -1,17 +1,18 @@
 package io.github.treetrail.jsonpath.migration;
 
-import io.github.treetrail.jsonpath.JsonPath;
-import io.github.treetrail.jsonpath.JsonPathSyntaxException;
-import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.PathNotFoundException;
+import io.github.treetrail.jsonpath.JsonPath;
+import io.github.treetrail.jsonpath.JsonPathSyntaxException;
+import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Runs JSONPath expressions with Jayway JsonPath and with this library and reports every difference.
@@ -85,7 +86,7 @@ public final class JaywayComparison {
 
     /** Compares one expression against a document. */
     public Comparison compare(String expression, Object document) {
-        List<Object> rfc;
+        List<@Nullable Object> rfc;
         String rfcError = null;
         try {
             rfc = new ArrayList<>(JsonPath.compile(expression).query(document).values());
@@ -105,7 +106,7 @@ public final class JaywayComparison {
                     "Jayway: " + e.getMessage());
         }
 
-        List<Object> jaywayValues;
+        List<@Nullable Object> jaywayValues;
         boolean single = false;
         try {
             Object result = compiled.read(document, jayway);
@@ -142,11 +143,11 @@ public final class JaywayComparison {
         return new Comparison(expression, outcome, rfc, jaywayValues, single, null);
     }
 
-    private static boolean sameValuesInAnyOrder(List<Object> a, List<Object> b) {
+    private static boolean sameValuesInAnyOrder(List<@Nullable Object> a, List<@Nullable Object> b) {
         if (a.size() != b.size()) {
             return false;
         }
-        List<Object> remaining = new ArrayList<>(b);
+        List<@Nullable Object> remaining = new ArrayList<>(b);
         for (Object value : a) {
             boolean found = false;
             for (int i = 0; i < remaining.size(); i++) {
@@ -164,7 +165,7 @@ public final class JaywayComparison {
     }
 
     /** JSON value equality: numbers by value, objects by members, arrays by elements. */
-    static boolean jsonEquals(Object a, Object b) {
+    static boolean jsonEquals(@Nullable Object a, @Nullable Object b) {
         if (a instanceof Number && b instanceof Number) {
             try {
                 return new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString())) == 0;

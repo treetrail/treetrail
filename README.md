@@ -25,7 +25,8 @@ for JSONPath.
 - **Fast:** on par with or faster than Jayway JsonPath in every query benchmark: on plain Java objects
   up to 1.8× for wildcards, on Jackson trees 1.2× to 2.2× faster in every query; see
   [docs/benchmarks.md](docs/benchmarks.md).
-- **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`).
+- **Java 17+**, a named JPMS module (`io.github.treetrail.jsonpath`), with [JSpecify](https://jspecify.dev)
+  nullness annotations, so Kotlin sees which values can be `null`.
 
 ## Installation
 

@@ -3,13 +3,14 @@ package io.github.treetrail.jsonpath;
 import io.github.treetrail.jsonpath.internal.Location;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A node selected by a query: a value together with its location in the document.
  *
  * @param <N> the node type of the object model
  */
-public final class Node<N> {
+public final class Node<N extends @Nullable Object> {
 
     private final N value;
     private final Location location;
@@ -38,7 +39,7 @@ public final class Node<N> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof Node)) {
             return false;
         }

@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Comparison of values (RFC 9535, section 2.3.5.2.2).
@@ -81,11 +82,11 @@ public final class Values {
 
     /** A pair of values still to compare, at a depth below the compared values. */
     private static final class Pending {
-        final Object a;
-        final Object b;
+        final @Nullable Object a;
+        final @Nullable Object b;
         final int depth;
 
-        Pending(Object a, Object b, int depth) {
+        Pending(@Nullable Object a, @Nullable Object b, int depth) {
             this.a = a;
             this.b = b;
             this.depth = depth;
@@ -96,12 +97,12 @@ public final class Values {
      * Whether two values are equal as JSON values, the semantics of {@code ==} in filters: numbers by value,
      * strings by content, arrays element by element, objects member by member regardless of order.
      */
-    public static boolean jsonEquals(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b, int maxDepth) {
+    public static boolean jsonEquals(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b, int maxDepth) {
         return deepEqual(ma, a, mb, b, maxDepth);
     }
 
     /** Structural equality, with an explicit stack so that deep values cannot overflow the call stack. */
-    private static boolean deepEqual(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b, int maxDepth) {
+    private static boolean deepEqual(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b, int maxDepth) {
         JsonKind kind = ma.kind(a);
         if (kind != mb.kind(b)) {
             return false;
@@ -137,8 +138,8 @@ public final class Values {
                 if (count > 0 && p.depth >= maxDepth) {
                     throw Evaluator.tooDeep(maxDepth);
                 }
-                for (Map.Entry<String, Object> member : ma.members(p.a)) {
-                    Object other = mb.findMember(p.b, member.getKey());
+                for (Map.Entry<String, @Nullable Object> member : ma.members(p.a)) {
+                    @Nullable Object other = mb.findMember(p.b, member.getKey());
                     if (other == null && !mb.hasMember(p.b, member.getKey())) {
                         return false;
                     }
@@ -155,7 +156,7 @@ public final class Values {
     private static final int INCOMPARABLE = 2;
 
     /** Compares two numbers as -1, 0 or 1, or returns {@link #INCOMPARABLE}. */
-    private static int compareNumbers(JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
+    private static int compareNumbers(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b) {
         if (ma.isLong(a) && mb.isLong(b)) {
             return Long.compare(ma.longValue(a), mb.longValue(b));
         }
@@ -167,7 +168,7 @@ public final class Values {
         return Integer.signum(na.compareTo(nb));
     }
 
-    private static boolean scalarEqual(JsonKind kind, JsonModel<Object> ma, Object a, JsonModel<Object> mb, Object b) {
+    private static boolean scalarEqual(JsonKind kind, JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b) {
         switch (kind) {
             case NULL:
                 return true;

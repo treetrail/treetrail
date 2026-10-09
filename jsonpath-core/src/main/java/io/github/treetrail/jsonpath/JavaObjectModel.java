@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link JsonModel} for plain Java objects: {@link Map} with {@link String} keys for objects,
@@ -26,7 +27,7 @@ import java.util.Set;
  * <p>This is the model most JSON libraries produce when asked for "untyped" output, for example
  * Jackson's {@code ObjectMapper.readValue(json, Object.class)}.
  */
-public final class JavaObjectModel implements JsonModel<Object> {
+public final class JavaObjectModel implements JsonModel<@Nullable Object> {
 
     /** The shared instance. The model is stateless. */
     public static final JavaObjectModel INSTANCE = new JavaObjectModel();
@@ -43,7 +44,7 @@ public final class JavaObjectModel implements JsonModel<Object> {
      * @throws JsonPathLimitExceededException if the values are nested more than 1,000 levels deep
      * @throws IllegalArgumentException if a value is not a JSON value of this model
      */
-    public static boolean jsonEquals(Object a, Object b) {
+    public static boolean jsonEquals(@Nullable Object a, @Nullable Object b) {
         return Values.jsonEquals(INSTANCE, a, INSTANCE, b, EvaluationLimits.DEFAULT.maxDepth());
     }
 
@@ -62,12 +63,12 @@ public final class JavaObjectModel implements JsonModel<Object> {
      * @throws InvalidJsonException if {@code json} is not valid JSON text
      * @throws NullPointerException if {@code json} is null
      */
-    public static Object parse(String json) {
+    public static @Nullable Object parse(String json) {
         return JsonReader.parse(Objects.requireNonNull(json, "json"));
     }
 
     @Override
-    public JsonKind kind(Object value) {
+    public JsonKind kind(@Nullable Object value) {
         if (value == null) {
             return JsonKind.NULL;
         }
@@ -120,8 +121,8 @@ public final class JavaObjectModel implements JsonModel<Object> {
     }
 
     @Override
-    public Iterable<String> memberNames(Object object) {
-        Set<?> keys = ((Map<?, ?>) object).keySet();
+    public Iterable<String> memberNames(@Nullable Object object) {
+        Set<?> keys = map(object).keySet();
         // Checks each key while iterating, so that maps with other keys fail with a clear message.
         return () -> new Iterator<String>() {
             private final Iterator<?> it = keys.iterator();
@@ -139,9 +140,9 @@ public final class JavaObjectModel implements JsonModel<Object> {
     }
 
     @Override
-    public Iterable<Map.Entry<String, Object>> members(Object object) {
-        Set<? extends Map.Entry<?, ?>> entries = ((Map<?, ?>) object).entrySet();
-        return () -> new Iterator<Map.Entry<String, Object>>() {
+    public Iterable<Map.Entry<String, @Nullable Object>> members(@Nullable Object object) {
+        Set<? extends Map.Entry<?, ?>> entries = map(object).entrySet();
+        return () -> new Iterator<Map.Entry<String, @Nullable Object>>() {
             private final Iterator<? extends Map.Entry<?, ?>> it = entries.iterator();
 
             @Override
@@ -150,17 +151,25 @@ public final class JavaObjectModel implements JsonModel<Object> {
             }
 
             @Override
-            public Map.Entry<String, Object> next() {
+            public Map.Entry<String, @Nullable Object> next() {
                 Map.Entry<?, ?> entry = it.next();
                 checkKey(entry.getKey());
                 @SuppressWarnings("unchecked")
-                Map.Entry<String, Object> member = (Map.Entry<String, Object>) entry;
+                Map.Entry<String, @Nullable Object> member = (Map.Entry<String, @Nullable Object>) entry;
                 return member;
             }
         };
     }
 
-    private static String checkKey(Object key) {
+    /**
+     * The evaluator calls the object, array and scalar methods only with values of their kind, never with
+     * JSON null; a null here is a bug.
+     */
+    private static Map<?, ?> map(@Nullable Object object) {
+        return (Map<?, ?>) Objects.requireNonNull(object);
+    }
+
+    private static String checkKey(@Nullable Object key) {
         if (!(key instanceof String)) {
             throw new IllegalArgumentException("Map keys must be strings to be JSON object members, found "
                     + (key == null ? "null" : key.getClass().getName()));
@@ -169,43 +178,43 @@ public final class JavaObjectModel implements JsonModel<Object> {
     }
 
     @Override
-    public Object findMember(Object object, String name) {
+    public @Nullable Object findMember(@Nullable Object object, String name) {
         // Null for a missing member and for JSON null; the caller tells them apart with hasMember.
-        return ((Map<?, ?>) object).get(name);
+        return map(object).get(name);
     }
 
     @Override
-    public boolean hasMember(Object object, String name) {
-        return ((Map<?, ?>) object).containsKey(name);
+    public boolean hasMember(@Nullable Object object, String name) {
+        return map(object).containsKey(name);
     }
 
     @Override
-    public Object member(Object object, String name) {
-        return ((Map<?, ?>) object).get(name);
+    public @Nullable Object member(@Nullable Object object, String name) {
+        return map(object).get(name);
     }
 
     @Override
-    public int memberCount(Object object) {
-        return ((Map<?, ?>) object).size();
+    public int memberCount(@Nullable Object object) {
+        return map(object).size();
     }
 
     @Override
-    public int size(Object array) {
-        return array instanceof List ? ((List<?>) array).size() : Array.getLength(array);
+    public int size(@Nullable Object array) {
+        return array instanceof List ? ((List<?>) array).size() : Array.getLength(Objects.requireNonNull(array));
     }
 
     @Override
-    public Object element(Object array, int index) {
-        return array instanceof List ? ((List<?>) array).get(index) : Array.get(array, index);
+    public @Nullable Object element(@Nullable Object array, int index) {
+        return array instanceof List ? ((List<?>) array).get(index) : Array.get(Objects.requireNonNull(array), index);
     }
 
     @Override
-    public String stringValue(Object value) {
-        return value.toString();
+    public String stringValue(@Nullable Object value) {
+        return Objects.requireNonNull(value).toString();
     }
 
     @Override
-    public BigDecimal numberValue(Object value) {
+    public @Nullable BigDecimal numberValue(@Nullable Object value) {
         if (value instanceof BigDecimal) {
             return (BigDecimal) value;
         }
@@ -223,14 +232,14 @@ public final class JavaObjectModel implements JsonModel<Object> {
             // Float.toString keeps the short decimal form (0.1f -> "0.1").
             return new BigDecimal(value.toString());
         }
-        return new BigDecimal(value.toString());
+        return new BigDecimal(Objects.requireNonNull(value).toString());
     }
 
     /** Largest absolute value up to which every integer is exactly representable as a {@code double}: 2^53. */
     private static final double EXACT_DOUBLE_LIMIT = 9_007_199_254_740_992.0;
 
     @Override
-    public boolean isLong(Object number) {
+    public boolean isLong(@Nullable Object number) {
         if (number instanceof Integer || number instanceof Long || number instanceof Short || number instanceof Byte) {
             return true;
         }
@@ -248,12 +257,12 @@ public final class JavaObjectModel implements JsonModel<Object> {
     }
 
     @Override
-    public long longValue(Object number) {
-        return ((Number) number).longValue();
+    public long longValue(@Nullable Object number) {
+        return ((Number) Objects.requireNonNull(number)).longValue();
     }
 
     @Override
-    public boolean booleanValue(Object value) {
-        return (Boolean) value;
+    public boolean booleanValue(@Nullable Object value) {
+        return (Boolean) Objects.requireNonNull(value);
     }
 }

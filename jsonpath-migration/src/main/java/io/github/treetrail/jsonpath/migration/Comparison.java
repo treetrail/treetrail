@@ -1,6 +1,7 @@
 package io.github.treetrail.jsonpath.migration;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The outcome of running one expression with Jayway JsonPath and with this library.
@@ -16,10 +17,10 @@ import java.util.List;
 public record Comparison(
         String expression,
         Outcome outcome,
-        List<Object> rfcValues,
-        List<Object> jaywayValues,
+        @Nullable List<@Nullable Object> rfcValues,
+        @Nullable List<@Nullable Object> jaywayValues,
         boolean jaywayReturnsSingleValue,
-        String detail) {
+        @Nullable String detail) {
 
     /** How the result under RFC 9535 relates to the result of Jayway JsonPath. */
     public enum Outcome {

@@ -3,6 +3,7 @@ package io.github.treetrail.jsonpath.internal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Location of a node in a document, kept as a parent-linked list so that extending a path is O(1).
@@ -12,11 +13,11 @@ public final class Location {
 
     public static final Location ROOT = new Location(null, null);
 
-    private final Location parent;
-    private final Object step;
+    private final @Nullable Location parent;
+    private final @Nullable Object step;
     private final int depth;
 
-    private Location(Location parent, Object step) {
+    private Location(@Nullable Location parent, @Nullable Object step) {
         this.parent = parent;
         this.step = step;
         this.depth = parent == null ? 0 : parent.depth + 1;

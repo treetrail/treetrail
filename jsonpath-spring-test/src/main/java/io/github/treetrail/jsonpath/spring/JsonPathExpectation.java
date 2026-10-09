@@ -6,6 +6,7 @@ import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.NodeList;
 import java.util.Arrays;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The checks behind the MockMvc and WebTestClient matchers, on a response body as text. Values are compared
@@ -22,16 +23,16 @@ final class JsonPathExpectation {
         this.path = JsonPath.compile(expression);
     }
 
-    void value(String body, Object expected) {
-        NodeList<Object> nodes = select(body);
+    void value(String body, @Nullable Object expected) {
+        NodeList<@Nullable Object> nodes = select(body);
         if (nodes.size() != 1 || !JavaObjectModel.jsonEquals(nodes.get(0).value(), expected)) {
             throw fail("expected one node with value " + format(expected) + " but found " + describe(nodes));
         }
     }
 
-    void values(String body, Object... expected) {
-        NodeList<Object> nodes = select(body);
-        List<Object> actual = nodes.values();
+    void values(String body, @Nullable Object... expected) {
+        NodeList<@Nullable Object> nodes = select(body);
+        List<@Nullable Object> actual = nodes.values();
         boolean equal = actual.size() == expected.length;
         for (int i = 0; equal && i < expected.length; i++) {
             equal = JavaObjectModel.jsonEquals(actual.get(i), expected[i]);
@@ -48,20 +49,20 @@ final class JsonPathExpectation {
     }
 
     void doesNotExist(String body) {
-        NodeList<Object> nodes = select(body);
+        NodeList<@Nullable Object> nodes = select(body);
         if (!nodes.isEmpty()) {
             throw fail("expected no node but found " + describe(nodes));
         }
     }
 
     void hasSize(String body, int size) {
-        NodeList<Object> nodes = select(body);
+        NodeList<@Nullable Object> nodes = select(body);
         if (nodes.size() != size) {
             throw fail("expected " + size + " node(s) but found " + describe(nodes));
         }
     }
 
-    private NodeList<Object> select(String body) {
+    private NodeList<@Nullable Object> select(String body) {
         try {
             return path.query(JavaObjectModel.parse(body));
         } catch (InvalidJsonException e) {
@@ -73,11 +74,11 @@ final class JsonPathExpectation {
         return new AssertionError("JSON path \"" + expression + "\": " + message);
     }
 
-    private static String describe(NodeList<Object> nodes) {
+    private static String describe(NodeList<@Nullable Object> nodes) {
         return nodes.isEmpty() ? "none" : format(nodes.values()) + " at " + nodes.paths();
     }
 
-    private static String format(Object value) {
+    private static String format(@Nullable Object value) {
         return value instanceof String ? "\"" + value + "\"" : String.valueOf(value);
     }
 }

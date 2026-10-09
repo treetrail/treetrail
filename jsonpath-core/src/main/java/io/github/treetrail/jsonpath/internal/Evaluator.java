@@ -32,6 +32,7 @@ import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Executes a parsed query against a document (RFC 9535, sections 2.3 to 2.5).
@@ -46,7 +47,7 @@ public final class Evaluator {
     /** The thread's interrupt status is checked whenever the visit count passes a multiple of 2^12 = 4,096. */
     private static final int INTERRUPT_CHECK_SHIFT = 12;
 
-    private final JsonModel<Object> model;
+    private final JsonModel<@Nullable Object> model;
     private final Located root;
     private final long maxVisitedNodes;
     private final int maxResultSize;
@@ -54,12 +55,12 @@ public final class Evaluator {
     private long visitedNodes;
 
     /** Results of absolute queries inside filters, created on first use. */
-    private IdentityHashMap<Query, List<Located>> absoluteNodes;
-    private IdentityHashMap<Query, List<Val>> absoluteValues;
+    private @Nullable IdentityHashMap<Query, List<Located>> absoluteNodes;
+    private @Nullable IdentityHashMap<Query, List<Val>> absoluteValues;
 
     @SuppressWarnings("unchecked")
     public Evaluator(Object document, JsonModel<?> model, EvaluationLimits limits) {
-        this.model = (JsonModel<Object>) model;
+        this.model = (JsonModel<@Nullable Object>) model;
         this.root = new Located(document, Location.ROOT);
         this.maxVisitedNodes = limits.maxVisitedNodes();
         this.maxResultSize = limits.maxResultSize();
@@ -289,7 +290,7 @@ public final class Evaluator {
         }
     }
 
-    private void add(Object array, int index, Located parent, List<Located> out) {
+    private void add(@Nullable Object array, int index, Located parent, List<Located> out) {
         visit(1);
         out.add(new Located(model.element(array, index), parent.location().child(index)));
     }

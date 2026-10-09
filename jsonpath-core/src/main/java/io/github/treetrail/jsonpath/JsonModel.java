@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Read-only view of a JSON tree in some object model (plain Java objects, Jackson, Gson, ...).
@@ -29,7 +30,7 @@ import java.util.Map;
  *
  * @param <N> the node type of the object model
  */
-public interface JsonModel<N> {
+public interface JsonModel<N extends @Nullable Object> {
 
     /** Returns the kind of {@code value}. */
     JsonKind kind(N value);
@@ -60,7 +61,7 @@ public interface JsonModel<N> {
      * express such numbers, but parsers produce them, for example for {@code 1e400} as a {@code double}.
      * Queries treat them as neither equal to nor ordered against any value.
      */
-    BigDecimal numberValue(N value);
+    @Nullable BigDecimal numberValue(N value);
 
     /** Returns the value of a boolean. */
     boolean booleanValue(N value);
@@ -97,7 +98,7 @@ public interface JsonModel<N> {
      * {@link #hasMember} to tell the two apart. The default implementation calls {@link #hasMember} and
      * {@link #member}. Override it if one lookup is enough.
      */
-    default N findMember(N object, String name) {
+    default @Nullable N findMember(N object, String name) {
         return hasMember(object, name) ? member(object, name) : null;
     }
 

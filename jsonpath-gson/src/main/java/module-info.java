@@ -2,6 +2,7 @@
  * JSONPath (RFC 9535) adapter for Gson trees ({@code com.google.gson.JsonElement}).
  */
 module io.github.treetrail.jsonpath.gson {
+    requires static transitive org.jspecify;
     requires transitive io.github.treetrail.jsonpath;
     requires transitive com.google.gson;
 

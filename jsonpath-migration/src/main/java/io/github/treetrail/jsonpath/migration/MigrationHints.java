@@ -1,6 +1,7 @@
 package io.github.treetrail.jsonpath.migration;
 
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Suggestions for rewriting Jayway-only expressions in RFC 9535 syntax.
@@ -23,7 +24,7 @@ public final class MigrationHints {
      * @param expression the Jayway expression
      * @param rfcError the parser message, used when no specific hint applies
      */
-    public static String forInvalidExpression(String expression, String rfcError) {
+    public static String forInvalidExpression(String expression, @Nullable String rfcError) {
         if (LENGTH_FUNCTION.matcher(expression).find()) {
             return "Path functions like .length() are not part of RFC 9535. Take the size of the result "
                     + "in Java (values().size()), or filter with length(), e.g. $[?length(@.tags) > 2].";

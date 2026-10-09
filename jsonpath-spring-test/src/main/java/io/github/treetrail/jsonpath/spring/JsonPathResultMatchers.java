@@ -1,6 +1,7 @@
 package io.github.treetrail.jsonpath.spring;
 
 import java.nio.charset.StandardCharsets;
+import org.jspecify.annotations.Nullable;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -17,12 +18,12 @@ public final class JsonPathResultMatchers {
     }
 
     /** Expects exactly one node, with a value equal to {@code expected} as a JSON value. */
-    public ResultMatcher value(Object expected) {
+    public ResultMatcher value(@Nullable Object expected) {
         return result -> expectation.value(body(result), expected);
     }
 
     /** Expects exactly these values, in this order. */
-    public ResultMatcher values(Object... expected) {
+    public ResultMatcher values(@Nullable Object... expected) {
         return result -> expectation.values(body(result), expected);
     }
 

@@ -1,11 +1,12 @@
 package io.github.treetrail.jsonpath.gson;
 
-import io.github.treetrail.jsonpath.JsonKind;
-import io.github.treetrail.jsonpath.JsonModel;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import io.github.treetrail.jsonpath.JsonKind;
+import io.github.treetrail.jsonpath.JsonModel;
 import java.math.BigDecimal;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link JsonModel} for Gson trees.
@@ -92,7 +93,7 @@ public final class GsonModel implements JsonModel<JsonElement> {
     }
 
     @Override
-    public BigDecimal numberValue(JsonElement value) {
+    public @Nullable BigDecimal numberValue(JsonElement value) {
         Number number = value.getAsNumber();
         // Lenient parsing and new JsonPrimitive(Double.NaN) produce numbers that are not finite.
         if ((number instanceof Double || number instanceof Float) && !Double.isFinite(number.doubleValue())) {

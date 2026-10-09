@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.Nullable;
 
 /**
  * I-Regexp (RFC 9485), the interoperable regular expression format used by the {@code match()}
@@ -85,8 +86,8 @@ public final class IRegexp {
     private final int[] next;
     private final int[] alt;
     private final CharSet[] sets;
-    private volatile LazyDfa matchDfa;
-    private volatile LazyDfa searchDfa;
+    private volatile @Nullable LazyDfa matchDfa;
+    private volatile @Nullable LazyDfa searchDfa;
 
     private IRegexp(Program program) {
         int size = program.ops.size();
@@ -171,7 +172,7 @@ public final class IRegexp {
             Node tree = new RegexParser(regexp).parse();
             Program program = new Program();
             program.emit(tree);
-            program.add(MATCH, -1, -1, null);
+            program.add(MATCH, -1, -1, NO_SET);
             return Optional.of(new IRegexp(program));
         } catch (InvalidRegexp e) {
             return Optional.empty();
@@ -223,7 +224,7 @@ public final class IRegexp {
         private final int generation;
         private final AtomicLong bytes = new AtomicLong();
         private final Map<StateKey, State> states = new ConcurrentHashMap<>();
-        private final State start;
+        private final @Nullable State start;
 
         LazyDfa(boolean search, int generation) {
             this.search = search;
@@ -260,7 +261,7 @@ public final class IRegexp {
         }
 
         /** Returns the result, or null if the state budget is exhausted. */
-        Boolean run(String input) {
+        @Nullable Boolean run(String input) {
             State state = start;
             if (state == null) {
                 return null;
@@ -303,7 +304,7 @@ public final class IRegexp {
          * Computes the state after reading {@code cp} in {@code from}, or the start state if
          * {@code from} is null. Returns null if the state budget is exhausted.
          */
-        private State closureState(State from, int cp, boolean atStart) {
+        private @Nullable State closureState(@Nullable State from, int cp, boolean atStart) {
             boolean[] visited = new boolean[ops.length];
             int[] chars = new int[ops.length];
             int[] ends = new int[ops.length];
@@ -425,8 +426,8 @@ public final class IRegexp {
             /** Transitions on ASCII characters, indexed directly: one lookup per step. */
             final State[] ascii = new State[ASCII];
             /** Transitions on other code points, created on first use. */
-            volatile Map<Integer, State> other;
-            volatile Boolean acceptsAtEnd;
+            volatile @Nullable Map<Integer, State> other;
+            volatile @Nullable Boolean acceptsAtEnd;
 
             State(int[] chars, int[] ends, boolean match) {
                 this.chars = chars;
@@ -435,7 +436,7 @@ public final class IRegexp {
                 this.dead = chars.length == 0 && ends.length == 0 && !match;
             }
 
-            State transition(int cp) {
+            @Nullable State transition(int cp) {
                 if (cp < ASCII) {
                     return ascii[cp];
                 }
@@ -666,6 +667,9 @@ public final class IRegexp {
 
     // ---- compiler ----
 
+    /** Placeholder in {@link #sets} for instructions other than CHAR; never consulted. */
+    private static final CharSet NO_SET = CharSet.ranges(false, new int[0]);
+
     /** Thompson construction of the automaton. */
     private static final class Program {
         final List<Integer> ops = new ArrayList<>();
@@ -696,9 +700,9 @@ public final class IRegexp {
             } else if (node instanceof Chars) {
                 add(CHAR, pc() + 1, -1, ((Chars) node).set());
             } else if (node instanceof Begin) {
-                add(BEGIN, pc() + 1, -1, null);
+                add(BEGIN, pc() + 1, -1, NO_SET);
             } else if (node instanceof End) {
-                add(END, pc() + 1, -1, null);
+                add(END, pc() + 1, -1, NO_SET);
             } else if (node instanceof Alternation) {
                 emitAlternation(((Alternation) node).branches());
             } else if (node instanceof Repeat) {
@@ -711,9 +715,9 @@ public final class IRegexp {
         private void emitAlternation(List<Node> branches) {
             List<Integer> jumps = new ArrayList<>();
             for (int i = 0; i < branches.size() - 1; i++) {
-                int split = add(SPLIT, pc() + 1, -1, null);
+                int split = add(SPLIT, pc() + 1, -1, NO_SET);
                 emit(branches.get(i));
-                jumps.add(add(JUMP, -1, -1, null));
+                jumps.add(add(JUMP, -1, -1, NO_SET));
                 alt.set(split, pc());
             }
             emit(branches.get(branches.size() - 1));
@@ -732,15 +736,15 @@ public final class IRegexp {
                 emit(repeat.atom());
             }
             if (repeat.max() < 0) {
-                int loop = add(SPLIT, pc() + 1, -1, null);
+                int loop = add(SPLIT, pc() + 1, -1, NO_SET);
                 emit(repeat.atom());
-                add(JUMP, loop, -1, null);
+                add(JUMP, loop, -1, NO_SET);
                 alt.set(loop, pc());
                 return;
             }
             List<Integer> splits = new ArrayList<>();
             for (int i = repeat.min(); i < repeat.max(); i++) {
-                splits.add(add(SPLIT, pc() + 1, -1, null));
+                splits.add(add(SPLIT, pc() + 1, -1, NO_SET));
                 emit(repeat.atom());
             }
             for (int split : splits) {

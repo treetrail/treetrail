@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The result of a query: the selected nodes in order (RFC 9535, section 1.1). A node list may
@@ -12,7 +13,7 @@ import java.util.Optional;
  *
  * @param <N> the node type of the object model
  */
-public final class NodeList<N> extends AbstractList<Node<N>> {
+public final class NodeList<N extends @Nullable Object> extends AbstractList<Node<N>> {
 
     private final List<Node<N>> nodes;
 
