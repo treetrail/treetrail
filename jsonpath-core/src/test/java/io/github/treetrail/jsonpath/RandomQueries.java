@@ -4,8 +4,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Random JSON documents and random RFC 9535 queries over them, for differential testing against another
@@ -15,16 +18,19 @@ import java.util.Random;
  * <p>Numbers stay within the range where binary floating point and exact decimals agree, because the
  * other implementation may parse numbers as doubles.
  *
- * <p>Known bugs of the reference (jsonpath-rfc9535 2.0.0) are avoided rather than tolerated: it rejects
- * {@code \u0000} to {@code \u001f} escapes and, since 2.0.0, some lower-case hex digits ({@code \u00e9}).
- * So control characters only appear in queries through their short escapes ({@code \n}, {@code \t}),
- * and names with other control characters only in documents.
+ * <p>String literals escape control characters with their short escapes or with Unicode escapes, and
+ * other characters now and then with Unicode escapes (surrogate pairs above U+FFFF), in hex digits of
+ * either case. Together with shorthand names above U+FFFF ({@code $.😀}), trailing commas
+ * ({@code $[1, ]}) among the damage, and boolean literals in ordering comparisons, this keeps the bugs
+ * the test found in the reference (fixed in jsonpath-rfc9535 2.0.1) covered.
  */
 final class RandomQueries {
 
-    private static final String[] SHORTHAND_NAMES = {"a", "b", "c", "_x", "é"};
+    private static final String[] SHORTHAND_NAMES = {"a", "b", "c", "_x", "é", "😀"};
     private static final String[] FUNCTIONS_TESTS = {"match", "search"};
     private static final String[] PATTERNS = {"a.*", "[a-c]+", "\\\\p{L}", ".", "é|😀", "^a", "b$", "[^a]*", "(ab|c){1,2}"};
+    private static final String[] TRAILING_COMMAS = {",", ", ", " ,", " , "};
+    private static final Pattern SHORTHAND = Pattern.compile("\\.(?:" + String.join("|", SHORTHAND_NAMES) + ")");
     private static final String[] OPERATORS = {"==", "!=", "<", "<=", ">", ">="};
 
     private final Random random;
@@ -155,29 +161,54 @@ final class RandomQueries {
     }
 
     private String name() {
-        String name;
-        do {
-            name = memberName();
-        } while (hasControlCharacterWithoutShortEscape(name));
+        String name = memberName();
         StringBuilder sb = new StringBuilder(random.nextBoolean() ? "'" : "\"");
         char quote = sb.charAt(0);
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
+        for (int i = 0; i < name.length(); i += Character.charCount(name.codePointAt(i))) {
+            int c = name.codePointAt(i);
             if (c == quote || c == '\\') {
-                sb.append('\\').append(c);
-            } else if (c == '\n') {
-                sb.append("\\n");
-            } else if (c == '\t') {
-                sb.append("\\t");
+                sb.append('\\').append((char) c);
+            } else if (c < 0x20 || random.nextInt(6) == 0) {
+                // Control characters must be escaped, any other character may be.
+                String shortEscape = shortEscape(c);
+                if (shortEscape != null && random.nextBoolean()) {
+                    sb.append(shortEscape);
+                } else {
+                    for (char unit : Character.toChars(c)) {
+                        sb.append(unicodeEscape(unit));
+                    }
+                }
             } else {
-                sb.append(c);
+                sb.appendCodePoint(c);
             }
         }
         return sb.append(quote).toString();
     }
 
-    private static boolean hasControlCharacterWithoutShortEscape(String name) {
-        return name.chars().anyMatch(c -> c < 0x20 && c != '\n' && c != '\t');
+    private static String shortEscape(int c) {
+        switch (c) {
+            case '\b':
+                return "\\b";
+            case '\t':
+                return "\\t";
+            case '\n':
+                return "\\n";
+            case '\f':
+                return "\\f";
+            case '\r':
+                return "\\r";
+            default:
+                return null;
+        }
+    }
+
+    /** A Unicode escape of one UTF-16 code unit, each hex digit in upper or lower case. */
+    private String unicodeEscape(char unit) {
+        StringBuilder sb = new StringBuilder("\\u");
+        for (char digit : String.format(Locale.ROOT, "%04x", (int) unit).toCharArray()) {
+            sb.append(random.nextBoolean() ? digit : Character.toUpperCase(digit));
+        }
+        return sb.toString();
     }
 
     private String slice() {
@@ -211,7 +242,7 @@ final class RandomQueries {
     }
 
     private String basic(int depth) {
-        switch (random.nextInt(8)) {
+        switch (random.nextInt(9)) {
             case 0:
                 return relative(depth);
             case 1:
@@ -220,6 +251,12 @@ final class RandomQueries {
                 return "(" + logical(depth) + ")";
             case 3:
                 return pick(FUNCTIONS_TESTS) + "(" + singular() + ", '" + pick(PATTERNS) + "')";
+            case 4:
+                // Booleans are not ordered: only == and != can be true for them (RFC 9535 2.3.5.2.2).
+                String bool = random.nextBoolean() ? "true" : "false";
+                String other = comparable();
+                String operator = pick(OPERATORS);
+                return random.nextBoolean() ? bool + " " + operator + " " + other : other + " " + operator + " " + bool;
             default:
                 return comparable() + " " + pick(OPERATORS) + " " + comparable();
         }
@@ -273,7 +310,10 @@ final class RandomQueries {
         }
     }
 
-    /** Deletes, duplicates or inserts one character, which often makes the query invalid. */
+    /**
+     * Deletes, duplicates or inserts one character, adds a trailing comma to a bracketed selection or a
+     * {@code -} to a member-name shorthand, which often makes the query invalid.
+     */
     private String damage(String query) {
         String damaged = damageOnce(query);
         // Never split a surrogate pair: the case files are UTF-8, which cannot hold a lone surrogate.
@@ -294,14 +334,26 @@ final class RandomQueries {
 
     private String damageOnce(String query) {
         int at = random.nextInt(query.length());
-        switch (random.nextInt(3)) {
+        switch (random.nextInt(5)) {
             case 0:
                 return query.substring(0, at) + query.substring(at + 1);
             case 1:
                 return query.substring(0, at + 1) + query.charAt(at) + query.substring(at + 1);
-            default:
+            case 2:
                 String insertions = "[]().,?@$'\"!=<> -0";
                 return query.substring(0, at) + insertions.charAt(random.nextInt(insertions.length())) + query.substring(at);
+            case 3:
+                int close = query.indexOf(']', at);
+                if (close < 0) {
+                    close = query.lastIndexOf(']');
+                }
+                return close < 0 ? query : query.substring(0, close) + pick(TRAILING_COMMAS) + query.substring(close);
+            default:
+                Matcher shorthand = SHORTHAND.matcher(query);
+                if (!shorthand.find(at) && !shorthand.find(0)) {
+                    return query;
+                }
+                return query.substring(0, shorthand.end()) + "-" + query.substring(shorthand.end());
         }
     }
 

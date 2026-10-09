@@ -78,6 +78,7 @@ tasks.register<JavaExec>("generateDifferentialCases") {
     )
 }
 tasks.withType<Test>().configureEach {
-    // A freshly generated reference file for DifferentialTest, used by the scheduled CI run.
+    // A freshly generated reference file for DifferentialTest instead of the committed one, for checking a
+    // regenerated corpus before replacing it; see scripts/differential/README.md.
     providers.gradleProperty("differentialExpected").orNull?.let { systemProperty("treetrail.differential.expected", it) }
 }
