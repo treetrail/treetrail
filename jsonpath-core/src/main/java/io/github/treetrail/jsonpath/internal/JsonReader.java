@@ -59,9 +59,9 @@ public final class JsonReader {
             case '"':
                 return string();
             case 't':
-                return literal("true", Boolean.TRUE);
+                return literal("true", true);
             case 'f':
-                return literal("false", Boolean.FALSE);
+                return literal("false", false);
             case 'n':
                 return literal("null", null);
             default:

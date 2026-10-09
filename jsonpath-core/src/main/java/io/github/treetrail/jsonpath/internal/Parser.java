@@ -22,7 +22,6 @@ import io.github.treetrail.jsonpath.internal.Ast.Selector;
 import io.github.treetrail.jsonpath.internal.Ast.Slice;
 import io.github.treetrail.jsonpath.internal.Ast.Test;
 import io.github.treetrail.jsonpath.internal.Ast.Wildcard;
-import io.github.treetrail.jsonpath.internal.FunctionDefinition.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -47,7 +46,7 @@ public final class Parser {
     private int nesting;
 
     /** Start position of every test expression, so that type errors point at the operand. */
-    private final Map<Test, Integer> testPositions = new IdentityHashMap<>();
+    private final IdentityHashMap<Test, Integer> testPositions = new IdentityHashMap<>();
 
     private Parser(String src, Map<String, FunctionDefinition> functions) {
         this.src = src;
@@ -375,9 +374,9 @@ public final class Parser {
             }
             switch (name) {
                 case "true":
-                    return new Literal(Boolean.TRUE);
+                    return new Literal(true);
                 case "false":
-                    return new Literal(Boolean.FALSE);
+                    return new Literal(false);
                 case "null":
                     return new Literal(null);
                 default:
@@ -436,7 +435,7 @@ public final class Parser {
         if (operand instanceof QueryOperand && !((QueryOperand) operand).query().isSingular()) {
             throw error("Only singular queries can be compared", at);
         }
-        if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() != Type.VALUE) {
+        if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() != FunctionDefinition.Type.VALUE) {
             throw error("Function result cannot be compared", at);
         }
     }
@@ -456,21 +455,21 @@ public final class Parser {
             if (operand instanceof Literal) {
                 throw error("A literal is not a valid test expression", at);
             }
-            if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() == Type.VALUE) {
+            if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() == FunctionDefinition.Type.VALUE) {
                 throw error("Function '" + ((FunctionCall) operand).function().name()
                         + "' returns a value and cannot be used as a test", at);
             }
         }
     }
 
-    private void checkArgument(Argument argument, Type type, int at) {
+    private void checkArgument(Argument argument, FunctionDefinition.Type type, int at) {
         boolean ok;
         switch (type) {
             case VALUE:
                 ok = argument instanceof Literal
                         || (argument instanceof QueryOperand && ((QueryOperand) argument).query().isSingular())
                         || (argument instanceof FunctionCall
-                                && ((FunctionCall) argument).function().result() == Type.VALUE);
+                                && ((FunctionCall) argument).function().result() == FunctionDefinition.Type.VALUE);
                 break;
             case LOGICAL:
                 if (argument instanceof Expr) {
@@ -479,13 +478,13 @@ public final class Parser {
                 } else {
                     ok = argument instanceof QueryOperand
                             || (argument instanceof FunctionCall
-                                    && ((FunctionCall) argument).function().result() != Type.VALUE);
+                                    && ((FunctionCall) argument).function().result() != FunctionDefinition.Type.VALUE);
                 }
                 break;
             case NODES:
                 ok = argument instanceof QueryOperand
                         || (argument instanceof FunctionCall
-                                && ((FunctionCall) argument).function().result() == Type.NODES);
+                                && ((FunctionCall) argument).function().result() == FunctionDefinition.Type.NODES);
                 break;
             default:
                 throw new IllegalStateException();

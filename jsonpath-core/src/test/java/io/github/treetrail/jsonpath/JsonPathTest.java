@@ -160,9 +160,10 @@ class JsonPathTest {
     @Test
     void showsAnExcerptWithACaretInSyntaxErrors() {
         assertThatThrownBy(() -> JsonPath.compile("$.store[?@.price <]"))
-                .hasMessage("Expected a query, a literal or a function at position 18:\n"
-                        + "  $.store[?@.price <]\n"
-                        + "                    ^");
+                .hasMessage("""
+                        Expected a query, a literal or a function at position 18:
+                          $.store[?@.price <]
+                                            ^""");
     }
 
     @Test
@@ -173,10 +174,10 @@ class JsonPathTest {
                 .isInstanceOfSatisfying(JsonPathSyntaxException.class, e -> {
                     assertThat(e.expression()).isEqualTo(expression);
                     assertThat(e.reason()).isEqualTo("Expected a query, a literal or a function");
-                    String[] lines = e.getMessage().split("\n");
+                    List<String> lines = e.getMessage().lines().toList();
                     assertThat(lines).hasSize(3);
-                    assertThat(lines[1]).startsWith("  ...").endsWith("...").hasSize(2 + 3 + 60 + 3);
-                    assertThat(lines[1].charAt(lines[2].indexOf('^'))).isEqualTo(']');
+                    assertThat(lines.get(1)).startsWith("  ...").endsWith("...").hasSize(2 + 3 + 60 + 3);
+                    assertThat(lines.get(1).charAt(lines.get(2).indexOf('^'))).isEqualTo(']');
                 });
     }
 
@@ -184,9 +185,9 @@ class JsonPathTest {
     void keepsTheCaretAlignedWhenTheExpressionContainsLineBreaks() {
         assertThatThrownBy(() -> JsonPath.compile("$[?@.a ==\n\t]"))
                 .isInstanceOfSatisfying(JsonPathSyntaxException.class, e -> {
-                    String[] lines = e.getMessage().split("\n");
-                    assertThat(lines[1]).isEqualTo("  $[?@.a ==  ]");
-                    assertThat(lines[2].indexOf('^')).isEqualTo(2 + e.position());
+                    List<String> lines = e.getMessage().lines().toList();
+                    assertThat(lines.get(1)).isEqualTo("  $[?@.a ==  ]");
+                    assertThat(lines.get(2).indexOf('^')).isEqualTo(2 + e.position());
                 });
     }
 

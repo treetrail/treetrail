@@ -41,6 +41,8 @@ public final class NodeListAssert extends AbstractListAssert<NodeListAssert, Lis
         this(new ArrayList<Object>(nodes.values()), nodes.paths(), expression);
     }
 
+    // usingElementComparator configures this assertion and returns it; the result is this object.
+    @SuppressWarnings("CheckReturnValue")
     private NodeListAssert(List<?> values, List<String> paths, String expression) {
         super(values, NodeListAssert.class);
         this.paths = paths;

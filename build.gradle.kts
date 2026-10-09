@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import net.ltgt.gradle.errorprone.errorprone
 import org.cyclonedx.gradle.CyclonedxDirectTask
 
 buildscript {
@@ -14,6 +15,7 @@ buildscript {
 plugins {
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.cyclonedx) apply false
+    alias(libs.plugins.errorprone) apply false
 }
 
 /** The modules published to Maven Central; jsonpath-benchmarks is a build tool. */
@@ -26,6 +28,8 @@ val publishedModules = setOf(
  * The build's timestamp in seconds since the epoch: SOURCE_DATE_EPOCH if set, otherwise the commit time of
  * HEAD. Used where an output must contain a date, so that two builds of the same commit are identical.
  */
+val errorproneCore = libs.errorprone.core
+
 val sourceDateEpoch: Provider<String> = providers.environmentVariable("SOURCE_DATE_EPOCH")
     .orElse(providers.exec { commandLine("git", "log", "-1", "--format=%ct") }.standardOutput.asText.map { it.trim() })
 
@@ -99,6 +103,19 @@ subprojects {
     tasks.withType<JavaCompile>().configureEach {
         options.release = 17
         options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    }
+
+    // Error Prone checks every compilation; with -Werror its warnings fail the build too.
+    apply(plugin = "net.ltgt.errorprone")
+    dependencies { "errorprone"(errorproneCore) }
+    tasks.withType<JavaCompile>().configureEach {
+        options.errorprone {
+            disableWarningsInGeneratedCode = true
+            // JMH's generated benchmark classes carry no @Generated annotation.
+            excludedPaths = ".*/build/generated/.*"
+            // Suggestions for newer Java idioms; the code moves to them in #21.
+            disable("PatternMatchingInstanceof", "StatementSwitchToExpressionSwitch")
+        }
     }
 
     tasks.withType<Javadoc>().configureEach {

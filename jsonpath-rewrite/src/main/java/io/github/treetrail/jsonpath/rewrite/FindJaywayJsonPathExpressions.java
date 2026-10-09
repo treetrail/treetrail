@@ -103,7 +103,7 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
         });
     }
 
-    private static final class Assessment {
+    static final class Assessment {
         final String expression;
         final String kind;
         final String hint;
