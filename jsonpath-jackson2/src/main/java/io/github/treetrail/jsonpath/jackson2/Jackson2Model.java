@@ -22,8 +22,7 @@ public final class Jackson2Model implements JsonModel<JsonNode> {
     /** The shared instance. The model is stateless. */
     public static final Jackson2Model INSTANCE = new Jackson2Model();
 
-    private Jackson2Model() {
-    }
+    private Jackson2Model() {}
 
     @Override
     public JsonKind kind(JsonNode value) {

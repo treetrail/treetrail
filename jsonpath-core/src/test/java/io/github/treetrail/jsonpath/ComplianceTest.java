@@ -1,9 +1,9 @@
 package io.github.treetrail.jsonpath;
 
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import java.io.UncheckedIOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -17,12 +17,13 @@ import org.junit.jupiter.api.TestFactory;
 class ComplianceTest {
 
     private static final ObjectMapper DEFAULTS = new ObjectMapper();
-    private static final ObjectMapper DECIMALS = new ObjectMapper()
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final ObjectMapper DECIMALS =
+            new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithJacksonDefaults() {
-        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> parse(DEFAULTS, json), ComplianceTest::serialize);
+        return ComplianceSuite.tests(
+                JavaObjectModel.INSTANCE, json -> parse(DEFAULTS, json), ComplianceTest::serialize);
     }
 
     @TestFactory
@@ -32,7 +33,8 @@ class ComplianceTest {
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithBigDecimals() {
-        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json), ComplianceTest::serialize);
+        return ComplianceSuite.tests(
+                JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json), ComplianceTest::serialize);
     }
 
     private static Object parse(ObjectMapper mapper, String json) {

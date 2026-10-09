@@ -95,7 +95,8 @@ public final class JsonReader {
             expect(':');
             skipWhitespace();
             if (object.containsKey(name)) {
-                throw error("Duplicate member name \"" + name + "\" in the object starting at position " + start,
+                throw error(
+                        "Duplicate member name \"" + name + "\" in the object starting at position " + start,
                         nameStart);
             }
             object.put(name, value());
@@ -155,7 +156,9 @@ public final class JsonReader {
             }
             char c = src.charAt(pos);
             if (c == '"') {
-                String s = sb == null ? src.substring(chunk, pos) : sb.append(src, chunk, pos).toString();
+                String s = sb == null
+                        ? src.substring(chunk, pos)
+                        : sb.append(src, chunk, pos).toString();
                 pos++;
                 return s;
             }

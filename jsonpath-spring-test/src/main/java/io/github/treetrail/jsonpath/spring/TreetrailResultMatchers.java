@@ -19,8 +19,7 @@ package io.github.treetrail.jsonpath.spring;
  */
 public final class TreetrailResultMatchers {
 
-    private TreetrailResultMatchers() {
-    }
+    private TreetrailResultMatchers() {}
 
     /**
      * Returns matchers for the nodes the expression selects in the response body.

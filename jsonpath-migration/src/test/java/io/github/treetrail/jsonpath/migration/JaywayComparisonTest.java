@@ -3,11 +3,11 @@ package io.github.treetrail.jsonpath.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
+import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
 import java.io.UncheckedIOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -113,12 +113,11 @@ class JaywayComparisonTest {
 
     @Test
     void summarizesSeveralExpressions() {
-        MigrationReport report = comparison.compareAll(List.of(
-                "$.store.book[*].title",
-                "$.store.book.length()",
-                "$.store.book[0:3:2].title"), STORE);
+        MigrationReport report = comparison.compareAll(
+                List.of("$.store.book[*].title", "$.store.book.length()", "$.store.book[0:3:2].title"), STORE);
 
-        assertThat(report.counts()).containsEntry(Outcome.SAME, 1)
+        assertThat(report.counts())
+                .containsEntry(Outcome.SAME, 1)
                 .containsEntry(Outcome.ONLY_JAYWAY_ACCEPTS, 1)
                 .containsEntry(Outcome.DIFFERENT_VALUES, 1);
         assertThat(report.differences()).hasSize(2);

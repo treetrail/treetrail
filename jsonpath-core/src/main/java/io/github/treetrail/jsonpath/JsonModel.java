@@ -61,7 +61,8 @@ public interface JsonModel<N extends @Nullable Object> {
      * express such numbers, but parsers produce them, for example for {@code 1e400} as a {@code double}.
      * Queries treat them as neither equal to nor ordered against any value.
      */
-    @Nullable BigDecimal numberValue(N value);
+    @Nullable
+    BigDecimal numberValue(N value);
 
     /** Returns the value of a boolean. */
     boolean booleanValue(N value);

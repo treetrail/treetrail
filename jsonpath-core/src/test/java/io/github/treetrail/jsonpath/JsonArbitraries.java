@@ -19,11 +19,28 @@ final class JsonArbitraries {
 
     /** Names that are hard to write in a normalized path; the first few are valid shorthand names. */
     static final List<String> NAMES = List.of(
-            "a", "b", "c", "_x", "é", "", " ", "it's", "\"quoted\"", "back\\slash", "tab\there", "nl\n",
-            "\u0001", "\u001f", "😀", "[0]", "$", "@", "a.b", "*");
+            "a",
+            "b",
+            "c",
+            "_x",
+            "é",
+            "",
+            " ",
+            "it's",
+            "\"quoted\"",
+            "back\\slash",
+            "tab\there",
+            "nl\n",
+            "\u0001",
+            "\u001f",
+            "😀",
+            "[0]",
+            "$",
+            "@",
+            "a.b",
+            "*");
 
-    private JsonArbitraries() {
-    }
+    private JsonArbitraries() {}
 
     /** Non-empty objects and arrays, nested up to four levels: on average about 18 nodes. */
     static Arbitrary<Object> documents() {
@@ -36,11 +53,7 @@ final class JsonArbitraries {
     }
 
     static Arbitrary<Object> scalars() {
-        return Arbitraries.oneOf(
-                Arbitraries.just(null),
-                Arbitraries.of(true, false),
-                numbers(),
-                strings());
+        return Arbitraries.oneOf(Arbitraries.just(null), Arbitraries.of(true, false), numbers(), strings());
     }
 
     static Arbitrary<Object> numbers() {
@@ -63,14 +76,15 @@ final class JsonArbitraries {
             return scalars();
         }
         return Arbitraries.frequencyOf(
-                net.jqwik.api.Tuple.of(2, scalars()),
-                net.jqwik.api.Tuple.of(3, container(depth, 0)));
+                net.jqwik.api.Tuple.of(2, scalars()), net.jqwik.api.Tuple.of(3, container(depth, 0)));
     }
 
     private static Arbitrary<Object> container(int depth, int minSize) {
         Arbitrary<Object> element = Arbitraries.lazy(() -> value(depth - 1));
         Arbitrary<Object> array = element.list().ofMinSize(minSize).ofMaxSize(5).map(list -> new ArrayList<>(list));
-        Arbitrary<Object> object = Arbitraries.maps(Arbitraries.of(NAMES), element).ofMinSize(minSize).ofMaxSize(5)
+        Arbitrary<Object> object = Arbitraries.maps(Arbitraries.of(NAMES), element)
+                .ofMinSize(minSize)
+                .ofMaxSize(5)
                 .map(map -> (Object) new LinkedHashMap<>(map));
         return Arbitraries.oneOf(array, object);
     }

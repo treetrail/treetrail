@@ -67,10 +67,15 @@ public final class JaywayComparison {
      */
     public Comparison compareJson(String expression, String json) {
         Object document = jayway.jsonProvider().parse(json);
-        if (document != null && !(document instanceof Map) && !(document instanceof List)
-                && !(document instanceof String) && !(document instanceof Number) && !(document instanceof Boolean)) {
-            throw new IllegalArgumentException("Jayway's JSON provider produced " + document.getClass().getName()
-                    + "; use a provider that produces Map/List, such as the default json-smart provider");
+        if (document != null
+                && !(document instanceof Map)
+                && !(document instanceof List)
+                && !(document instanceof String)
+                && !(document instanceof Number)
+                && !(document instanceof Boolean)) {
+            throw new IllegalArgumentException(
+                    "Jayway's JSON provider produced " + document.getClass().getName()
+                            + "; use a provider that produces Map/List, such as the default json-smart provider");
         }
         return compare(expression, document);
     }
@@ -102,8 +107,7 @@ public final class JaywayComparison {
             if (rfc == null) {
                 return new Comparison(expression, Outcome.BOTH_REJECT, null, null, false, rfcError);
             }
-            return new Comparison(expression, Outcome.ONLY_RFC_ACCEPTS, rfc, null, false,
-                    "Jayway: " + e.getMessage());
+            return new Comparison(expression, Outcome.ONLY_RFC_ACCEPTS, rfc, null, false, "Jayway: " + e.getMessage());
         }
 
         List<@Nullable Object> jaywayValues;
@@ -124,12 +128,22 @@ public final class JaywayComparison {
             if (rfc == null) {
                 return new Comparison(expression, Outcome.BOTH_REJECT, null, null, false, rfcError);
             }
-            return new Comparison(expression, Outcome.JAYWAY_FAILS_AT_RUNTIME, rfc, null, false,
+            return new Comparison(
+                    expression,
+                    Outcome.JAYWAY_FAILS_AT_RUNTIME,
+                    rfc,
+                    null,
+                    false,
                     "Jayway: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
 
         if (rfc == null) {
-            return new Comparison(expression, Outcome.ONLY_JAYWAY_ACCEPTS, null, jaywayValues, single,
+            return new Comparison(
+                    expression,
+                    Outcome.ONLY_JAYWAY_ACCEPTS,
+                    null,
+                    jaywayValues,
+                    single,
                     MigrationHints.forInvalidExpression(expression, rfcError));
         }
         Outcome outcome;

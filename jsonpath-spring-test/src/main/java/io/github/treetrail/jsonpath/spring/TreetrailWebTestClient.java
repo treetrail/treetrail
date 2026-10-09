@@ -17,8 +17,7 @@ package io.github.treetrail.jsonpath.spring;
  */
 public final class TreetrailWebTestClient {
 
-    private TreetrailWebTestClient() {
-    }
+    private TreetrailWebTestClient() {}
 
     /**
      * Returns checks for the nodes the expression selects in the response body.

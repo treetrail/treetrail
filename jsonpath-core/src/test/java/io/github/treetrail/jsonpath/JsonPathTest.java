@@ -14,12 +14,15 @@ import org.junit.jupiter.api.Test;
 
 class JsonPathTest {
 
-    private static final Map<String, Object> STORE = Map.of("store", Map.of(
-            "book", List.of(
-                    book("Sayings of the Century", 8.95),
-                    book("Sword of Honour", 12.99),
-                    book("Moby Dick", 8.99)),
-            "bicycle", Map.of("color", "red", "price", 399)));
+    private static final Map<String, Object> STORE = Map.of(
+            "store",
+            Map.of(
+                    "book",
+                            List.of(
+                                    book("Sayings of the Century", 8.95),
+                                    book("Sword of Honour", 12.99),
+                                    book("Moby Dick", 8.99)),
+                    "bicycle", Map.of("color", "red", "price", 399)));
 
     private static Map<String, Object> book(String title, double price) {
         Map<String, Object> book = new LinkedHashMap<>();
@@ -30,18 +33,23 @@ class JsonPathTest {
 
     @Test
     void selectsValuesWithFilter() {
-        NodeList<Object> nodes = JsonPath.compile("$.store.book[?@.price < 10].title").query(STORE);
+        NodeList<Object> nodes =
+                JsonPath.compile("$.store.book[?@.price < 10].title").query(STORE);
 
         assertThat(nodes.values()).containsExactly("Sayings of the Century", "Moby Dick");
-        assertThat(nodes.paths()).containsExactly(
-                "$['store']['book'][0]['title']", "$['store']['book'][2]['title']");
+        assertThat(nodes.paths()).containsExactly("$['store']['book'][0]['title']", "$['store']['book'][2]['title']");
     }
 
     @Test
     void comparesNumbersOfDifferentJavaTypesByValue() {
-        Map<String, Object> doc = Map.of("items", List.of(
-                Map.of("n", 1), Map.of("n", 1L), Map.of("n", 1.0), Map.of("n", new BigDecimal("1.00")),
-                Map.of("n", 2)));
+        Map<String, Object> doc = Map.of(
+                "items",
+                List.of(
+                        Map.of("n", 1),
+                        Map.of("n", 1L),
+                        Map.of("n", 1.0),
+                        Map.of("n", new BigDecimal("1.00")),
+                        Map.of("n", 2)));
 
         assertThat(JsonPath.compile("$.items[?@.n == 1]").query(doc)).hasSize(4);
     }
@@ -92,7 +100,8 @@ class JsonPathTest {
 
     @Test
     void reportsLocationSteps() {
-        Node<Object> node = JsonPath.compile("$.store.book[1].price").query(STORE).get(0);
+        Node<Object> node =
+                JsonPath.compile("$.store.book[1].price").query(STORE).get(0);
 
         assertThat(node.location()).containsExactly("store", "book", 1, "price");
     }
@@ -159,8 +168,7 @@ class JsonPathTest {
 
     @Test
     void showsAnExcerptWithACaretInSyntaxErrors() {
-        assertThatThrownBy(() -> JsonPath.compile("$.store[?@.price <]"))
-                .hasMessage("""
+        assertThatThrownBy(() -> JsonPath.compile("$.store[?@.price <]")).hasMessage("""
                         Expected a query, a literal or a function at position 18:
                           $.store[?@.price <]
                                             ^""");
@@ -194,10 +202,12 @@ class JsonPathTest {
     @Test
     void pointsTypeErrorsAtTheOperand() {
         assertThatThrownBy(() -> JsonPath.compile("$[?length(@.a) && @.b]"))
-                .isInstanceOfSatisfying(JsonPathSyntaxException.class,
+                .isInstanceOfSatisfying(
+                        JsonPathSyntaxException.class,
                         e -> assertThat(e.position()).isEqualTo(3));
         assertThatThrownBy(() -> JsonPath.compile("$[?@.b || !length(@.a)]"))
-                .isInstanceOfSatisfying(JsonPathSyntaxException.class,
+                .isInstanceOfSatisfying(
+                        JsonPathSyntaxException.class,
                         e -> assertThat(e.position()).isEqualTo(11));
     }
 }

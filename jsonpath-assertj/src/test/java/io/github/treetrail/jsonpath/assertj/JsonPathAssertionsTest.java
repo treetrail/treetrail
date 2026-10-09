@@ -44,14 +44,17 @@ class JsonPathAssertionsTest {
 
     @Test
     void assertsNormalizedPaths() {
-        assertThatJson(STORE).jsonPath("$..price").paths()
+        assertThatJson(STORE)
+                .jsonPath("$..price")
+                .paths()
                 .contains("$['store']['bicycle']['price']", "$['store']['book'][0]['price']");
         assertThat(JsonPath.compile("$.store.book[1].title").queryJson(STORE)).containsExactly("Sword");
     }
 
     @Test
     void namesTheExpressionWhenValuesDiffer() {
-        assertThatThrownBy(() -> assertThatJson(STORE).jsonPath("$.store.book[*].title").containsExactly("Sayings"))
+        assertThatThrownBy(() ->
+                        assertThatJson(STORE).jsonPath("$.store.book[*].title").containsExactly("Sayings"))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("$.store.book[*].title")
                 .hasMessageContaining("Sword");
@@ -91,8 +94,10 @@ class JsonPathAssertionsTest {
 
     @Test
     void usesTheCustomDescription() {
-        assertThatThrownBy(() -> assertThatJson(STORE).as("book titles").jsonPath("$.store.book[0].title")
-                .containsExactly("Other"))
+        assertThatThrownBy(() -> assertThatJson(STORE)
+                        .as("book titles")
+                        .jsonPath("$.store.book[0].title")
+                        .containsExactly("Other"))
                 .hasMessageContaining("[book titles]");
     }
 }

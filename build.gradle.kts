@@ -17,6 +17,7 @@ plugins {
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.cyclonedx) apply false
     alias(libs.plugins.errorprone) apply false
+    alias(libs.plugins.spotless) apply false
 }
 
 /** The modules published to Maven Central; jsonpath-benchmarks is a build tool. */
@@ -30,6 +31,7 @@ val publishedModules = setOf(
  * HEAD. Used where an output must contain a date, so that two builds of the same commit are identical.
  */
 val errorproneCore = libs.errorprone.core
+val palantirJavaFormatVersion = libs.versions.palantir.java.format.get()
 val nullaway = libs.nullaway
 val jspecify = libs.jspecify
 
@@ -106,6 +108,19 @@ subprojects {
     tasks.withType<JavaCompile>().configureEach {
         options.release = 17
         options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+    }
+
+    // One formatting for all Java sources, so that reviews need no style comments: `spotlessApply` formats,
+    // and `check` fails on unformatted code.
+    apply(plugin = "com.diffplug.spotless")
+    extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        java {
+            target("src/*/java/**/*.java")
+            palantirJavaFormat(palantirJavaFormatVersion)
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
     }
 
     // Error Prone checks every compilation; with -Werror its warnings fail the build too.

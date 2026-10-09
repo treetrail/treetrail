@@ -7,8 +7,7 @@ import java.util.Map;
  */
 final class TestJson {
 
-    private TestJson() {
-    }
+    private TestJson() {}
 
     static String write(Object value) {
         StringBuilder sb = new StringBuilder();

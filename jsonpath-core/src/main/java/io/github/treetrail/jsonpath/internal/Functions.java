@@ -22,8 +22,7 @@ public final class Functions {
             "search", new FunctionDefinition("search", List.of(VALUE, VALUE), LOGICAL, args -> regex(args, false)),
             "value", new FunctionDefinition("value", List.of(NODES), VALUE, Functions::value));
 
-    private Functions() {
-    }
+    private Functions() {}
 
     private static Object length(List<Object> args) {
         Val v = (Val) args.get(0);
@@ -58,7 +57,8 @@ public final class Functions {
     private static Object regex(List<Object> args, boolean fullMatch) {
         Val subject = (Val) args.get(0);
         Val regexp = (Val) args.get(1);
-        if (subject.isNothing() || regexp.isNothing()
+        if (subject.isNothing()
+                || regexp.isNothing()
                 || subject.kind() != JsonKind.STRING
                 || regexp.kind() != JsonKind.STRING) {
             return false;
@@ -67,6 +67,8 @@ public final class Functions {
         if (compiled.isEmpty()) {
             return false;
         }
-        return fullMatch ? compiled.get().matches(subject.string()) : compiled.get().find(subject.string());
+        return fullMatch
+                ? compiled.get().matches(subject.string())
+                : compiled.get().find(subject.string());
     }
 }

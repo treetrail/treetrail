@@ -45,8 +45,12 @@ class IRegexpMemoryTest {
                 boolean matches = regexp.matches(input);
                 boolean found = regexp.find(input);
                 if (i % 20 == 0) {
-                    assertThat(matches).as("match %s on %s", n, input).isEqualTo(java.matcher(input).matches());
-                    assertThat(found).as("search %s on %s", n, input).isEqualTo(java.matcher(input).find());
+                    assertThat(matches)
+                            .as("match %s on %s", n, input)
+                            .isEqualTo(java.matcher(input).matches());
+                    assertThat(found)
+                            .as("search %s on %s", n, input)
+                            .isEqualTo(java.matcher(input).find());
                 }
             }
             assertThat(IRegexp.cachedDfaBytes()).isLessThanOrEqualTo(IRegexp.MAX_DFA_BYTES);
@@ -88,7 +92,8 @@ class IRegexpMemoryTest {
             assertThat(IRegexp.compile("a{5000}x{0," + n + "}")).isPresent();
             assertThat(IRegexp.cachedInstructions()).isLessThanOrEqualTo(IRegexp.MAX_CACHED_INSTRUCTIONS);
         }
-        assertThat(IRegexp.compile("a{5000}").orElseThrow().matches("a".repeat(5000))).isTrue();
+        assertThat(IRegexp.compile("a{5000}").orElseThrow().matches("a".repeat(5000)))
+                .isTrue();
     }
 
     @Test

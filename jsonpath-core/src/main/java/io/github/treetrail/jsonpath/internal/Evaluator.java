@@ -56,6 +56,7 @@ public final class Evaluator {
 
     /** Results of absolute queries inside filters, created on first use. */
     private @Nullable IdentityHashMap<Query, List<Located>> absoluteNodes;
+
     private @Nullable IdentityHashMap<Query, List<Val>> absoluteValues;
 
     @SuppressWarnings("unchecked")
@@ -70,8 +71,8 @@ public final class Evaluator {
     public List<Located> run(Query query) {
         List<Located> result = evaluate(query, root);
         if (result.size() > maxResultSize) {
-            throw new JsonPathLimitExceededException("Query selected " + result.size()
-                    + " nodes, more than the limit of " + maxResultSize);
+            throw new JsonPathLimitExceededException(
+                    "Query selected " + result.size() + " nodes, more than the limit of " + maxResultSize);
         }
         return result;
     }
@@ -167,7 +168,8 @@ public final class Evaluator {
     private List<Located> childrenOf(Located node) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
-        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY) && node.location().depth() >= maxDepth) {
+        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY)
+                && node.location().depth() >= maxDepth) {
             throw tooDeep(maxDepth);
         }
         if (kind == JsonKind.OBJECT) {
@@ -184,7 +186,8 @@ public final class Evaluator {
             visit(size);
             List<Located> children = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
-                children.add(new Located(model.element(value, i), node.location().child(i)));
+                children.add(
+                        new Located(model.element(value, i), node.location().child(i)));
             }
             return children;
         }
@@ -322,8 +325,8 @@ public final class Evaluator {
         }
         if (expr instanceof Comparison) {
             Comparison comparison = (Comparison) expr;
-            return Values.compare(value(comparison.left(), current), comparison.op(),
-                    value(comparison.right(), current), maxDepth);
+            return Values.compare(
+                    value(comparison.left(), current), comparison.op(), value(comparison.right(), current), maxDepth);
         }
         Operand operand = ((Test) expr).operand();
         return logical(operand, current);
@@ -393,9 +396,10 @@ public final class Evaluator {
                     args.add(value((Operand) argument, current));
                     break;
                 case LOGICAL:
-                    args.add(argument instanceof Expr
-                            ? test((Expr) argument, current)
-                            : logical((Operand) argument, current));
+                    args.add(
+                            argument instanceof Expr
+                                    ? test((Expr) argument, current)
+                                    : logical((Operand) argument, current));
                     break;
                 case NODES:
                     args.add(nodes((Operand) argument, current));

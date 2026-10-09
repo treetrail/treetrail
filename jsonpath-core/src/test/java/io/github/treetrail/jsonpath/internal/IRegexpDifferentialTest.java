@@ -22,8 +22,8 @@ class IRegexpDifferentialTest {
 
     /** Code points the generators draw from: ASCII, Latin-1, a combining mark, a space, an emoji. */
     private static final int[] ALPHABET = {
-        'a', 'b', 'c', 'x', 'A', 'Z', '0', '7', '-', '.', ' ', '_', '\n', '\r', '\t',
-        'é', 'Ü', 'ß', 0x0301, 0x00A0, 0x2028, 0x1F600, 0x4E00, '$', '^', '['
+        'a', 'b', 'c', 'x', 'A', 'Z', '0', '7', '-', '.', ' ', '_', '\n', '\r', '\t', 'é', 'Ü', 'ß', 0x0301, 0x00A0,
+        0x2028, 0x1F600, 0x4E00, '$', '^', '['
     };
 
     private static final List<String> CATEGORIES = List.of("L", "Lu", "Ll", "N", "Nd", "P", "S", "Z", "Zs", "M", "C");
@@ -126,7 +126,8 @@ class IRegexpDifferentialTest {
         int items = 1 + random.nextInt(3);
         for (int i = 0; i < items; i++) {
             if (random.nextInt(4) == 0) {
-                String escape = (random.nextBoolean() ? "\\p{" : "\\P{") + CATEGORIES.get(random.nextInt(CATEGORIES.size())) + "}";
+                String escape = (random.nextBoolean() ? "\\p{" : "\\P{")
+                        + CATEGORIES.get(random.nextInt(CATEGORIES.size())) + "}";
                 iregexp.append(escape);
                 java.append(escape);
                 continue;
@@ -205,7 +206,8 @@ class IRegexpDifferentialTest {
 
     private static String escape(String s) {
         StringBuilder sb = new StringBuilder("\"");
-        s.codePoints().forEach(c -> sb.append(c < 0x20 || c > 0x7e ? String.format("\\u{%x}", c) : String.valueOf((char) c)));
+        s.codePoints()
+                .forEach(c -> sb.append(c < 0x20 || c > 0x7e ? String.format("\\u{%x}", c) : String.valueOf((char) c)));
         return sb.append('"').toString();
     }
 }

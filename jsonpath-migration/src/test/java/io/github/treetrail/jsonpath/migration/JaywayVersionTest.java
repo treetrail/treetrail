@@ -10,7 +10,11 @@ class JaywayVersionTest {
     @Test
     void runsAgainstTheExpectedJaywayVersion() {
         String expected = System.getProperty("jayway.version");
-        String jar = com.jayway.jsonpath.JsonPath.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String jar = com.jayway.jsonpath.JsonPath.class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .getPath();
 
         assertThat(expected).as("system property jayway.version").isNotBlank();
         assertThat(jar).endsWith("json-path-" + expected + ".jar");

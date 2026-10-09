@@ -261,7 +261,8 @@ public final class IRegexp {
         }
 
         /** Returns the result, or null if the state budget is exhausted. */
-        @Nullable Boolean run(String input) {
+        @Nullable
+        Boolean run(String input) {
             State state = start;
             if (state == null) {
                 return null;
@@ -343,8 +344,8 @@ public final class IRegexp {
             return created;
         }
 
-        private void closure(int startPc, boolean atStart, boolean[] visited, int[] chars, int[] ends,
-                int[] counts, int[] stack) {
+        private void closure(
+                int startPc, boolean atStart, boolean[] visited, int[] chars, int[] ends, int[] counts, int[] stack) {
             int top = 0;
             stack[top++] = startPc;
             while (top > 0) {
@@ -427,6 +428,7 @@ public final class IRegexp {
             final State[] ascii = new State[ASCII];
             /** Transitions on other code points, created on first use. */
             volatile @Nullable Map<Integer, State> other;
+
             volatile @Nullable Boolean acceptsAtEnd;
 
             State(int[] chars, int[] ends, boolean match) {
@@ -436,7 +438,8 @@ public final class IRegexp {
                 this.dead = chars.length == 0 && ends.length == 0 && !match;
             }
 
-            @Nullable State transition(int cp) {
+            @Nullable
+            State transition(int cp) {
                 if (cp < ASCII) {
                     return ascii[cp];
                 }
@@ -462,7 +465,8 @@ public final class IRegexp {
                         }
                     }
                 }
-                if (transitions.size() < MAX_DFA_STATES && !transitions.containsKey(cp)
+                if (transitions.size() < MAX_DFA_STATES
+                        && !transitions.containsKey(cp)
                         && reserve(TRANSITION_OVERHEAD)) {
                     if (transitions.putIfAbsent(cp, state) != null) {
                         release(TRANSITION_OVERHEAD);
@@ -509,7 +513,8 @@ public final class IRegexp {
                 return false;
             }
             StateKey other = (StateKey) o;
-            return match == other.match && java.util.Arrays.equals(chars, other.chars)
+            return match == other.match
+                    && java.util.Arrays.equals(chars, other.chars)
                     && java.util.Arrays.equals(ends, other.ends);
         }
 
@@ -643,27 +648,20 @@ public final class IRegexp {
     // ---- syntax tree ----
 
     /** Node of the parsed expression. */
-    interface Node {
-    }
+    interface Node {}
 
-    record Alternation(List<Node> branches) implements Node {
-    }
+    record Alternation(List<Node> branches) implements Node {}
 
-    record Sequence(List<Node> pieces) implements Node {
-    }
+    record Sequence(List<Node> pieces) implements Node {}
 
     /** {@code max} is -1 for "unbounded". */
-    record Repeat(Node atom, int min, int max) implements Node {
-    }
+    record Repeat(Node atom, int min, int max) implements Node {}
 
-    record Chars(CharSet set) implements Node {
-    }
+    record Chars(CharSet set) implements Node {}
 
-    record Begin() implements Node {
-    }
+    record Begin() implements Node {}
 
-    record End() implements Node {
-    }
+    record End() implements Node {}
 
     // ---- compiler ----
 
@@ -883,8 +881,14 @@ public final class IRegexp {
         }
 
         private static boolean isNormalChar(int c) {
-            return (c <= 0x27) || c == ',' || c == '-' || (c >= 0x2F && c <= 0x3E) || (c >= 0x40 && c <= 0x5A)
-                    || (c >= 0x5E && c <= 0x7A) || (c >= 0x7E && c <= 0xD7FF) || (c >= 0xE000 && c <= 0x10FFFF);
+            return (c <= 0x27)
+                    || c == ','
+                    || c == '-'
+                    || (c >= 0x2F && c <= 0x3E)
+                    || (c >= 0x40 && c <= 0x5A)
+                    || (c >= 0x5E && c <= 0x7A)
+                    || (c >= 0x7E && c <= 0xD7FF)
+                    || (c >= 0xE000 && c <= 0x10FFFF);
         }
 
         /** Parses an escape after the backslash: a single character or a category. */
@@ -904,8 +908,20 @@ public final class IRegexp {
                     return '\r';
                 case 't':
                     return '\t';
-                case '(': case ')': case '*': case '+': case '-': case '.': case '?':
-                case '[': case '\\': case ']': case '^': case '{': case '|': case '}':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '?':
+                case '[':
+                case '\\':
+                case ']':
+                case '^':
+                case '{':
+                case '|':
+                case '}':
                     return c;
                 default:
                     throw new InvalidRegexp();

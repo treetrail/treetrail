@@ -41,8 +41,8 @@ class JsonPathFuzzTest {
 
     @MethodSource("queries")
     @FuzzTest
-    void queryAnyDocument(@NotNull @WithUtf8Length(max = 500) String expression,
-            @NotNull @WithUtf8Length(max = 5_000) String json) {
+    void queryAnyDocument(
+            @NotNull @WithUtf8Length(max = 500) String expression, @NotNull @WithUtf8Length(max = 5_000) String json) {
         long start = System.nanoTime();
         try {
             JsonPath.compile(expression).withLimits(LIMITS).queryJson(json).paths();
@@ -54,8 +54,8 @@ class JsonPathFuzzTest {
 
     @MethodSource("regularExpressions")
     @FuzzTest
-    void matchAnyRegularExpression(@NotNull @WithUtf8Length(max = 500) String pattern,
-            @NotNull @WithUtf8Length(max = 5_000) String subject) {
+    void matchAnyRegularExpression(
+            @NotNull @WithUtf8Length(max = 500) String pattern, @NotNull @WithUtf8Length(max = 5_000) String subject) {
         long start = System.nanoTime();
         Optional<IRegexp> regexp = IRegexp.compile(pattern);
         if (regexp.isPresent()) {

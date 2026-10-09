@@ -23,8 +23,7 @@ public final class JsonpModel implements JsonModel<JsonValue> {
     /** The shared instance. The model is stateless. */
     public static final JsonpModel INSTANCE = new JsonpModel();
 
-    private JsonpModel() {
-    }
+    private JsonpModel() {}
 
     @Override
     public JsonKind kind(JsonValue value) {

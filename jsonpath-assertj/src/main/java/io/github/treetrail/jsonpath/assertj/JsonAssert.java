@@ -33,8 +33,8 @@ public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
     /** Verifies that the query selects at least one node. */
     public JsonAssert hasJsonPath(String expression) {
         if (JsonPath.compile(expression).query(document()).isEmpty()) {
-            throw failure("Expected %s to select at least one node, but it selected none in:%n  %s",
-                    expression, actual);
+            throw failure(
+                    "Expected %s to select at least one node, but it selected none in:%n  %s", expression, actual);
         }
         return this;
     }
@@ -43,7 +43,8 @@ public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
     public JsonAssert doesNotHaveJsonPath(String expression) {
         NodeList<@Nullable Object> nodes = JsonPath.compile(expression).query(document());
         if (!nodes.isEmpty()) {
-            throw failure("Expected %s to select no node, but it selected %s at %s",
+            throw failure(
+                    "Expected %s to select no node, but it selected %s at %s",
                     expression, nodes.values(), nodes.paths());
         }
         return this;

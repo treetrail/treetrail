@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
  */
 class DifferentialTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final ObjectMapper MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     @Test
     @SuppressWarnings("unchecked")
@@ -65,13 +65,19 @@ class DifferentialTest {
             }
         }
         assertThat(mismatches)
-                .as("%d of %d queries differ from %s (seed %s); first ones:%n%s", mismatches.size(), queries,
-                        expected.get("reference"), expected.get("seed"),
+                .as(
+                        "%d of %d queries differ from %s (seed %s); first ones:%n%s",
+                        mismatches.size(),
+                        queries,
+                        expected.get("reference"),
+                        expected.get("seed"),
                         String.join("\n", mismatches.subList(0, Math.min(20, mismatches.size()))))
                 .isEmpty();
         // A known difference that no longer occurs means the reference was fixed: drop it from the list.
         if (System.getProperty("treetrail.differential.expected") == null) {
-            assertThat(knownSeen).as("known differences that no longer occur").containsExactlyInAnyOrderElementsOf(known.keySet());
+            assertThat(knownSeen)
+                    .as("known differences that no longer occur")
+                    .containsExactlyInAnyOrderElementsOf(known.keySet());
         }
         // Guard against a degenerate corpus: most queries valid, many selecting something, few skipped.
         assertThat(valid).isGreaterThan(queries / 2);
@@ -89,7 +95,8 @@ class DifferentialTest {
             nodes = JsonPath.compile(query).query(document);
         } catch (JsonPathSyntaxException e) {
             return Boolean.TRUE.equals(expected.get("valid"))
-                    ? "rejected, reference accepts: " + e.getMessage().lines().findFirst().orElse("")
+                    ? "rejected, reference accepts: "
+                            + e.getMessage().lines().findFirst().orElse("")
                     : null;
         }
         if (!Boolean.TRUE.equals(expected.get("valid"))) {

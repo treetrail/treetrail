@@ -35,7 +35,8 @@ class TreetrailResultMatchersTest {
         }
     }
 
-    private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new StoreController()).build();
+    private final MockMvc mockMvc =
+            MockMvcBuilders.standaloneSetup(new StoreController()).build();
 
     @Test
     void matchesValuesOfTheResponseBody() throws Exception {
@@ -51,34 +52,39 @@ class TreetrailResultMatchersTest {
                 .andExpect(jsonPath("$.store.book[2].isbn").exists())
                 .andExpect(jsonPath("$.store.book[0].isbn").doesNotExist())
                 .andExpect(jsonPath("$.store.owner").value("Zoë"))
-                .andExpect(jsonPath("$.store.book[*].price").values(List.of(8.95, 12.99, 8.99).toArray()));
+                .andExpect(jsonPath("$.store.book[*].price")
+                        .values(List.of(8.95, 12.99, 8.99).toArray()));
     }
 
     @Test
     void explainsMismatchesWithValuesAndPaths() {
-        assertThatThrownBy(() -> mockMvc.perform(get("/store")).andExpect(jsonPath("$..price").value(399)))
+        assertThatThrownBy(() -> mockMvc.perform(get("/store"))
+                        .andExpect(jsonPath("$..price").value(399)))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("JSON path \"$..price\": expected one node with value 399 but found [")
                 .hasMessageContaining("$['store']['bicycle']['price']");
-        assertThatThrownBy(() -> mockMvc.perform(get("/store")).andExpect(jsonPath("$.store.bicycle.color").value("blue")))
+        assertThatThrownBy(() -> mockMvc.perform(get("/store"))
+                        .andExpect(jsonPath("$.store.bicycle.color").value("blue")))
                 .hasMessage("JSON path \"$.store.bicycle.color\": expected one node with value \"blue\" but found "
                         + "[red] at [$['store']['bicycle']['color']]");
-        assertThatThrownBy(() -> mockMvc.perform(get("/store")).andExpect(jsonPath("$.store.music").exists()))
+        assertThatThrownBy(() -> mockMvc.perform(get("/store"))
+                        .andExpect(jsonPath("$.store.music").exists()))
                 .hasMessage("JSON path \"$.store.music\": expected at least one node but found none");
-        assertThatThrownBy(() -> mockMvc.perform(get("/store")).andExpect(jsonPath("$.store.book[*]").hasSize(2)))
+        assertThatThrownBy(() -> mockMvc.perform(get("/store"))
+                        .andExpect(jsonPath("$.store.book[*]").hasSize(2)))
                 .hasMessageStartingWith("JSON path \"$.store.book[*]\": expected 2 node(s) but found [");
     }
 
     @Test
     void reportsBodiesThatAreNotJson() {
-        assertThatThrownBy(() -> mockMvc.perform(get("/broken")).andExpect(jsonPath("$.a").exists()))
+        assertThatThrownBy(() -> mockMvc.perform(get("/broken"))
+                        .andExpect(jsonPath("$.a").exists()))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("the response body is not valid JSON");
     }
 
     @Test
     void rejectsJaywayOnlySyntaxWhereTheMatcherIsWritten() {
-        assertThatThrownBy(() -> jsonPath("$.store.book.length()"))
-                .isInstanceOf(JsonPathSyntaxException.class);
+        assertThatThrownBy(() -> jsonPath("$.store.book.length()")).isInstanceOf(JsonPathSyntaxException.class);
     }
 }

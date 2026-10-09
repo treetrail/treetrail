@@ -27,14 +27,17 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
     void assessesJaywayReads() {
         rewriteRun(
                 spec -> spec.dataTable(JsonPathExpressions.Row.class, rows -> {
-                    assertThat(rows).extracting(JsonPathExpressions.Row::getAssessment)
+                    assertThat(rows)
+                            .extracting(JsonPathExpressions.Row::getAssessment)
                             .containsExactly("VALID", "VALID_SINGLE_VALUE", "NOT_RFC_9535");
-                    assertThat(rows).extracting(JsonPathExpressions.Row::getExpression)
-                            .containsExactly("$.store.book[?(@.price < 10)].title", "$.store.bicycle.color",
+                    assertThat(rows)
+                            .extracting(JsonPathExpressions.Row::getExpression)
+                            .containsExactly(
+                                    "$.store.book[?(@.price < 10)].title",
+                                    "$.store.bicycle.color",
                                     "$.store.book.length()");
                 }),
-                java(
-                        """
+                java("""
                         import com.jayway.jsonpath.JsonPath;
 
                         class Books {
@@ -48,8 +51,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
                                 return JsonPath.read(json, "$.store.book.length()");
                             }
                         }
-                        """,
-                        """
+                        """, """
                         import com.jayway.jsonpath.JsonPath;
 
                         class Books {
@@ -68,9 +70,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
 
     @Test
     void flagsWritesAndComputedExpressions() {
-        rewriteRun(
-                java(
-                        """
+        rewriteRun(java("""
                         import com.jayway.jsonpath.JsonPath;
 
                         class Writes {
@@ -79,8 +79,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
                                 JsonPath.compile(path);
                             }
                         }
-                        """,
-                        """
+                        """, """
                         import com.jayway.jsonpath.JsonPath;
 
                         class Writes {
@@ -94,9 +93,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
 
     @Test
     void assessesSpringMockMvcExpressions() {
-        rewriteRun(
-                java(
-                        """
+        rewriteRun(java("""
                         import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
                         class ApiTest {
@@ -104,8 +101,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
                                 return jsonPath("$.items[?(@.name =~ /a.*/)]");
                             }
                         }
-                        """,
-                        """
+                        """, """
                         import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
                         class ApiTest {
@@ -118,9 +114,7 @@ class FindJaywayJsonPathExpressionsTest implements RewriteTest {
 
     @Test
     void leavesUnrelatedCodeAlone() {
-        rewriteRun(
-                java(
-                        """
+        rewriteRun(java("""
                         class Plain {
                             String read(String a, String b) {
                                 return a + b;

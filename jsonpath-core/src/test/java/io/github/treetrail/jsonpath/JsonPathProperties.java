@@ -51,13 +51,19 @@ class JsonPathProperties {
     @Property(tries = 300)
     void compilationIsDeterministic(@ForAll("documents") Object document) {
         for (String expression : List.of(
-                "$..*", "$..[?@.a]", "$[?@ == 1]", "$..[?length(@) > 1]", "$..[0, -1, 1:3, ::-1]",
-                "$..[?match(@, '[a-c]+') || search(@, 'é|😀')]", "$..[?@.a == @.b && !@.c]")) {
+                "$..*",
+                "$..[?@.a]",
+                "$[?@ == 1]",
+                "$..[?length(@) > 1]",
+                "$..[0, -1, 1:3, ::-1]",
+                "$..[?match(@, '[a-c]+') || search(@, 'é|😀')]",
+                "$..[?@.a == @.b && !@.c]")) {
             JsonPath first = JsonPath.compile(expression);
             JsonPath second = JsonPath.compile(expression);
 
             assertThat(second.toString()).isEqualTo(first.toString());
-            assertThat(second.query(document).paths()).isEqualTo(first.query(document).paths());
+            assertThat(second.query(document).paths())
+                    .isEqualTo(first.query(document).paths());
         }
     }
 
@@ -74,7 +80,9 @@ class JsonPathProperties {
 
         assertThat(eq).as("== is symmetric").isEqualTo(selects("$[?@.r == @.l]", document));
         assertThat(eq).as("== agrees with jsonEquals").isEqualTo(JavaObjectModel.jsonEquals(left, right));
-        assertThat(JavaObjectModel.jsonEquals(right, left)).as("jsonEquals is symmetric").isEqualTo(eq);
+        assertThat(JavaObjectModel.jsonEquals(right, left))
+                .as("jsonEquals is symmetric")
+                .isEqualTo(eq);
         assertThat(ne).as("!= is the negation of ==").isEqualTo(!eq);
         assertThat(lt && gt).as("< and > exclude each other").isFalse();
         assertThat(lt).as("< mirrors >").isEqualTo(selects("$[?@.r > @.l]", document));
@@ -86,7 +94,8 @@ class JsonPathProperties {
     @Property(tries = 500)
     void equalityIsReflexive(@ForAll("values") Object value) {
         assertThat(JavaObjectModel.jsonEquals(value, value)).isTrue();
-        assertThat(selects("$[?@.l == @.r]", JsonArbitraries.pair(value, value))).isTrue();
+        assertThat(selects("$[?@.l == @.r]", JsonArbitraries.pair(value, value)))
+                .isTrue();
     }
 
     private static boolean selects(String expression, Object document) {

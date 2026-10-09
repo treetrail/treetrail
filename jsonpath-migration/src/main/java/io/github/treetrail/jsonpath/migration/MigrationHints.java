@@ -8,15 +8,14 @@ import org.jspecify.annotations.Nullable;
  */
 public final class MigrationHints {
 
-    private static final Pattern PATH_FUNCTION = Pattern.compile(
-            "\\.(min|max|avg|stddev|sum|first|last|index|keys|concat|append)\\(.*\\)\\s*$");
+    private static final Pattern PATH_FUNCTION =
+            Pattern.compile("\\.(min|max|avg|stddev|sum|first|last|index|keys|concat|append)\\(.*\\)\\s*$");
     private static final Pattern LENGTH_FUNCTION = Pattern.compile("\\.(length|size)\\(\\)\\s*$");
     private static final Pattern REGEX_OPERATOR = Pattern.compile("=~");
     private static final Pattern SET_OPERATOR = Pattern.compile("\\s(in|nin|subsetof|anyof|noneof)\\s");
     private static final Pattern SIZE_OPERATOR = Pattern.compile("\\s(size|empty)\\s");
 
-    private MigrationHints() {
-    }
+    private MigrationHints() {}
 
     /**
      * Returns a rewrite hint for an expression that is not valid RFC 9535.

@@ -27,6 +27,9 @@ errorprone = "2.50.0"
 errorprone-plugin = "5.1.1"
 nullaway = "0.14.2"
 jspecify = "1.0.1"
+spotless = "8.10.3"
+# The formatter Spotless runs; not a library, so Dependabot does not update it.
+palantir-java-format = "2.101.0"
 
 [libraries]
 jazzer-junit = { module = "com.code-intelligence:jazzer-junit", version.ref = "jazzer" }
@@ -65,3 +68,4 @@ japicmp = { module = "com.github.siom79.japicmp:japicmp", version.ref = "japicmp
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 errorprone = { id = "net.ltgt.errorprone", version.ref = "errorprone-plugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

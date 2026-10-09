@@ -23,27 +23,35 @@ class JsonpModelTest {
 
     @Test
     void returnsTheOriginalValues() {
-        JsonValue document = parse("{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
+        JsonValue document =
+                parse("{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
 
-        NodeList<JsonValue> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, JsonpModel.INSTANCE);
+        NodeList<JsonValue> nodes =
+                JsonPath.compile("$.store.book[?@.price < 10]").query(document, JsonpModel.INSTANCE);
 
         // Identity, not equality: the query hands back the library's own node objects.
         assertThat(nodes.values()).hasSize(1);
-        assertThat(nodes.values().get(0)).isSameAs(document.asJsonObject().getJsonObject("store").getJsonArray("book").get(0));
+        assertThat(nodes.values().get(0))
+                .isSameAs(document.asJsonObject()
+                        .getJsonObject("store")
+                        .getJsonArray("book")
+                        .get(0));
     }
 
     @Test
     void comparesNumbersByValue() {
         JsonValue document = parse("[{\"n\":1},{\"n\":1.0},{\"n\":10e-1},{\"n\":2}]");
 
-        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, JsonpModel.INSTANCE)).hasSize(3);
+        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, JsonpModel.INSTANCE))
+                .hasSize(3);
     }
 
     @Test
     void distinguishesJsonNullFromMissingMembers() {
         JsonValue document = parse("[{\"a\":null},{}]");
 
-        assertThat(JsonPath.compile("$[?@.a == null]").query(document, JsonpModel.INSTANCE)).hasSize(1);
+        assertThat(JsonPath.compile("$[?@.a == null]").query(document, JsonpModel.INSTANCE))
+                .hasSize(1);
     }
 
     private static JsonValue parse(String json) {
