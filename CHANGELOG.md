@@ -13,6 +13,12 @@ a minor version may still change the API, which this file then says.
   `JsonModel.numberValue`. Kotlin and other null-aware tools see these types. JSpecify is a compile-time
   dependency only (`requires static transitive org.jspecify`). No change in behavior.
   ([#19](https://github.com/treetrail/treetrail/issues/19))
+- `NormalizedPath`: a node's location as a value with typed steps (`Name`, `Index`), parsed from and printed
+  as a normalized path, and converted to a JSON Pointer (RFC 6901) with `toJsonPointer()`.
+  `Node.normalizedPath()` returns it. `JsonPath` has value semantics (`equals`/`hashCode` by expression and
+  limits) and an `expression()` accessor. `Node.hashCode()` now hashes the path only, instead of hashing
+  the value deeply and rebuilding the path string on every call.
+  ([#14](https://github.com/treetrail/treetrail/issues/14))
 
 ### Testing
 

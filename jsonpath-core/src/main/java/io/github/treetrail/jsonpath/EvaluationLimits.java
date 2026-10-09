@@ -1,5 +1,7 @@
 package io.github.treetrail.jsonpath;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Limits for running a query, to bound the work spent on queries from untrusted sources.
  *
@@ -100,7 +102,7 @@ public final class EvaluationLimits {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (!(o instanceof EvaluationLimits)) {
             return false;
         }

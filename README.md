@@ -64,6 +64,16 @@ nodes.values(); // ["Sayings of the Century", "Moby Dick"]
 nodes.paths();  // ["$['store']['book'][0]['title']", "$['store']['book'][2]['title']"]
 ```
 
+Each node's location is also available as a `NormalizedPath` with typed steps, and as a JSON Pointer
+(RFC 6901) for libraries that address nodes that way:
+
+```java
+NormalizedPath location = nodes.get(0).normalizedPath();
+location.steps();          // [Name[name=store], Name[name=book], Index[index=0], Name[name=title]]
+location.toJsonPointer();  // "/store/book/0/title"
+NormalizedPath.parse("$['store']['book'][0]['title']").equals(location); // true
+```
+
 `query(Object)` works on plain Java objects: `Map` for objects, `List` for arrays, `String`,
 `Number`, `Boolean` and `null`. That is what most JSON libraries produce when asked for untyped
 output, for example Jackson's `objectMapper.readValue(json, Object.class)`.

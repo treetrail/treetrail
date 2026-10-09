@@ -1,5 +1,6 @@
 package io.github.treetrail.jsonpath.internal;
 
+import io.github.treetrail.jsonpath.NormalizedPath;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,54 +47,21 @@ public final class Location {
         return Collections.unmodifiableList(steps);
     }
 
-    /** Returns the normalized path (RFC 9535, section 2.7), for example {@code $['store']['book'][0]}. */
-    public String normalizedPath() {
-        StringBuilder sb = new StringBuilder("$");
+    /** Returns the location as a normalized path (RFC 9535, section 2.7). */
+    public NormalizedPath toNormalizedPath() {
+        List<NormalizedPath.Step> steps = new ArrayList<>(depth);
         for (Object step : steps()) {
-            if (step instanceof Integer) {
-                sb.append('[').append(step).append(']');
-            } else {
-                sb.append("['");
-                appendEscaped(sb, (String) step);
-                sb.append("']");
-            }
+            steps.add(
+                    step instanceof Integer index
+                            ? new NormalizedPath.Index(index)
+                            : new NormalizedPath.Name((String) step));
         }
-        return sb.toString();
+        return NormalizedPath.of(steps);
     }
 
-    private static void appendEscaped(StringBuilder sb, String name) {
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            switch (c) {
-                case '\b':
-                    sb.append("\\b");
-                    break;
-                case '\f':
-                    sb.append("\\f");
-                    break;
-                case '\n':
-                    sb.append("\\n");
-                    break;
-                case '\r':
-                    sb.append("\\r");
-                    break;
-                case '\t':
-                    sb.append("\\t");
-                    break;
-                case '\'':
-                    sb.append("\\'");
-                    break;
-                case '\\':
-                    sb.append("\\\\");
-                    break;
-                default:
-                    if (c < 0x20) {
-                        sb.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        sb.append(c);
-                    }
-            }
-        }
+    /** Returns the normalized path as a string, for example {@code $['store']['book'][0]}. */
+    public String normalizedPath() {
+        return toNormalizedPath().toString();
     }
 
     @Override

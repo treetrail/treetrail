@@ -104,6 +104,23 @@ public final class JsonPath {
         return query.isSingular();
     }
 
+    /** Returns the expression this query was compiled from. */
+    public String expression() {
+        return expression;
+    }
+
+    /** Two queries are equal if they were compiled from the same expression and have the same limits. */
+    @Override
+    public boolean equals(@Nullable Object o) {
+        return o instanceof JsonPath other && expression.equals(other.expression) && limits.equals(other.limits);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * expression.hashCode() + limits.hashCode();
+    }
+
+    /** Returns the expression this query was compiled from. */
     @Override
     public String toString() {
         return expression;
