@@ -265,6 +265,10 @@ Besides the Compliance Test Suite, which runs against every JSON model on Java 1
 The build compiles with JDK 25 for Java 17 and runs the unit tests and the compliance suite on
 Java 17, 21 and 25. Gradle downloads the JDKs it does not find.
 
+The build also fails if a published module's API becomes incompatible with the last release (see
+[docs/releasing.md](docs/releasing.md#api-compatibility)) or if a module's line or branch coverage falls below
+its minimum in `build.gradle.kts`. Coverage reports are in `build/reports/jacoco/test/html` of each module.
+
 ## License
 
 [Apache License 2.0](LICENSE). The vendored Compliance Test Suite (test sources only) is licensed
