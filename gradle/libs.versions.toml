@@ -25,6 +25,8 @@ japicmp = "0.26.3"
 jacoco = "0.8.15"
 errorprone = "2.50.0"
 errorprone-plugin = "5.1.1"
+nullaway = "0.14.2"
+jspecify = "1.0.1"
 
 [libraries]
 jazzer-junit = { module = "com.code-intelligence:jazzer-junit", version.ref = "jazzer" }
@@ -54,6 +56,8 @@ rewrite-java-jdk25 = { module = "org.openrewrite:rewrite-java-25" }
 rewrite-test = { module = "org.openrewrite:rewrite-test" }
 jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 japicmp = { module = "com.github.siom79.japicmp:japicmp", version.ref = "japicmp" }
 

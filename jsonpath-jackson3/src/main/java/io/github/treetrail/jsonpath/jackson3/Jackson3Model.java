@@ -2,9 +2,10 @@ package io.github.treetrail.jsonpath.jackson3;
 
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
-import tools.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * {@link JsonModel} for Jackson 3 trees.
@@ -91,7 +92,7 @@ public final class Jackson3Model implements JsonModel<JsonNode> {
     }
 
     @Override
-    public BigDecimal numberValue(JsonNode value) {
+    public @Nullable BigDecimal numberValue(JsonNode value) {
         // Doubles and floats can be NaN or infinite, for example 1e400 parsed as a double.
         if ((value.isDouble() || value.isFloat()) && !Double.isFinite(value.doubleValue())) {
             return null;

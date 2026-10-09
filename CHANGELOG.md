@@ -5,6 +5,15 @@ a minor version may still change the API, which this file then says.
 
 ## Unreleased
 
+### Added
+
+- Nullness annotations: every package is `@NullMarked` ([JSpecify](https://jspecify.dev)), and values that can
+  be `null` are `@Nullable`, for example JSON `null` in `JavaObjectModel` (now a `JsonModel<@Nullable Object>`,
+  so `query(Object)` returns a `NodeList<@Nullable Object>`), `JsonModel.findMember` and
+  `JsonModel.numberValue`. Kotlin and other null-aware tools see these types. JSpecify is a compile-time
+  dependency only (`requires static transitive org.jspecify`). No change in behavior.
+  ([#19](https://github.com/treetrail/treetrail/issues/19))
+
 ### Testing
 
 - The differential test runs against jsonpath-rfc9535 2.0.1, which fixes all six bugs it had found in

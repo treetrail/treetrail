@@ -1,6 +1,7 @@
 package io.github.treetrail.jsonpath.internal;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Syntax tree of a parsed query. Produced by {@link Parser}, executed by {@link Evaluator}.
@@ -44,7 +45,7 @@ public final class Ast {
     }
 
     /** A slice; {@code null} bounds mean "not given". */
-    public record Slice(Long start, Long end, Long step) implements Selector {
+    public record Slice(@Nullable Long start, @Nullable Long end, @Nullable Long step) implements Selector {
     }
 
     public record Filter(Expr expr) implements Selector {
@@ -59,7 +60,7 @@ public final class Ast {
     }
 
     /** A literal; {@code value} uses the {@link io.github.treetrail.jsonpath.JavaObjectModel} (null = JSON null). */
-    public record Literal(Object value) implements Operand {
+    public record Literal(@Nullable Object value) implements Operand {
     }
 
     public record QueryOperand(Query query) implements Operand {

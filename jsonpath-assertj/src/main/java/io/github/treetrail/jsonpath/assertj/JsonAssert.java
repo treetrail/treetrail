@@ -5,13 +5,15 @@ import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.NodeList;
 import org.assertj.core.api.AbstractAssert;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Assertions on a JSON document. Created by {@link JsonPathAssertions#assertThatJson(String)}.
  */
 public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
 
-    private Object document;
+    private @Nullable Object document;
+    private boolean parsed;
 
     JsonAssert(String json) {
         super(json, JsonAssert.class);
@@ -24,7 +26,7 @@ public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
      *         RFC 9535 query, a mistake in the test rather than a failed assertion
      */
     public NodeListAssert jsonPath(String expression) {
-        NodeList<Object> nodes = JsonPath.compile(expression).query(document());
+        NodeList<@Nullable Object> nodes = JsonPath.compile(expression).query(document());
         return new NodeListAssert(nodes, expression).as(descriptionText().isEmpty() ? expression : descriptionText());
     }
 
@@ -39,7 +41,7 @@ public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
 
     /** Verifies that the query selects no node. */
     public JsonAssert doesNotHaveJsonPath(String expression) {
-        NodeList<Object> nodes = JsonPath.compile(expression).query(document());
+        NodeList<@Nullable Object> nodes = JsonPath.compile(expression).query(document());
         if (!nodes.isEmpty()) {
             throw failure("Expected %s to select no node, but it selected %s at %s",
                     expression, nodes.values(), nodes.paths());
@@ -47,11 +49,12 @@ public final class JsonAssert extends AbstractAssert<JsonAssert, String> {
         return this;
     }
 
-    private Object document() {
+    private @Nullable Object document() {
         isNotNull();
-        if (document == null) {
+        if (!parsed) {
             try {
                 document = JavaObjectModel.parse(actual);
+                parsed = true;
             } catch (InvalidJsonException e) {
                 throw failure("Expected valid JSON, but %s:%n  %s", e.getMessage(), actual);
             }

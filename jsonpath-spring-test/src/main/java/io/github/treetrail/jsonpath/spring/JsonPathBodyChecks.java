@@ -2,6 +2,7 @@ package io.github.treetrail.jsonpath.spring;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 
 /**
@@ -17,12 +18,12 @@ public final class JsonPathBodyChecks {
     }
 
     /** Expects exactly one node, with a value equal to {@code expected} as a JSON value. */
-    public Consumer<EntityExchangeResult<byte[]>> value(Object expected) {
+    public Consumer<EntityExchangeResult<byte[]>> value(@Nullable Object expected) {
         return result -> expectation.value(body(result), expected);
     }
 
     /** Expects exactly these values, in this order. */
-    public Consumer<EntityExchangeResult<byte[]>> values(Object... expected) {
+    public Consumer<EntityExchangeResult<byte[]>> values(@Nullable Object... expected) {
         return result -> expectation.values(body(result), expected);
     }
 

@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
 import org.cyclonedx.gradle.CyclonedxDirectTask
 
@@ -29,6 +30,8 @@ val publishedModules = setOf(
  * HEAD. Used where an output must contain a date, so that two builds of the same commit are identical.
  */
 val errorproneCore = libs.errorprone.core
+val nullaway = libs.nullaway
+val jspecify = libs.jspecify
 
 val sourceDateEpoch: Provider<String> = providers.environmentVariable("SOURCE_DATE_EPOCH")
     .orElse(providers.exec { commandLine("git", "log", "-1", "--format=%ct") }.standardOutput.asText.map { it.trim() })
@@ -108,6 +111,30 @@ subprojects {
     // Error Prone checks every compilation; with -Werror its warnings fail the build too.
     apply(plugin = "net.ltgt.errorprone")
     dependencies { "errorprone"(errorproneCore) }
+
+    // Null safety: every package is @NullMarked (JSpecify), so types are non-null unless annotated @Nullable,
+    // and NullAway checks the main sources against that. JSpecify is a compile-time dependency only
+    // (`requires static` in the module descriptors); Gradle consumers get it on their compile class path,
+    // so that Kotlin and other tools see the nullness of the API.
+    if (name != "jsonpath-benchmarks") {
+        dependencies {
+            "compileOnlyApi"(jspecify)
+            "testCompileOnly"(jspecify)
+            "errorprone"(nullaway)
+        }
+        tasks.withType<JavaCompile>().configureEach {
+            options.errorprone {
+                if (name == "compileJava") {
+                    check("NullAway", CheckSeverity.ERROR)
+                    option("NullAway:OnlyNullMarked", "true")
+                    // Checks nullness of type arguments too, e.g. JavaObjectModel as JsonModel<@Nullable Object>.
+                    option("NullAway:JSpecifyMode", "true")
+                } else {
+                    disable("NullAway")
+                }
+            }
+        }
+    }
     tasks.withType<JavaCompile>().configureEach {
         options.errorprone {
             disableWarningsInGeneratedCode = true

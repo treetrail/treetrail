@@ -1,5 +1,7 @@
 package io.github.treetrail.jsonpath;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Thrown when a valid query cannot be run to completion: the document contains a value the
  * {@link JsonModel} rejects, an {@link EvaluationLimits evaluation limit} was exceeded, or the thread
@@ -13,7 +15,7 @@ public class JsonPathEvaluationException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    private final String path;
+    private final @Nullable String path;
 
     /**
      * Creates the exception.
@@ -41,7 +43,7 @@ public class JsonPathEvaluationException extends RuntimeException {
      * Returns the normalized path of the node being processed when the failure occurred, for example
      * {@code $['store']['book'][0]}, or {@code null} if the failure is not tied to a node.
      */
-    public String path() {
+    public @Nullable String path() {
         return path;
     }
 }

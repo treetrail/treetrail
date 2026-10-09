@@ -4,6 +4,7 @@ import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
 import io.github.treetrail.jsonpath.migration.MigrationHints;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -104,11 +105,11 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
     }
 
     static final class Assessment {
-        final String expression;
+        final @Nullable String expression;
         final String kind;
         final String hint;
 
-        Assessment(String expression, String kind, String hint) {
+        Assessment(@Nullable String expression, String kind, String hint) {
             this.expression = expression;
             this.kind = kind;
             this.hint = hint;

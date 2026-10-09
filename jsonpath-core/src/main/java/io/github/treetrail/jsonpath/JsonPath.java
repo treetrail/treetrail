@@ -8,6 +8,7 @@ import io.github.treetrail.jsonpath.internal.Parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A compiled JSONPath query as defined by RFC 9535.
@@ -62,7 +63,7 @@ public final class JsonPath {
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
      * @throws JsonPathEvaluationException if the thread is interrupted
      */
-    public NodeList<Object> query(Object document) {
+    public NodeList<@Nullable Object> query(@Nullable Object document) {
         return query(document, JavaObjectModel.INSTANCE);
     }
 
@@ -77,7 +78,7 @@ public final class JsonPath {
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
      * @throws JsonPathEvaluationException if the thread is interrupted
      */
-    public NodeList<Object> queryJson(String json) {
+    public NodeList<@Nullable Object> queryJson(String json) {
         return query(JavaObjectModel.parse(json));
     }
 
@@ -87,7 +88,7 @@ public final class JsonPath {
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
      * @throws JsonPathEvaluationException if the thread is interrupted
      */
-    public <N> NodeList<N> query(N document, JsonModel<N> model) {
+    public <N extends @Nullable Object> NodeList<N> query(N document, JsonModel<N> model) {
         List<Located> located = new Evaluator(document, model, limits).run(query);
         List<Node<N>> nodes = new ArrayList<>(located.size());
         for (Located l : located) {

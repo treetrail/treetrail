@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Recursive-descent parser for the RFC 9535 grammar (appendix A), including the well-typedness
@@ -190,7 +191,7 @@ public final class Parser {
         return new Slice(start, end, step);
     }
 
-    private Long optionalInt() {
+    private @Nullable Long optionalInt() {
         int c = peek();
         if (c != '-' && !isDigit(c)) {
             return null;
@@ -337,7 +338,7 @@ public final class Parser {
         }
     }
 
-    private ComparisonOp comparisonOp() {
+    private @Nullable ComparisonOp comparisonOp() {
         for (String symbol : new String[] {"==", "!=", "<=", ">=", "<", ">"}) {
             if (src.startsWith(symbol, pos)) {
                 pos += symbol.length();

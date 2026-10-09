@@ -1,5 +1,6 @@
 package io.github.treetrail.jsonpath.rewrite;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Column;
 import org.openrewrite.DataTable;
 import org.openrewrite.Recipe;
@@ -24,7 +25,7 @@ public class JsonPathExpressions extends DataTable<JsonPathExpressions.Row> {
         private final String call;
 
         @Column(displayName = "Expression", description = "The JSONPath expression, if it is a string literal.")
-        private final String expression;
+        private final @Nullable String expression;
 
         @Column(displayName = "Assessment", description = "VALID, VALID_SINGLE_VALUE, NOT_RFC_9535, "
                 + "WRITE_API or NOT_A_LITERAL.")
@@ -33,7 +34,7 @@ public class JsonPathExpressions extends DataTable<JsonPathExpressions.Row> {
         @Column(displayName = "Hint", description = "What to do when migrating to RFC 9535.")
         private final String hint;
 
-        public Row(String sourcePath, String call, String expression, String assessment, String hint) {
+        public Row(String sourcePath, String call, @Nullable String expression, String assessment, String hint) {
             this.sourcePath = sourcePath;
             this.call = call;
             this.expression = expression;
@@ -49,7 +50,7 @@ public class JsonPathExpressions extends DataTable<JsonPathExpressions.Row> {
             return call;
         }
 
-        public String getExpression() {
+        public @Nullable String getExpression() {
             return expression;
         }
 

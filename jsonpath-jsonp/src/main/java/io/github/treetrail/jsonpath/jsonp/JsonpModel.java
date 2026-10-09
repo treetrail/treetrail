@@ -7,6 +7,8 @@ import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * {@link JsonModel} for Jakarta JSON Processing (JSON-P) trees, with any JSON-P implementation.
@@ -56,7 +58,7 @@ public final class JsonpModel implements JsonModel<JsonValue> {
     }
 
     @Override
-    public JsonValue findMember(JsonValue object, String name) {
+    public @Nullable JsonValue findMember(JsonValue object, String name) {
         // Null only for a missing member; JSON null is JsonValue.NULL.
         return object.asJsonObject().get(name);
     }
@@ -70,7 +72,7 @@ public final class JsonpModel implements JsonModel<JsonValue> {
 
     @Override
     public JsonValue member(JsonValue object, String name) {
-        return object.asJsonObject().get(name);
+        return Objects.requireNonNull(object.asJsonObject().get(name), name);
     }
 
     @Override
