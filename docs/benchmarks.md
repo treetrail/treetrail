@@ -22,6 +22,23 @@ This library's time includes building the node list with locations.
 | descendant | `$..price` | 148.1 ± 0.6 | 146.2 ± 2.6 | 0.99× |
 | regex | `match(@.author, 'H.*')` / `=~ /H.*/` | 58.3 ± 1.2 | 71.2 ± 1.1 | 1.22× |
 
+## Queries on Jackson trees
+
+The same queries on the same document, read into a Jackson 2 `JsonNode` tree, the most common setup
+in practice. This library queries it through `Jackson2Model`, Jayway JsonPath through its
+`JacksonJsonNodeJsonProvider` and `JacksonMappingProvider`; neither converts the tree. The setup again
+checks that both select the same nodes. Measured on 2026-10-09 with the code of 0.2.0, same machine and
+settings; raw results: [jmh-results-jackson-2026-10-09.json](benchmarks/jmh-results-jackson-2026-10-09.json).
+`./gradlew :jsonpath-benchmarks:jmh -PjmhArgs="JacksonQueryBenchmark"` reproduces them.
+
+| Query | Expression | This library (µs) | Jayway (µs) | Jayway / this |
+| --- | --- | --- | --- | --- |
+| definite | `$.store.bicycle.color` | 0.091 ± 0.004 | 0.121 ± 0.0004 | 1.33× |
+| wildcard | `$.store.book[*].title` | 29.8 ± 1.4 | 66.2 ± 0.3 | 2.22× |
+| filter | `$.store.book[?(@.price < 10 && @.category == 'fiction')].title` | 92.3 ± 0.4 | 154.4 ± 1.3 | 1.67× |
+| descendant | `$..price` | 168.1 ± 0.4 | 257.5 ± 1.2 | 1.53× |
+| regex | `match(@.author, 'H.*')` / `=~ /H.*/` | 86.4 ± 2.8 | 106.1 ± 1.2 | 1.23× |
+
 ## Compiling an expression
 
 `$.store.book[?(@.price < 10 && @.category == 'fiction')].title`, for code that does not cache compiled paths.
@@ -48,6 +65,6 @@ still exponential on JDK 25.
 ## Caveats
 
 - One machine, one JDK, one run. Treat differences under about 10 % as noise.
-- Jayway reads the plain-Java document through its default json-smart provider; with other providers
-  (Jackson, Gson) its numbers differ.
+- Jayway reads the plain-Java document through its default json-smart provider, and the Jackson tree
+  through its Jackson providers; with other providers (Gson) its numbers differ.
 - The regex query benefits from this library's cached automaton (a lazy DFA, see `IRegexp`).
