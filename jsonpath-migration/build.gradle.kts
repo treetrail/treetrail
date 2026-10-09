@@ -45,7 +45,7 @@ val jayway2TestRuntimeClasspath = configurations.resolvable("jayway2TestRuntimeC
 }
 
 
-val testJayway2 by tasks.registering(Test::class) {
+val testJayway2 = tasks.register<Test>("testJayway2") {
     description = "Runs the tests against Jayway JsonPath ${libs.versions.jayway2.get()}."
     group = "verification"
     testClassesDirs = sourceSets.test.get().output.classesDirs

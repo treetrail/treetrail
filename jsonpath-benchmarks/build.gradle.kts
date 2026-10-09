@@ -19,7 +19,7 @@ tasks.withType<JavaCompile>().configureEach {
 // The benchmark jar is a build tool, not a library.
 tasks.withType<Javadoc>().configureEach { enabled = false }
 
-val jmh by tasks.registering(JavaExec::class) {
+tasks.register<JavaExec>("jmh") {
     description = "Runs the JMH benchmarks and writes build/jmh-results.json."
     group = "verification"
     classpath = sourceSets.main.get().runtimeClasspath
