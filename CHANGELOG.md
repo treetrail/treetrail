@@ -3,6 +3,17 @@
 All notable changes to Treetrail. Versions follow [Semantic Versioning](https://semver.org); before 1.0
 a minor version may still change the API, which this file then says.
 
+## Unreleased
+
+### Testing
+
+- The differential test runs against jsonpath-rfc9535 2.0.1, which fixes all six bugs it had found in
+  the reference ([#24](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/24)–[#27](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/27)).
+  The list of known differences is now empty. The query generator no longer avoids those bugs: it writes
+  Unicode escapes for control characters and other characters with hex digits in either case, shorthand
+  names above U+FFFF, trailing commas, `-` after shorthand names and ordering comparisons with booleans.
+  Against 2.0.0, the regenerated corpus differs on 299 of its 2000 queries; against 2.0.1, on none.
+
 ## 0.2.0 – 2026-10-08
 
 The first announced release. No breaking changes: the public API of 0.1.0 is unchanged, everything
