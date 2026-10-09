@@ -68,8 +68,13 @@ class JaywayConformanceReport {
             Comparison c = comparison.compareJson(selector, json(test.get("document")));
             if (c.outcome() == Outcome.ONLY_JAYWAY_ACCEPTS || c.outcome() == Outcome.BOTH_REJECT) {
                 // The parenthesized form is always valid RFC 9535; only Jayway's view matters here.
-                c = new Comparison(selector, c.jaywayValues() == null ? Outcome.ONLY_RFC_ACCEPTS
-                        : Outcome.DIFFERENT_VALUES, null, c.jaywayValues(), false, c.detail());
+                c = new Comparison(
+                        selector,
+                        c.jaywayValues() == null ? Outcome.ONLY_RFC_ACCEPTS : Outcome.DIFFERENT_VALUES,
+                        null,
+                        c.jaywayValues(),
+                        false,
+                        c.detail());
             }
             Outcome outcome = c.outcome();
             if (c.jaywayValues() != null && matchesExpected(c.jaywayValues(), test)) {
@@ -77,8 +82,8 @@ class JaywayConformanceReport {
             } else if (outcome == Outcome.SAME) {
                 outcome = Outcome.DIFFERENT_VALUES;
             }
-            String expected = String.valueOf(test.containsKey("result") ? test.get("result")
-                    : ((List<Object>) test.get("results")).get(0));
+            String expected = String.valueOf(
+                    test.containsKey("result") ? test.get("result") : ((List<Object>) test.get("results")).get(0));
             valid.computeIfAbsent(outcome, k -> new ArrayList<>()).add(row(test, expected, c));
         }
 
@@ -86,7 +91,11 @@ class JaywayConformanceReport {
         md.append("| Outcome | Cases |\n| --- | --- |\n");
         for (Outcome outcome : Outcome.values()) {
             if (valid.containsKey(outcome)) {
-                md.append("| ").append(outcome).append(" | ").append(valid.get(outcome).size()).append(" |\n");
+                md.append("| ")
+                        .append(outcome)
+                        .append(" | ")
+                        .append(valid.get(outcome).size())
+                        .append(" |\n");
             }
         }
         md.append("\n## Invalid RFC 9535 queries: ").append(invalidCount).append("\n\n");
@@ -145,7 +154,6 @@ class JaywayConformanceReport {
         return out.toString();
     }
 
-
     private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -180,17 +188,22 @@ class JaywayConformanceReport {
     }
 
     private static String row(Map<String, Object> test, String expected, Comparison c) {
-        String jayway = c == null ? "" : c.jaywayValues() != null ? String.valueOf(c.jaywayValues())
-                : String.valueOf(c.detail());
+        String jayway = c == null
+                ? ""
+                : c.jaywayValues() != null ? String.valueOf(c.jaywayValues()) : String.valueOf(c.detail());
         if (c == null) {
             return "| " + cell(test.get("name")) + " | `" + cell(test.get("selector")) + "` |\n";
         }
-        return "| " + cell(test.get("name")) + " | `" + cell(test.get("selector")) + "` | "
-                + cell(expected) + " | " + cell(jayway) + " |\n";
+        return "| " + cell(test.get("name")) + " | `" + cell(test.get("selector")) + "` | " + cell(expected) + " | "
+                + cell(jayway) + " |\n";
     }
 
     private static String cell(Object value) {
-        String s = String.valueOf(value).replace("|", "\\|").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
+        String s = String.valueOf(value)
+                .replace("|", "\\|")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
         return s.length() > 120 ? s.substring(0, 117) + "..." : s;
     }
 }

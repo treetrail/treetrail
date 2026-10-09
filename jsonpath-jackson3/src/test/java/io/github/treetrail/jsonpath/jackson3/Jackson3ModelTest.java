@@ -32,18 +32,21 @@ class Jackson3ModelTest {
         JsonNode document = MAPPER.readTree(
                 "{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
 
-        NodeList<JsonNode> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, Jackson3Model.INSTANCE);
+        NodeList<JsonNode> nodes =
+                JsonPath.compile("$.store.book[?@.price < 10]").query(document, Jackson3Model.INSTANCE);
 
         // Identity, not equality: the query hands back the library's own node objects.
         assertThat(nodes.values()).hasSize(1);
-        assertThat(nodes.values().get(0)).isSameAs(document.get("store").get("book").get(0));
+        assertThat(nodes.values().get(0))
+                .isSameAs(document.get("store").get("book").get(0));
     }
 
     @Test
     void comparesIntegerAndFloatingPointNodesByValue() {
         JsonNode document = MAPPER.readTree("[{\"n\":1},{\"n\":1.0},{\"n\":10e-1},{\"n\":2}]");
 
-        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, Jackson3Model.INSTANCE)).hasSize(3);
+        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, Jackson3Model.INSTANCE))
+                .hasSize(3);
     }
 
     @Test
@@ -52,7 +55,8 @@ class Jackson3ModelTest {
         document.putPOJO("pojo", new Object());
 
         assertThatThrownBy(() -> JsonPath.compile("$[?@ == 1]").query(document, Jackson3Model.INSTANCE))
-                .isInstanceOfSatisfying(JsonPathEvaluationException.class,
+                .isInstanceOfSatisfying(
+                        JsonPathEvaluationException.class,
                         e -> assertThat(e.path()).isEqualTo("$['pojo']"));
     }
 
@@ -61,8 +65,11 @@ class Jackson3ModelTest {
         // Jackson parses 1e400 into a DoubleNode holding Infinity.
         JsonNode document = MAPPER.readTree("[1e400, -1e400, 2]");
 
-        assertThat(JsonPath.compile("$[?@ > 1]").query(document, Jackson3Model.INSTANCE).values())
+        assertThat(JsonPath.compile("$[?@ > 1]")
+                        .query(document, Jackson3Model.INSTANCE)
+                        .values())
                 .containsExactly(document.get(2));
-        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson3Model.INSTANCE)).hasSize(2);
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson3Model.INSTANCE))
+                .hasSize(2);
     }
 }

@@ -413,7 +413,8 @@ public final class Parser {
         expect(')');
         nesting--;
         if (arguments.size() != function.parameters().size()) {
-            throw error("Function '" + name + "' expects " + function.parameters().size() + " argument(s)", start);
+            throw error(
+                    "Function '" + name + "' expects " + function.parameters().size() + " argument(s)", start);
         }
         for (int i = 0; i < arguments.size(); i++) {
             checkArgument(arguments.get(i), function.parameters().get(i), positions.get(i));
@@ -436,7 +437,8 @@ public final class Parser {
         if (operand instanceof QueryOperand && !((QueryOperand) operand).query().isSingular()) {
             throw error("Only singular queries can be compared", at);
         }
-        if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() != FunctionDefinition.Type.VALUE) {
+        if (operand instanceof FunctionCall
+                && ((FunctionCall) operand).function().result() != FunctionDefinition.Type.VALUE) {
             throw error("Function result cannot be compared", at);
         }
     }
@@ -456,9 +458,12 @@ public final class Parser {
             if (operand instanceof Literal) {
                 throw error("A literal is not a valid test expression", at);
             }
-            if (operand instanceof FunctionCall && ((FunctionCall) operand).function().result() == FunctionDefinition.Type.VALUE) {
-                throw error("Function '" + ((FunctionCall) operand).function().name()
-                        + "' returns a value and cannot be used as a test", at);
+            if (operand instanceof FunctionCall
+                    && ((FunctionCall) operand).function().result() == FunctionDefinition.Type.VALUE) {
+                throw error(
+                        "Function '" + ((FunctionCall) operand).function().name()
+                                + "' returns a value and cannot be used as a test",
+                        at);
             }
         }
     }
@@ -468,7 +473,8 @@ public final class Parser {
         switch (type) {
             case VALUE:
                 ok = argument instanceof Literal
-                        || (argument instanceof QueryOperand && ((QueryOperand) argument).query().isSingular())
+                        || (argument instanceof QueryOperand
+                                && ((QueryOperand) argument).query().isSingular())
                         || (argument instanceof FunctionCall
                                 && ((FunctionCall) argument).function().result() == FunctionDefinition.Type.VALUE);
                 break;
@@ -658,8 +664,11 @@ public final class Parser {
     }
 
     private static boolean isNameFirst(int c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
-                || (c >= 0x80 && c <= 0xD7FF) || (c >= 0xE000 && c <= 0x10FFFF);
+        return (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                || c == '_'
+                || (c >= 0x80 && c <= 0xD7FF)
+                || (c >= 0xE000 && c <= 0x10FFFF);
     }
 
     private static boolean isNameChar(int c) {

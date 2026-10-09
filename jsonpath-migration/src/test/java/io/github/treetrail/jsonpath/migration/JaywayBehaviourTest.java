@@ -2,9 +2,9 @@ package io.github.treetrail.jsonpath.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.treetrail.jsonpath.JsonPath;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.treetrail.jsonpath.JsonPath;
 import java.io.UncheckedIOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,8 @@ class JaywayBehaviourTest {
 
     @Test
     void jaywayComparesNumbersAndNumericStringsAsEqual() {
-        String json = "[{\"a\":1,\"d\":\"e\"},{\"a\":\"c\",\"d\":\"f\"},{\"a\":2,\"d\":\"f\"},{\"a\":\"1\",\"d\":\"f\"}]";
+        String json =
+                "[{\"a\":1,\"d\":\"e\"},{\"a\":\"c\",\"d\":\"f\"},{\"a\":2,\"d\":\"f\"},{\"a\":\"1\",\"d\":\"f\"}]";
 
         assertThat(jayway(json, "$[?(@.a==1)].d")).isEqualTo(List.of("e", "f"));
         assertThat(rfc(json, "$[?@.a==1].d")).isEqualTo(List.of("e"));

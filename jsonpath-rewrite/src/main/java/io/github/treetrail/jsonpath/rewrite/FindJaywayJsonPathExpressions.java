@@ -53,8 +53,11 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
             new Target("com.jayway.jsonpath.WriteContext delete(String, ..)", 0, false, true),
             new Target("com.jayway.jsonpath.WriteContext renameKey(String, ..)", 0, false, true),
             new Target("com.jayway.jsonpath.WriteContext map(String, ..)", 0, false, true),
-            new Target("org.springframework.test.web.servlet.result.MockMvcResultMatchers jsonPath(String, ..)",
-                    0, true, false));
+            new Target(
+                    "org.springframework.test.web.servlet.result.MockMvcResultMatchers jsonPath(String, ..)",
+                    0,
+                    true,
+                    false));
 
     private final transient JsonPathExpressions table = new JsonPathExpressions(this);
 
@@ -90,13 +93,18 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
                     if (m.getArguments().size() <= target.argument) {
                         continue;
                     }
-                    String call = type == null ? m.getSimpleName()
+                    String call = type == null
+                            ? m.getSimpleName()
                             : type.getDeclaringType().getClassName() + "." + m.getSimpleName();
-                    String sourcePath = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class)
-                            .getSourcePath().toString();
+                    String sourcePath = getCursor()
+                            .firstEnclosingOrThrow(J.CompilationUnit.class)
+                            .getSourcePath()
+                            .toString();
                     Assessment assessment = assess(m.getArguments().get(target.argument), target.write);
-                    table.insertRow(ctx, new JsonPathExpressions.Row(sourcePath, call, assessment.expression,
-                            assessment.kind, assessment.hint));
+                    table.insertRow(
+                            ctx,
+                            new JsonPathExpressions.Row(
+                                    sourcePath, call, assessment.expression, assessment.kind, assessment.hint));
                     return SearchResult.found(m, assessment.kind + ": " + assessment.hint);
                 }
                 return m;
@@ -118,25 +126,31 @@ public final class FindJaywayJsonPathExpressions extends Recipe {
 
     static Assessment assess(Expression argument, boolean write) {
         if (!(argument instanceof J.Literal) || !(((J.Literal) argument).getValue() instanceof String)) {
-            return new Assessment(null, "NOT_A_LITERAL",
-                    "The expression is computed at runtime; check it with JaywayComparison.");
+            return new Assessment(
+                    null, "NOT_A_LITERAL", "The expression is computed at runtime; check it with JaywayComparison.");
         }
         String expression = (String) ((J.Literal) argument).getValue();
         if (write) {
-            return new Assessment(expression, "WRITE_API",
+            return new Assessment(
+                    expression,
+                    "WRITE_API",
                     "RFC 9535 defines queries only; select the nodes and modify the document with your JSON library.");
         }
         try {
             JsonPath.compile(expression);
         } catch (JsonPathSyntaxException e) {
-            return new Assessment(expression, "NOT_RFC_9535",
-                    MigrationHints.forInvalidExpression(expression, e.getMessage()));
+            return new Assessment(
+                    expression, "NOT_RFC_9535", MigrationHints.forInvalidExpression(expression, e.getMessage()));
         }
         if (isDefiniteForJayway(expression)) {
-            return new Assessment(expression, "VALID_SINGLE_VALUE",
+            return new Assessment(
+                    expression,
+                    "VALID_SINGLE_VALUE",
                     "Valid RFC 9535. Jayway returns a single value here, RFC 9535 a node list: use NodeList.single().");
         }
-        return new Assessment(expression, "VALID",
+        return new Assessment(
+                expression,
+                "VALID",
                 "Valid RFC 9535. Results can still differ (slices, type coercion); check with JaywayComparison.");
     }
 

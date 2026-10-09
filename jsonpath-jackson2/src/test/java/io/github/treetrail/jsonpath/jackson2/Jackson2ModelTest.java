@@ -3,15 +3,15 @@ package io.github.treetrail.jsonpath.jackson2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.github.treetrail.jsonpath.JsonPath;
-import io.github.treetrail.jsonpath.JsonPathEvaluationException;
-import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.treetrail.jsonpath.JsonPath;
+import io.github.treetrail.jsonpath.JsonPathEvaluationException;
+import io.github.treetrail.jsonpath.NodeList;
+import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import java.io.UncheckedIOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -30,20 +30,24 @@ class Jackson2ModelTest {
 
     @Test
     void returnsTheOriginalNodes() {
-        JsonNode document = parse("{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
+        JsonNode document =
+                parse("{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
 
-        NodeList<JsonNode> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, Jackson2Model.INSTANCE);
+        NodeList<JsonNode> nodes =
+                JsonPath.compile("$.store.book[?@.price < 10]").query(document, Jackson2Model.INSTANCE);
 
         // Identity, not equality: the query hands back the library's own node objects.
         assertThat(nodes.values()).hasSize(1);
-        assertThat(nodes.values().get(0)).isSameAs(document.get("store").get("book").get(0));
+        assertThat(nodes.values().get(0))
+                .isSameAs(document.get("store").get("book").get(0));
     }
 
     @Test
     void comparesIntegerAndFloatingPointNodesByValue() {
         JsonNode document = parse("[{\"n\":1},{\"n\":1.0},{\"n\":10e-1},{\"n\":2}]");
 
-        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, Jackson2Model.INSTANCE)).hasSize(3);
+        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, Jackson2Model.INSTANCE))
+                .hasSize(3);
     }
 
     @Test
@@ -52,7 +56,8 @@ class Jackson2ModelTest {
         document.putPOJO("pojo", new Object());
 
         assertThatThrownBy(() -> JsonPath.compile("$[?@ == 1]").query(document, Jackson2Model.INSTANCE))
-                .isInstanceOfSatisfying(JsonPathEvaluationException.class,
+                .isInstanceOfSatisfying(
+                        JsonPathEvaluationException.class,
                         e -> assertThat(e.path()).isEqualTo("$['pojo']"));
     }
 
@@ -61,9 +66,12 @@ class Jackson2ModelTest {
         // Jackson parses 1e400 into a DoubleNode holding Infinity.
         JsonNode document = parse("[1e400, -1e400, 2]");
 
-        assertThat(JsonPath.compile("$[?@ > 1]").query(document, Jackson2Model.INSTANCE).values())
+        assertThat(JsonPath.compile("$[?@ > 1]")
+                        .query(document, Jackson2Model.INSTANCE)
+                        .values())
                 .containsExactly(document.get(2));
-        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson2Model.INSTANCE)).hasSize(2);
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, Jackson2Model.INSTANCE))
+                .hasSize(2);
     }
 
     private static JsonNode parse(String json) {

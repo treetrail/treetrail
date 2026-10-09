@@ -28,7 +28,9 @@ final class RandomQueries {
 
     private static final String[] SHORTHAND_NAMES = {"a", "b", "c", "_x", "é", "😀"};
     private static final String[] FUNCTIONS_TESTS = {"match", "search"};
-    private static final String[] PATTERNS = {"a.*", "[a-c]+", "\\\\p{L}", ".", "é|😀", "^a", "b$", "[^a]*", "(ab|c){1,2}"};
+    private static final String[] PATTERNS = {
+        "a.*", "[a-c]+", "\\\\p{L}", ".", "é|😀", "^a", "b$", "[^a]*", "(ab|c){1,2}"
+    };
     private static final String[] TRAILING_COMMAS = {",", ", ", " ,", " , "};
     private static final Pattern SHORTHAND = Pattern.compile("\\.(?:" + String.join("|", SHORTHAND_NAMES) + ")");
     private static final String[] OPERATORS = {"==", "!=", "<", "<=", ">", ">="};
@@ -97,7 +99,10 @@ final class RandomQueries {
         StringBuilder sb = new StringBuilder();
         int length = random.nextInt(4);
         for (int i = 0; i < length; i++) {
-            sb.append("abcé😀".codePoints().skip(random.nextInt(5)).limit(1)
+            sb.append("abcé😀"
+                    .codePoints()
+                    .skip(random.nextInt(5))
+                    .limit(1)
                     .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append));
         }
         return sb.toString();
@@ -341,7 +346,9 @@ final class RandomQueries {
                 return query.substring(0, at + 1) + query.charAt(at) + query.substring(at + 1);
             case 2:
                 String insertions = "[]().,?@$'\"!=<> -0";
-                return query.substring(0, at) + insertions.charAt(random.nextInt(insertions.length())) + query.substring(at);
+                return query.substring(0, at)
+                        + insertions.charAt(random.nextInt(insertions.length()))
+                        + query.substring(at);
             case 3:
                 int close = query.indexOf(']', at);
                 if (close < 0) {

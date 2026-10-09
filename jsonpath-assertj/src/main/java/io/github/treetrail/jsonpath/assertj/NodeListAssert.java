@@ -56,7 +56,8 @@ public final class NodeListAssert extends AbstractListAssert<NodeListAssert, Lis
      */
     public ObjectAssert<Object> singleValue() {
         if (actual.size() != 1) {
-            throw failure("Expected %s to select exactly one node, but it selected %d: %s at %s",
+            throw failure(
+                    "Expected %s to select exactly one node, but it selected %d: %s at %s",
                     expression, actual.size(), actual, paths);
         }
         return Assertions.assertThat((Object) actual.get(0))

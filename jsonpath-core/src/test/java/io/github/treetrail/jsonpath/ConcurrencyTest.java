@@ -70,7 +70,8 @@ class ConcurrencyTest {
                     for (int i = 0; i < documents.size(); i++) {
                         int d = (i + offset * 17) % documents.size();
                         for (int q = 0; q < QUERIES.length; q++) {
-                            List<String> paths = shared.get(q).query(documents.get(d)).paths();
+                            List<String> paths =
+                                    shared.get(q).query(documents.get(d)).paths();
                             if (!paths.equals(expected.get(q * documents.size() + d))) {
                                 mismatches++;
                             }

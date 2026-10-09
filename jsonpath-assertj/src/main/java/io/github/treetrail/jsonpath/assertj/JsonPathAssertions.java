@@ -20,8 +20,7 @@ import io.github.treetrail.jsonpath.NodeList;
  */
 public final class JsonPathAssertions {
 
-    private JsonPathAssertions() {
-    }
+    private JsonPathAssertions() {}
 
     /**
      * Starts assertions on JSON text, which is parsed with {@link JavaObjectModel#parse(String)}.

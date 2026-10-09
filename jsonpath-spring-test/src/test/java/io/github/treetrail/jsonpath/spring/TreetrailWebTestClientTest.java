@@ -12,14 +12,18 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 class TreetrailWebTestClientTest {
 
-    private final WebTestClient client = WebTestClient.bindToRouterFunction(route(GET("/store"),
-            request -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(TreetrailResultMatchersTest.STORE)))
+    private final WebTestClient client = WebTestClient.bindToRouterFunction(route(
+                    GET("/store"),
+                    request -> ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(TreetrailResultMatchersTest.STORE)))
             .build();
 
     @Test
     void checksValuesOfTheResponseBody() {
-        client.get().uri("/store").exchange()
+        client.get()
+                .uri("/store")
+                .exchange()
                 .expectBody()
                 .consumeWith(jsonPath("$.store.bicycle.color").value("red"))
                 .consumeWith(jsonPath("$.store.book[?@.price < 10].title").values("Sayings", "Moby Dick"))
@@ -31,9 +35,11 @@ class TreetrailWebTestClientTest {
 
     @Test
     void explainsMismatches() {
-        assertThatThrownBy(() -> client.get().uri("/store").exchange()
-                .expectBody()
-                .consumeWith(jsonPath("$.store.bicycle.price").value(400)))
+        assertThatThrownBy(() -> client.get()
+                        .uri("/store")
+                        .exchange()
+                        .expectBody()
+                        .consumeWith(jsonPath("$.store.bicycle.price").value(400)))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("JSON path \"$.store.bicycle.price\": expected one node with value 400 but found "
                         + "[399] at [$['store']['bicycle']['price']]");

@@ -3,13 +3,13 @@ package io.github.treetrail.jsonpath.testing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
 import io.github.treetrail.jsonpath.NodeList;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -29,11 +29,10 @@ import org.junit.jupiter.api.DynamicTest;
  */
 public final class ComplianceSuite {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final ObjectMapper MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
-    private ComplianceSuite() {
-    }
+    private ComplianceSuite() {}
 
     /**
      * Creates one dynamic test per test case.
@@ -42,10 +41,11 @@ public final class ComplianceSuite {
      * @param parse parses JSON text into the model's node type
      * @param serialize writes a node of the model as JSON text
      */
-    public static <N> Stream<DynamicTest> tests(JsonModel<N> model, Function<String, N> parse,
-            Function<N, String> serialize) {
-        return loadTests().stream().map(test -> DynamicTest.dynamicTest(
-                test.get("name") + " | " + test.get("selector"), () -> run(test, model, parse, serialize)));
+    public static <N> Stream<DynamicTest> tests(
+            JsonModel<N> model, Function<String, N> parse, Function<N, String> serialize) {
+        return loadTests().stream()
+                .map(test -> DynamicTest.dynamicTest(
+                        test.get("name") + " | " + test.get("selector"), () -> run(test, model, parse, serialize)));
     }
 
     /**
@@ -67,8 +67,9 @@ public final class ComplianceSuite {
     }
 
     @SuppressWarnings("unchecked")
-    private static <N> void run(Map<String, Object> test, JsonModel<N> model, Function<String, N> parse,
-            Function<N, String> serialize) throws JsonProcessingException {
+    private static <N> void run(
+            Map<String, Object> test, JsonModel<N> model, Function<String, N> parse, Function<N, String> serialize)
+            throws JsonProcessingException {
         String selector = (String) test.get("selector");
         if (Boolean.TRUE.equals(test.get("invalid_selector"))) {
             assertThatThrownBy(() -> JsonPath.compile(selector))
@@ -99,8 +100,8 @@ public final class ComplianceSuite {
                 return;
             }
         }
-        throw new AssertionError("No alternative matched: got " + actual + " at " + nodes.paths()
-                + ", expected one of " + alternatives);
+        throw new AssertionError(
+                "No alternative matched: got " + actual + " at " + nodes.paths() + ", expected one of " + alternatives);
     }
 
     private static boolean jsonEquals(Object a, Object b) {

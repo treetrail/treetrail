@@ -23,8 +23,8 @@ import org.junit.jupiter.api.TestFactory;
  */
 class JsonModelDefaultsTest {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final ObjectMapper MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     /** Implements the abstract methods only, by delegating to {@link JavaObjectModel}. */
     private static final JsonModel<Object> MINIMAL = new JsonModel<>() {
@@ -88,11 +88,30 @@ class JsonModelDefaultsTest {
 
     @Test
     void comparesNumbersTheSameWithAndWithoutTheLongFastPath() {
-        List<Object> numbers = List.of(0, -0.0, 1, 1L, 1.0, 1.5f, (short) 2, (byte) -3, new BigDecimal("2.0"),
-                new BigDecimal("10"), new BigDecimal("1E+1"), 10.0, 9_007_199_254_740_992.0,
-                9_007_199_254_740_993L, new BigDecimal("9007199254740993"), 1e18, Long.MAX_VALUE, Long.MIN_VALUE,
-                BigInteger.TWO.pow(63), BigInteger.TWO.pow(63).negate(), new BigDecimal("123456789012345678"),
-                new BigDecimal("1234567890123456789"), Double.NaN);
+        List<Object> numbers = List.of(
+                0,
+                -0.0,
+                1,
+                1L,
+                1.0,
+                1.5f,
+                (short) 2,
+                (byte) -3,
+                new BigDecimal("2.0"),
+                new BigDecimal("10"),
+                new BigDecimal("1E+1"),
+                10.0,
+                9_007_199_254_740_992.0,
+                9_007_199_254_740_993L,
+                new BigDecimal("9007199254740993"),
+                1e18,
+                Long.MAX_VALUE,
+                Long.MIN_VALUE,
+                BigInteger.TWO.pow(63),
+                BigInteger.TWO.pow(63).negate(),
+                new BigDecimal("123456789012345678"),
+                new BigDecimal("1234567890123456789"),
+                Double.NaN);
         JsonPath less = JsonPath.compile("$[?@.a < @.b]");
         JsonPath equal = JsonPath.compile("$[?@.a == @.b]");
         List<String> mismatches = new ArrayList<>();

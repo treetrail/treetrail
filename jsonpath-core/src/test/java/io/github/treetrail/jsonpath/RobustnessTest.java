@@ -60,7 +60,9 @@ class RobustnessTest {
         JsonPath path = JsonPath.compile("$[?@.a == @.b]");
 
         assertThatThrownBy(() -> path.query(doc)).isInstanceOf(JsonPathLimitExceededException.class);
-        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxDepth(200_000)).query(doc)).hasSize(1);
+        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxDepth(200_000))
+                        .query(doc))
+                .hasSize(1);
     }
 
     @Test
@@ -87,7 +89,8 @@ class RobustnessTest {
 
         assertThat(JsonPath.compile("$.names[1]").query(doc).values()).containsExactly("y");
         assertThat(JsonPath.compile("$.numbers[?@ > 1]").query(doc).values()).containsExactly(2, 3);
-        assertThat(JsonPath.compile("$[?length(@.numbers) == 3]").query(List.of(doc))).hasSize(1);
+        assertThat(JsonPath.compile("$[?length(@.numbers) == 3]").query(List.of(doc)))
+                .hasSize(1);
     }
 
     @Test
@@ -101,7 +104,8 @@ class RobustnessTest {
     @Test
     void rejectsCollectionsWithoutOrderWithAHint() {
         assertThatThrownBy(() -> JsonPath.compile("$.tags[0]").query(Map.of("tags", Set.of("a"))))
-                .isInstanceOfSatisfying(JsonPathEvaluationException.class,
+                .isInstanceOfSatisfying(
+                        JsonPathEvaluationException.class,
                         e -> assertThat(e.path()).isEqualTo("$['tags']"))
                 .hasMessageContaining("copy them into a List")
                 .hasCauseInstanceOf(IllegalArgumentException.class);
@@ -110,7 +114,9 @@ class RobustnessTest {
     @Test
     void rejectsMapKeysThatAreNotStrings() {
         assertThatThrownBy(() -> JsonPath.compile("$.*").query(Map.of(1, "x")))
-                .isInstanceOfSatisfying(JsonPathEvaluationException.class, e -> assertThat(e.path()).isEqualTo("$"))
+                .isInstanceOfSatisfying(
+                        JsonPathEvaluationException.class,
+                        e -> assertThat(e.path()).isEqualTo("$"))
                 .hasMessageContaining("Map keys must be strings")
                 .hasMessageContaining("java.lang.Integer");
     }

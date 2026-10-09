@@ -14,8 +14,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Values {
 
-    private Values() {
-    }
+    private Values() {}
 
     /**
      * Compares two values. Numbers that are not finite (see {@link JsonModel#numberValue}) are neither
@@ -97,12 +96,22 @@ public final class Values {
      * Whether two values are equal as JSON values, the semantics of {@code ==} in filters: numbers by value,
      * strings by content, arrays element by element, objects member by member regardless of order.
      */
-    public static boolean jsonEquals(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b, int maxDepth) {
+    public static boolean jsonEquals(
+            JsonModel<@Nullable Object> ma,
+            @Nullable Object a,
+            JsonModel<@Nullable Object> mb,
+            @Nullable Object b,
+            int maxDepth) {
         return deepEqual(ma, a, mb, b, maxDepth);
     }
 
     /** Structural equality, with an explicit stack so that deep values cannot overflow the call stack. */
-    private static boolean deepEqual(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b, int maxDepth) {
+    private static boolean deepEqual(
+            JsonModel<@Nullable Object> ma,
+            @Nullable Object a,
+            JsonModel<@Nullable Object> mb,
+            @Nullable Object b,
+            int maxDepth) {
         JsonKind kind = ma.kind(a);
         if (kind != mb.kind(b)) {
             return false;
@@ -156,7 +165,8 @@ public final class Values {
     private static final int INCOMPARABLE = 2;
 
     /** Compares two numbers as -1, 0 or 1, or returns {@link #INCOMPARABLE}. */
-    private static int compareNumbers(JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b) {
+    private static int compareNumbers(
+            JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b) {
         if (ma.isLong(a) && mb.isLong(b)) {
             return Long.compare(ma.longValue(a), mb.longValue(b));
         }
@@ -168,7 +178,12 @@ public final class Values {
         return Integer.signum(na.compareTo(nb));
     }
 
-    private static boolean scalarEqual(JsonKind kind, JsonModel<@Nullable Object> ma, @Nullable Object a, JsonModel<@Nullable Object> mb, @Nullable Object b) {
+    private static boolean scalarEqual(
+            JsonKind kind,
+            JsonModel<@Nullable Object> ma,
+            @Nullable Object a,
+            JsonModel<@Nullable Object> mb,
+            @Nullable Object b) {
         switch (kind) {
             case NULL:
                 return true;

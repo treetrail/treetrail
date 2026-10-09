@@ -34,8 +34,8 @@ public final class EvaluationLimits {
      * No limits. Only use this for queries from trusted sources and documents without cycles. Values are
      * compared without recursion, so deep documents cannot overflow the stack.
      */
-    public static final EvaluationLimits NONE = new EvaluationLimits(Long.MAX_VALUE, Integer.MAX_VALUE,
-            Integer.MAX_VALUE);
+    public static final EvaluationLimits NONE =
+            new EvaluationLimits(Long.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 
     private final long maxVisitedNodes;
     private final int maxResultSize;
@@ -105,7 +105,8 @@ public final class EvaluationLimits {
             return false;
         }
         EvaluationLimits other = (EvaluationLimits) o;
-        return maxVisitedNodes == other.maxVisitedNodes && maxResultSize == other.maxResultSize
+        return maxVisitedNodes == other.maxVisitedNodes
+                && maxResultSize == other.maxResultSize
                 && maxDepth == other.maxDepth;
     }
 

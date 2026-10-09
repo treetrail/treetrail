@@ -20,8 +20,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class JsonParseTest {
 
-    private static final ObjectMapper JACKSON = new ObjectMapper()
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final ObjectMapper JACKSON =
+            new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     @Test
     void parsesEveryComplianceSuiteDocumentLikeJackson() throws JsonProcessingException {
@@ -45,7 +45,9 @@ class JsonParseTest {
         for (int i = 0; i < 2_000; i++) {
             Object document = randomValue(random, 0);
             String json = JACKSON.writeValueAsString(document);
-            assertThat(jsonEquals(JavaObjectModel.parse(json), document)).as(json).isTrue();
+            assertThat(jsonEquals(JavaObjectModel.parse(json), document))
+                    .as(json)
+                    .isTrue();
         }
     }
 
@@ -73,36 +75,38 @@ class JsonParseTest {
     }
 
     @ParameterizedTest
-    @CsvSource(delimiter = '|', value = {
-        "''                         | Expected a value                  | 0",
-        "'[1,]'                     | Expected a value                  | 3",
-        "'{\"a\":1,}'               | Expected a member name            | 7",
-        "'[01]'                     | Expected ',' or ']'               | 2",
-        "'[1.]'                     | Expected a digit after '.'        | 3",
-        "'[1e]'                     | Expected a digit in the exponent  | 3",
-        "'\"abc'                    | Unterminated string               | 0",
-        "'\"a\\x\"'                 | Invalid escape                    | 2",
-        "'\"\\u12g4\"'              | Expected four hex digits          | 3",
-        "'\"\\ud800\"'              | Unpaired surrogate                | 7",
-        "'\"\\udc00\"'              | Unpaired surrogate                | 7",
-        "'{\"a\":1,\"a\":2}'        | Duplicate member name             | 7",
-        "'[1] [2]'                  | Unexpected text after the JSON value | 4",
-        "'tru'                      | Expected a value                  | 0",
-        "'1e9999999999'             | Number out of range               | 0",
-        "'[NaN]'                    | Expected a value                  | 1",
-    })
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "''                         | Expected a value                  | 0",
+                "'[1,]'                     | Expected a value                  | 3",
+                "'{\"a\":1,}'               | Expected a member name            | 7",
+                "'[01]'                     | Expected ',' or ']'               | 2",
+                "'[1.]'                     | Expected a digit after '.'        | 3",
+                "'[1e]'                     | Expected a digit in the exponent  | 3",
+                "'\"abc'                    | Unterminated string               | 0",
+                "'\"a\\x\"'                 | Invalid escape                    | 2",
+                "'\"\\u12g4\"'              | Expected four hex digits          | 3",
+                "'\"\\ud800\"'              | Unpaired surrogate                | 7",
+                "'\"\\udc00\"'              | Unpaired surrogate                | 7",
+                "'{\"a\":1,\"a\":2}'        | Duplicate member name             | 7",
+                "'[1] [2]'                  | Unexpected text after the JSON value | 4",
+                "'tru'                      | Expected a value                  | 0",
+                "'1e9999999999'             | Number out of range               | 0",
+                "'[NaN]'                    | Expected a value                  | 1",
+            })
     void rejectsInvalidJsonWithReasonAndPosition(String json, String reason, int position) {
-        assertThatThrownBy(() -> JavaObjectModel.parse(json))
-                .isInstanceOfSatisfying(InvalidJsonException.class, e -> {
-                    assertThat(e.reason()).startsWith(reason);
-                    assertThat(e.position()).isEqualTo(position);
-                });
+        assertThatThrownBy(() -> JavaObjectModel.parse(json)).isInstanceOfSatisfying(InvalidJsonException.class, e -> {
+            assertThat(e.reason()).startsWith(reason);
+            assertThat(e.position()).isEqualTo(position);
+        });
     }
 
     @Test
     void rejectsControlCharactersAndNonAsciiHexDigits() {
         assertThatThrownBy(() -> JavaObjectModel.parse("\"a\tb\"")).isInstanceOf(InvalidJsonException.class);
-        assertThatThrownBy(() -> JavaObjectModel.parse("\"\\u\u0663\u0663\u0663\u0663\"")).isInstanceOf(InvalidJsonException.class);
+        assertThatThrownBy(() -> JavaObjectModel.parse("\"\\u\u0663\u0663\u0663\u0663\""))
+                .isInstanceOf(InvalidJsonException.class);
         assertThatThrownBy(() -> JavaObjectModel.parse("\"\uD800\"")).isInstanceOf(InvalidJsonException.class);
         assertThatThrownBy(() -> JavaObjectModel.parse("\f1")).isInstanceOf(InvalidJsonException.class);
     }
@@ -196,7 +200,8 @@ class JsonParseTest {
     void comparesJavaValuesAsJson() {
         assertThat(JavaObjectModel.jsonEquals(10, 10L)).isTrue();
         assertThat(JavaObjectModel.jsonEquals(8.95, new BigDecimal("8.950"))).isTrue();
-        assertThat(JavaObjectModel.jsonEquals(Map.of("a", 1, "b", List.of(1, 2)), JavaObjectModel.parse("{\"b\":[1,2],\"a\":1.0}")))
+        assertThat(JavaObjectModel.jsonEquals(
+                        Map.of("a", 1, "b", List.of(1, 2)), JavaObjectModel.parse("{\"b\":[1,2],\"a\":1.0}")))
                 .isTrue();
         assertThat(JavaObjectModel.jsonEquals(List.of(1, 2), List.of(2, 1))).isFalse();
         assertThat(JavaObjectModel.jsonEquals("1", 1)).isFalse();

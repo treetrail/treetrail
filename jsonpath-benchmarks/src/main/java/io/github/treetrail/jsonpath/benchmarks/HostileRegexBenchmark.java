@@ -1,7 +1,7 @@
 package io.github.treetrail.jsonpath.benchmarks;
 
-import io.github.treetrail.jsonpath.JsonPath;
 import com.jayway.jsonpath.Configuration;
+import io.github.treetrail.jsonpath.JsonPath;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,8 @@ public class HostileRegexBenchmark {
 
     private Object document;
     private final JsonPath rfc = JsonPath.compile("$[?match(@.s, '((a+)+)+b')]");
-    private final com.jayway.jsonpath.JsonPath jayway = com.jayway.jsonpath.JsonPath.compile("$[?(@.s =~ /((a+)+)+b/)]");
+    private final com.jayway.jsonpath.JsonPath jayway =
+            com.jayway.jsonpath.JsonPath.compile("$[?(@.s =~ /((a+)+)+b/)]");
     private final Configuration jaywayConfiguration = Configuration.defaultConfiguration();
 
     @Setup

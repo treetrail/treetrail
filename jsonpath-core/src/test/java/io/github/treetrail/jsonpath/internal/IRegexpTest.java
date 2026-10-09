@@ -14,41 +14,82 @@ import org.junit.jupiter.params.provider.ValueSource;
 class IRegexpTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "", "abc", "a|b", "(ab)*", "a{2}", "a{2,}", "a{2,3}", "[a-z]", "[^a-z]", "[-a]", "[a-]",
-        "\\p{Lu}", "\\P{L}", "[\\p{Nd}x]", "\\.", "\\n", "[\\]]", ".", "^a$", "()", "a||b"
-    })
+    @ValueSource(
+            strings = {
+                "",
+                "abc",
+                "a|b",
+                "(ab)*",
+                "a{2}",
+                "a{2,}",
+                "a{2,3}",
+                "[a-z]",
+                "[^a-z]",
+                "[-a]",
+                "[a-]",
+                "\\p{Lu}",
+                "\\P{L}",
+                "[\\p{Nd}x]",
+                "\\.",
+                "\\n",
+                "[\\]]",
+                ".",
+                "^a$",
+                "()",
+                "a||b"
+            })
     void acceptsValidExpressions(String regexp) {
         assertThat(IRegexp.compile(regexp)).isPresent();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "(", ")", "a**", "a{3,2}", "a{", "[]", "[^]", "[b-a]", "[a-c-e]", "\\d", "\\w", "\\s",
-        "\\p{IsBasicLatin}", "\\p{Cs}", "(?:a)", "a+?", "\\b", "[a-\\p{L}]", "{1}", "a{99999999999}"
-    })
+    @ValueSource(
+            strings = {
+                "(",
+                ")",
+                "a**",
+                "a{3,2}",
+                "a{",
+                "[]",
+                "[^]",
+                "[b-a]",
+                "[a-c-e]",
+                "\\d",
+                "\\w",
+                "\\s",
+                "\\p{IsBasicLatin}",
+                "\\p{Cs}",
+                "(?:a)",
+                "a+?",
+                "\\b",
+                "[a-\\p{L}]",
+                "{1}",
+                "a{99999999999}"
+            })
     void rejectsExpressionsOutsideIRegexp(String regexp) {
         assertThat(IRegexp.compile(regexp)).isEmpty();
     }
 
     @ParameterizedTest
-    @CsvSource(delimiter = ';', value = {
-        "a.c    ; abc   ; true",
-        "a.c    ; a\\nc ; false",
-        "[a-c]+ ; abcab ; true",
-        "[^a-c] ; d     ; true",
-        "[^a-c] ; b     ; false",
-        "\\p{Lu}\\p{Ll}* ; Hello ; true",
-        "\\P{L}+ ; 123  ; true",
-        "[\\P{L}\\P{N}] ; a ; true",
-        "a{2,3} ; aaaa  ; false",
-        "a{2,}  ; aaaa  ; true",
-        "(ab|cd){2} ; abcd ; true",
-        "x*     ; ''    ; true",
-        // Regular-language semantics: the first pass matches the empty string at '^'.
-        // java.util.regex answers false here; RE2 and Rust's regex answer true.
-        "(^|a){2} ; a  ; true",
-    })
+    @CsvSource(
+            delimiter = ';',
+            value = {
+                "a.c    ; abc   ; true",
+                "a.c    ; a\\nc ; false",
+                "[a-c]+ ; abcab ; true",
+                "[^a-c] ; d     ; true",
+                "[^a-c] ; b     ; false",
+                "\\p{Lu}\\p{Ll}* ; Hello ; true",
+                "\\P{L}+ ; 123  ; true",
+                "[\\P{L}\\P{N}] ; a ; true",
+                "a{2,3} ; aaaa  ; false",
+                "a{2,}  ; aaaa  ; true",
+                "(ab|cd){2} ; abcd ; true",
+                "x*     ; ''    ; true",
+                // Regular-language semantics: the first pass matches the empty string at '^'.
+                // java.util.regex answers false here; RE2 and Rust's regex answer true.
+                "(^|a){2} ; a  ; true",
+            })
     void matchesWholeInput(String regexp, String input, boolean expected) {
         String subject = input.equals("''") ? "" : input.replace("\\n", "\n");
         assertThat(IRegexp.compile(regexp).orElseThrow().matches(subject)).isEqualTo(expected);
@@ -95,7 +136,8 @@ class IRegexpTest {
             assertThat(IRegexp.compile("(a*)*b").orElseThrow().matches(input)).isFalse();
             assertThat(IRegexp.compile("(a|a)*b").orElseThrow().matches(input)).isFalse();
             assertThat(IRegexp.compile("(a|aa)+b").orElseThrow().find(input)).isFalse();
-            assertThat(IRegexp.compile("(.*a){20}").orElseThrow().matches(input)).isFalse();
+            assertThat(IRegexp.compile("(.*a){20}").orElseThrow().matches(input))
+                    .isFalse();
         });
     }
 
@@ -109,16 +151,25 @@ class IRegexpTest {
     @Test
     void compilesHugeRepetitionsOfNothingQuickly() {
         assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
-            assertThat(IRegexp.compile("(a|b)*a(){00000001390468697}").orElseThrow().matches("ba")).isTrue();
-            assertThat(IRegexp.compile("((){2000000000}){2000000000}x").orElseThrow().matches("x")).isTrue();
-            assertThat(IRegexp.compile("(a{0}){2000000000}").orElseThrow().matches("")).isTrue();
-            assertThat(IRegexp.compile("(){0,2000000000}y").orElseThrow().find("xy")).isTrue();
+            assertThat(IRegexp.compile("(a|b)*a(){00000001390468697}")
+                            .orElseThrow()
+                            .matches("ba"))
+                    .isTrue();
+            assertThat(IRegexp.compile("((){2000000000}){2000000000}x")
+                            .orElseThrow()
+                            .matches("x"))
+                    .isTrue();
+            assertThat(IRegexp.compile("(a{0}){2000000000}").orElseThrow().matches(""))
+                    .isTrue();
+            assertThat(IRegexp.compile("(){0,2000000000}y").orElseThrow().find("xy"))
+                    .isTrue();
         });
     }
 
     @Test
     void rejectsDeeplyNestedGroups() {
-        assertThat(IRegexp.compile("(".repeat(10_000) + "a" + ")".repeat(10_000))).isEmpty();
+        assertThat(IRegexp.compile("(".repeat(10_000) + "a" + ")".repeat(10_000)))
+                .isEmpty();
     }
 
     @Test
@@ -132,7 +183,8 @@ class IRegexpTest {
             for (int j = 0; j < 40; j++) {
                 input.append(random.nextBoolean() ? 'a' : 'b');
             }
-            assertThat(regexp.matches(input.toString())).isEqualTo(java.matcher(input).matches());
+            assertThat(regexp.matches(input.toString()))
+                    .isEqualTo(java.matcher(input).matches());
         }
     }
 
@@ -150,7 +202,8 @@ class IRegexpTest {
             inputs.add(sb.toString());
         }
         assertThat(inputs.parallelStream().filter(regexp::matches).count())
-                .isEqualTo(inputs.stream().filter(s -> java.matcher(s).matches()).count());
+                .isEqualTo(
+                        inputs.stream().filter(s -> java.matcher(s).matches()).count());
     }
 
     /** Compares the automaton with java.util.regex on random expressions and inputs. */
@@ -161,8 +214,8 @@ class IRegexpTest {
             StringBuilder iregexp = new StringBuilder();
             StringBuilder java = new StringBuilder();
             randomRegexp(random, 3, iregexp, java);
-            IRegexp ours = IRegexp.compile(iregexp.toString()).orElseThrow(
-                    () -> new AssertionError("rejected " + iregexp));
+            IRegexp ours =
+                    IRegexp.compile(iregexp.toString()).orElseThrow(() -> new AssertionError("rejected " + iregexp));
             Pattern theirs = Pattern.compile(java.toString());
             for (int j = 0; j < 20; j++) {
                 String input = randomInput(random);
@@ -185,7 +238,8 @@ class IRegexpTest {
                 kind = 0;
             }
             switch (kind) {
-                case 0: case 1:
+                case 0:
+                case 1:
                     String c = random.nextBoolean() ? "a" : "b";
                     iregexp.append(c);
                     java.append(c);

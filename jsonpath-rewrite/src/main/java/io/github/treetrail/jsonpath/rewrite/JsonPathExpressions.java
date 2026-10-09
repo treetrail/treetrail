@@ -11,7 +11,9 @@ import org.openrewrite.Recipe;
 public class JsonPathExpressions extends DataTable<JsonPathExpressions.Row> {
 
     public JsonPathExpressions(Recipe recipe) {
-        super(recipe, "JSONPath expressions",
+        super(
+                recipe,
+                "JSONPath expressions",
                 "Jayway JsonPath and Spring jsonPath() expressions and how they relate to RFC 9535.");
     }
 
@@ -27,8 +29,9 @@ public class JsonPathExpressions extends DataTable<JsonPathExpressions.Row> {
         @Column(displayName = "Expression", description = "The JSONPath expression, if it is a string literal.")
         private final @Nullable String expression;
 
-        @Column(displayName = "Assessment", description = "VALID, VALID_SINGLE_VALUE, NOT_RFC_9535, "
-                + "WRITE_API or NOT_A_LITERAL.")
+        @Column(
+                displayName = "Assessment",
+                description = "VALID, VALID_SINGLE_VALUE, NOT_RFC_9535, " + "WRITE_API or NOT_A_LITERAL.")
         private final String assessment;
 
         @Column(displayName = "Hint", description = "What to do when migrating to RFC 9535.")

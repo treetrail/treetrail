@@ -269,6 +269,8 @@ Java 17, 21 and 25. Gradle downloads the JDKs it does not find.
 The build also fails if a published module's API becomes incompatible with the last release (see
 [docs/releasing.md](docs/releasing.md#api-compatibility)) or if a module's line or branch coverage falls below
 its minimum in `build.gradle.kts`. Coverage reports are in `build/reports/jacoco/test/html` of each module.
+Java sources are formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format):
+`./gradlew spotlessApply` formats them, and the build fails on unformatted code.
 
 ## License
 

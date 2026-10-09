@@ -46,18 +46,21 @@ class EvaluationLimitsTest {
     void reusesAbsoluteResultsOnlyWithinOneRun() {
         JsonPath path = JsonPath.compile("$.items[?@ == $.target]");
 
-        assertThat(path.query(Map.of("items", List.of(1, 2, 3), "target", 1)).values()).containsExactly(1);
-        assertThat(path.query(Map.of("items", List.of(1, 2, 3), "target", 2)).values()).containsExactly(2);
+        assertThat(path.query(Map.of("items", List.of(1, 2, 3), "target", 1)).values())
+                .containsExactly(1);
+        assertThat(path.query(Map.of("items", List.of(1, 2, 3), "target", 2)).values())
+                .containsExactly(2);
     }
 
     @Test
     void failsWhenTooManyNodesAreVisited() {
         JsonPath path = JsonPath.compile("$[*]");
 
-        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxVisitedNodes(1_000)).query(numbers(1_000)))
+        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxVisitedNodes(1_000))
+                        .query(numbers(1_000)))
                 .hasSize(1_000);
         assertThatThrownBy(() -> path.withLimits(EvaluationLimits.DEFAULT.withMaxVisitedNodes(999))
-                .query(numbers(1_000)))
+                        .query(numbers(1_000)))
                 .isInstanceOf(JsonPathLimitExceededException.class)
                 .hasMessageContaining("999");
     }
@@ -66,10 +69,11 @@ class EvaluationLimitsTest {
     void failsWhenTheResultIsTooLarge() {
         JsonPath path = JsonPath.compile("$[*]");
 
-        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxResultSize(1_000)).query(numbers(1_000)))
+        assertThat(path.withLimits(EvaluationLimits.DEFAULT.withMaxResultSize(1_000))
+                        .query(numbers(1_000)))
                 .hasSize(1_000);
         assertThatThrownBy(() -> path.withLimits(EvaluationLimits.DEFAULT.withMaxResultSize(999))
-                .query(numbers(1_000)))
+                        .query(numbers(1_000)))
                 .isInstanceOf(JsonPathLimitExceededException.class)
                 .hasMessageContaining("1000");
     }
@@ -83,7 +87,9 @@ class EvaluationLimitsTest {
             assertThatThrownBy(() -> path.query(doc))
                     .isExactlyInstanceOf(JsonPathEvaluationException.class)
                     .hasMessageContaining("interrupted");
-            assertThat(Thread.currentThread().isInterrupted()).as("interrupt status stays set").isTrue();
+            assertThat(Thread.currentThread().isInterrupted())
+                    .as("interrupt status stays set")
+                    .isTrue();
         } finally {
             Thread.interrupted();
         }
@@ -92,7 +98,8 @@ class EvaluationLimitsTest {
     @Test
     void startsWithDefaultLimits() {
         JsonPath path = JsonPath.compile("$.a");
-        EvaluationLimits strict = EvaluationLimits.DEFAULT.withMaxVisitedNodes(10).withMaxResultSize(1);
+        EvaluationLimits strict =
+                EvaluationLimits.DEFAULT.withMaxVisitedNodes(10).withMaxResultSize(1);
 
         assertThat(path.limits()).isEqualTo(EvaluationLimits.DEFAULT);
         assertThat(EvaluationLimits.DEFAULT.maxVisitedNodes()).isEqualTo(100_000_000L);

@@ -32,8 +32,7 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
     /** The shared instance. The model is stateless. */
     public static final JavaObjectModel INSTANCE = new JavaObjectModel();
 
-    private JavaObjectModel() {
-    }
+    private JavaObjectModel() {}
 
     /**
      * Returns whether two plain Java values are equal as JSON values, with the semantics of {@code ==} in
@@ -90,12 +89,14 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
         String hint = value instanceof Collection
                 ? ". Collections other than List have no element order; copy them into a List"
                 : adapterHint(value.getClass());
-        throw new IllegalArgumentException("Not a JSON value: " + value.getClass().getName() + hint);
+        throw new IllegalArgumentException(
+                "Not a JSON value: " + value.getClass().getName() + hint);
     }
 
     /** Tree types of JSON libraries that have an adapter, by fully qualified name of a supertype. */
     private static final Map<String, String> ADAPTERS = Map.of(
-            "com.fasterxml.jackson.databind.JsonNode", "Jackson 2 trees, use Jackson2Model.INSTANCE from jsonpath-jackson2",
+            "com.fasterxml.jackson.databind.JsonNode",
+                    "Jackson 2 trees, use Jackson2Model.INSTANCE from jsonpath-jackson2",
             "tools.jackson.databind.JsonNode", "Jackson 3 trees, use Jackson3Model.INSTANCE from jsonpath-jackson3",
             "com.google.gson.JsonElement", "Gson trees, use GsonModel.INSTANCE from jsonpath-gson",
             "jakarta.json.JsonValue", "JSON-P values, use JsonpModel.INSTANCE from jsonpath-jsonp");

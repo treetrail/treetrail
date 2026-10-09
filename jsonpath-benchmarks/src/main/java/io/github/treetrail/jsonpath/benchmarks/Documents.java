@@ -14,8 +14,7 @@ final class Documents {
     private static final String[] AUTHORS = {"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"};
     private static final String[] CATEGORIES = {"reference", "fiction"};
 
-    private Documents() {
-    }
+    private Documents() {}
 
     /** The classic bookstore, with {@code books} books. */
     static Map<String, Object> store(int books) {

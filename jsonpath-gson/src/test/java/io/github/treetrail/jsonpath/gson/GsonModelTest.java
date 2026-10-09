@@ -2,16 +2,16 @@ package io.github.treetrail.jsonpath.gson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.treetrail.jsonpath.JavaObjectModel;
-import io.github.treetrail.jsonpath.JsonPath;
-import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.treetrail.jsonpath.JavaObjectModel;
+import io.github.treetrail.jsonpath.JsonPath;
+import io.github.treetrail.jsonpath.NodeList;
+import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,8 @@ class GsonModelTest {
 
     private static final Gson GSON = new Gson();
     /** Writes results back with null members, which Gson drops by default. */
-    private static final Gson GSON_WITH_NULLS = new GsonBuilder().serializeNulls().create();
+    private static final Gson GSON_WITH_NULLS =
+            new GsonBuilder().serializeNulls().create();
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
@@ -34,8 +35,8 @@ class GsonModelTest {
      */
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithUntypedGsonOutput() {
-        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, json -> GSON.fromJson(json, Object.class),
-                GSON_WITH_NULLS::toJson);
+        return ComplianceSuite.tests(
+                JavaObjectModel.INSTANCE, json -> GSON.fromJson(json, Object.class), GSON_WITH_NULLS::toJson);
     }
 
     @Test
@@ -43,18 +44,24 @@ class GsonModelTest {
         JsonElement document = JsonParser.parseString(
                 "{\"store\":{\"book\":[{\"title\":\"A\",\"price\":8.95},{\"title\":\"B\",\"price\":12}]}}");
 
-        NodeList<JsonElement> nodes = JsonPath.compile("$.store.book[?@.price < 10]").query(document, GsonModel.INSTANCE);
+        NodeList<JsonElement> nodes =
+                JsonPath.compile("$.store.book[?@.price < 10]").query(document, GsonModel.INSTANCE);
 
         // Identity, not equality: the query hands back the library's own node objects.
         assertThat(nodes.values()).hasSize(1);
-        assertThat(nodes.values().get(0)).isSameAs(document.getAsJsonObject().getAsJsonObject("store").getAsJsonArray("book").get(0));
+        assertThat(nodes.values().get(0))
+                .isSameAs(document.getAsJsonObject()
+                        .getAsJsonObject("store")
+                        .getAsJsonArray("book")
+                        .get(0));
     }
 
     @Test
     void comparesNumbersByValue() {
         JsonElement document = JsonParser.parseString("[{\"n\":1},{\"n\":1.0},{\"n\":10e-1},{\"n\":2}]");
 
-        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, GsonModel.INSTANCE)).hasSize(3);
+        assertThat(JsonPath.compile("$[?@.n == 1]").query(document, GsonModel.INSTANCE))
+                .hasSize(3);
     }
 
     @Test
@@ -65,7 +72,8 @@ class GsonModelTest {
         array.add((JsonElement) null);
         document.add("a", array);
 
-        assertThat(JsonPath.compile("$.a[?@ == null]").query(document, GsonModel.INSTANCE)).hasSize(1);
+        assertThat(JsonPath.compile("$.a[?@ == null]").query(document, GsonModel.INSTANCE))
+                .hasSize(1);
     }
 
     @Test
@@ -75,9 +83,12 @@ class GsonModelTest {
         document.add(Double.POSITIVE_INFINITY);
         document.add(2);
 
-        assertThat(JsonPath.compile("$[?@ > 1]").query(document, GsonModel.INSTANCE).values())
+        assertThat(JsonPath.compile("$[?@ > 1]")
+                        .query(document, GsonModel.INSTANCE)
+                        .values())
                 .containsExactly(document.get(2));
-        assertThat(JsonPath.compile("$[?@ != 2]").query(document, GsonModel.INSTANCE)).hasSize(2);
+        assertThat(JsonPath.compile("$[?@ != 2]").query(document, GsonModel.INSTANCE))
+                .hasSize(2);
     }
 
     @Test
@@ -85,8 +96,11 @@ class GsonModelTest {
         JsonElement document = JsonParser.parseString(
                 "[-123, 123456789012345678, 1234567890123456789, 12345678901234567890, 1e2, 100, 1.5]");
 
-        assertThat(JsonPath.compile("$[?@ == 100]").query(document, GsonModel.INSTANCE)).hasSize(2);
-        assertThat(JsonPath.compile("$[?@ > 123456789012345678]").query(document, GsonModel.INSTANCE)).hasSize(2);
-        assertThat(JsonPath.compile("$[?@ < 0]").query(document, GsonModel.INSTANCE)).hasSize(1);
+        assertThat(JsonPath.compile("$[?@ == 100]").query(document, GsonModel.INSTANCE))
+                .hasSize(2);
+        assertThat(JsonPath.compile("$[?@ > 123456789012345678]").query(document, GsonModel.INSTANCE))
+                .hasSize(2);
+        assertThat(JsonPath.compile("$[?@ < 0]").query(document, GsonModel.INSTANCE))
+                .hasSize(1);
     }
 }

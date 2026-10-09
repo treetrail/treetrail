@@ -1,7 +1,7 @@
 package io.github.treetrail.jsonpath.benchmarks;
 
-import io.github.treetrail.jsonpath.JsonPath;
 import com.jayway.jsonpath.Configuration;
+import io.github.treetrail.jsonpath.JsonPath;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;

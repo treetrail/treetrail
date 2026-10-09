@@ -17,8 +17,7 @@ import java.util.Map;
  */
 public final class DifferentialCases {
 
-    private DifferentialCases() {
-    }
+    private DifferentialCases() {}
 
     /** Arguments: output file, seed, number of documents, queries per document. */
     public static void main(String[] args) throws IOException {

@@ -23,8 +23,7 @@ public final class GsonModel implements JsonModel<JsonElement> {
     /** The shared instance. The model is stateless. */
     public static final GsonModel INSTANCE = new GsonModel();
 
-    private GsonModel() {
-    }
+    private GsonModel() {}
 
     @Override
     public JsonKind kind(JsonElement value) {

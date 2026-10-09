@@ -9,11 +9,12 @@ import java.util.function.Function;
  * <p>Arguments are passed as {@link Val} (ValueType), {@link Boolean} (LogicalType) or
  * {@code List<Val>} (NodesType, one value per node); the body returns a value of the declared result type.
  */
-public record FunctionDefinition(
-        String name, List<Type> parameters, Type result, Function<List<Object>, Object> body) {
+public record FunctionDefinition(String name, List<Type> parameters, Type result, Function<List<Object>, Object> body) {
 
     /** The RFC 9535 function expression types. */
     public enum Type {
-        VALUE, LOGICAL, NODES
+        VALUE,
+        LOGICAL,
+        NODES
     }
 }
