@@ -67,6 +67,24 @@ allprojects {
     version = providers.gradleProperty("releaseVersion").getOrElse("0.0.0-SNAPSHOT")
 }
 
+val jacocoVersion = libs.versions.jacoco.get()
+
+/**
+ * Minimum line and branch coverage per module, a little below the coverage when it was last raised. Raise a
+ * module's values when its coverage has grown, so that it does not quietly fall back.
+ */
+val coverageMinimum = mapOf(
+    "jsonpath-core" to (0.96 to 0.91),
+    "jsonpath-jackson2" to (0.90 to 0.87),
+    "jsonpath-jackson3" to (0.90 to 0.87),
+    "jsonpath-gson" to (0.94 to 0.75),
+    "jsonpath-jsonp" to (0.84 to 0.87),
+    "jsonpath-assertj" to (0.89 to 0.74),
+    "jsonpath-spring-test" to (0.95 to 0.74),
+    "jsonpath-migration" to (0.73 to 0.54),
+    "jsonpath-rewrite" to (0.88 to 0.76),
+)
+
 // Shared setup for all library modules.
 subprojects {
     apply(plugin = "java-library")
@@ -117,6 +135,44 @@ subprojects {
             }
             tasks.named("check") { dependsOn(testOnJava) }
         }
+    }
+
+    // Test coverage of each module by its own tests (`test`, on Java 25): an HTML and XML report after every
+    // test run, and `check` fails if a module's line or branch coverage falls below its minimum.
+    if (name != "jsonpath-benchmarks") {
+        apply(plugin = "jacoco")
+        extensions.configure<JacocoPluginExtension> {
+            toolVersion = jacocoVersion
+        }
+        val coverageReport = tasks.named<JacocoReport>("jacocoTestReport") {
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }
+        tasks.named<Test>("test") { finalizedBy(coverageReport) }
+        // Only `test` counts; the runs on Java 17 and 21 and the fuzzing tasks run without the agent.
+        tasks.withType<Test>().configureEach {
+            if (name != "test") {
+                extensions.configure<JacocoTaskExtension> { isEnabled = false }
+            }
+        }
+        val minimum = coverageMinimum.getValue(name)
+        val coverageCheck = tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+            violationRules {
+                rule {
+                    limit {
+                        counter = "LINE"
+                        this.minimum = minimum.first.toBigDecimal()
+                    }
+                    limit {
+                        counter = "BRANCH"
+                        this.minimum = minimum.second.toBigDecimal()
+                    }
+                }
+            }
+        }
+        tasks.named("check") { dependsOn(coverageCheck) }
     }
 
     if (name in publishedModules) {
