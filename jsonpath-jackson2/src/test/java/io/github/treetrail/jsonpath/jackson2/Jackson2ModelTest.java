@@ -8,11 +8,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.treetrail.jsonpath.JavaObjectModel;
+import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathEvaluationException;
 import io.github.treetrail.jsonpath.NodeList;
 import io.github.treetrail.jsonpath.testing.ComplianceSuite;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -26,6 +31,21 @@ class Jackson2ModelTest {
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
         return ComplianceSuite.tests(Jackson2Model.INSTANCE, Jackson2ModelTest::parse, JsonNode::toString);
+    }
+
+    @Test
+    void comparesValuesAcrossModels() throws JsonProcessingException {
+        JsonNode node = new ObjectMapper().readTree("{\"price\": 399.0, \"tags\": [\"a\", null], \"ok\": true}");
+        Map<String, Object> same = new LinkedHashMap<>();
+        same.put("ok", true);
+        same.put("tags", Arrays.asList("a", null));
+        same.put("price", 399);
+
+        assertThat(JsonModel.jsonEquals(Jackson2Model.INSTANCE, node, JavaObjectModel.INSTANCE, same))
+                .isTrue();
+        same.put("price", 399.5);
+        assertThat(JsonModel.jsonEquals(Jackson2Model.INSTANCE, node, JavaObjectModel.INSTANCE, same))
+                .isFalse();
     }
 
     @Test

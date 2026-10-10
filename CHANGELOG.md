@@ -19,6 +19,10 @@ a minor version may still change the API, which this file then says.
   limits) and an `expression()` accessor. `Node.hashCode()` now hashes the path only, instead of hashing
   the value deeply and rebuilding the path string on every call.
   ([#14](https://github.com/treetrail/treetrail/issues/14))
+- `JsonModel.jsonEquals(modelA, a, modelB, b)`: JSON value equality with the semantics of `==` in filters,
+  also across models, for example a Jackson tree against plain Java objects. The migration module and the
+  compliance tests now use it instead of their own implementations.
+  ([#21](https://github.com/treetrail/treetrail/issues/21))
 
 ### Testing
 

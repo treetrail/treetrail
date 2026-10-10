@@ -38,7 +38,8 @@ public final class JavaObjectModel implements JsonModel<@Nullable Object> {
      * Returns whether two plain Java values are equal as JSON values, with the semantics of {@code ==} in
      * filters: numbers by value ({@code 10}, {@code 10L}, {@code 10.0} and {@code new BigDecimal("10.00")}
      * are equal), strings by content, lists element by element and maps member by member regardless of
-     * order. Useful to compare query results with expected values in tests.
+     * order. Useful to compare query results with expected values in tests. For values of other models,
+     * see {@link JsonModel#jsonEquals(JsonModel, Object, JsonModel, Object)}.
      *
      * @throws JsonPathLimitExceededException if the values are nested more than 1,000 levels deep
      * @throws IllegalArgumentException if a value is not a JSON value of this model
