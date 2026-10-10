@@ -13,6 +13,9 @@ import org.jspecify.annotations.Nullable;
  * The result of a query: the selected nodes in order (RFC 9535, section 1.1). A node list may
  * contain the same node more than once, for example for {@code $[0,0]}.
  *
+ * <p>A node list, like its nodes, keeps the queried document reachable, because the locations link to the
+ * nodes' ancestors. The lists that {@link #values()} and {@link #paths()} return do not.
+ *
  * @param <N> the node type of the object model
  */
 public final class NodeList<N extends @Nullable Object> extends AbstractList<Node<N>> {
@@ -43,7 +46,7 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
         return nodes.size();
     }
 
-    /** Returns the selected values in order. */
+    /** Returns the selected values in order, in a list that does not refer to the rest of the document. */
     public List<N> values() {
         @Nullable Object[] values = new Object[nodes.size()];
         for (int i = 0; i < values.length; i++) {

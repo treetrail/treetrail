@@ -8,6 +8,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * A node selected by a query: a value together with its location in the document.
  *
+ * <p>The location links to the node's ancestors in the document, so a node keeps the whole document it was
+ * selected from reachable. To keep only the values of a query on a large document, use
+ * {@link NodeList#values()}.
+ *
  * @param <N> the node type of the object model
  */
 public final class Node<N extends @Nullable Object> {
