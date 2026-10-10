@@ -1,3 +1,8 @@
+pluginManagement {
+    // The convention plugins treetrail.* (see build.gradle.kts).
+    includeBuild("build-logic")
+}
+
 plugins {
     // Downloads the JDKs for the test runs on Java 17 and 21 when they are not installed.
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"

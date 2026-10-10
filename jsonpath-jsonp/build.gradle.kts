@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "Treetrail JSONPath (RFC 9535) on Jakarta JSON-P values (jakarta.json.JsonValue), with any JSON-P implementation."
+
+treetrail {
+    coverage(line = 0.84, branch = 0.87)
+}
 
 dependencies {
     api(project(":jsonpath-core"))
