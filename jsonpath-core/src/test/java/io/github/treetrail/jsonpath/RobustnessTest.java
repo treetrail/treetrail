@@ -54,6 +54,23 @@ class RobustnessTest {
     }
 
     @Test
+    void appliesTheDepthLimitToChildSegments() {
+        EvaluationLimits shallow = EvaluationLimits.DEFAULT.withMaxDepth(2);
+        Object lists = nestedLists(4);
+        Object maps = Map.of("a", Map.of("b", Map.of("c", 1)));
+
+        // The children of nodes at depth 2 are beyond the limit, for arrays and objects alike.
+        assertThat(JsonPath.compile("$[*][*]").withLimits(shallow).query(lists)).hasSize(1);
+        assertThatThrownBy(
+                        () -> JsonPath.compile("$[*][*][*]").withLimits(shallow).query(lists))
+                .isInstanceOf(JsonPathLimitExceededException.class);
+        assertThat(JsonPath.compile("$.*.*").withLimits(shallow).query(maps)).hasSize(1);
+        assertThatThrownBy(
+                        () -> JsonPath.compile("$.*.*[?@]").withLimits(shallow).query(maps))
+                .isInstanceOf(JsonPathLimitExceededException.class);
+    }
+
+    @Test
     void comparesDeepValuesWithoutOverflowingTheStack() {
         Object deep = nestedLists(100_000);
         Object doc = List.of(Map.of("a", deep, "b", nestedLists(100_000)));
