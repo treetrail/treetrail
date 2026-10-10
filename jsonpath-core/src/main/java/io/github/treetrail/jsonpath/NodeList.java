@@ -2,7 +2,7 @@ package io.github.treetrail.jsonpath;
 
 import io.github.treetrail.jsonpath.internal.Located;
 import java.util.AbstractList;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -17,15 +17,25 @@ import org.jspecify.annotations.Nullable;
  */
 public final class NodeList<N extends @Nullable Object> extends AbstractList<Node<N>> {
 
-    private final List<Node<N>> nodes;
+    // The selected nodes as the evaluator found them; Node objects are created only when asked for.
+    private final List<Located> nodes;
 
-    NodeList(List<Node<N>> nodes) {
-        this.nodes = Collections.unmodifiableList(nodes);
+    NodeList(List<Located> nodes) {
+        this.nodes = nodes;
     }
 
     @Override
     public Node<N> get(int index) {
-        return nodes.get(index);
+        return of(nodes.get(index));
+    }
+
+    /**
+     * Returns the node for a node the evaluator selected in a document of type N. The value is null only for
+     * models whose N includes null, which NullAway cannot tell from the cast.
+     */
+    @SuppressWarnings({"unchecked", "NullAway"})
+    static <N extends @Nullable Object> Node<N> of(Located node) {
+        return new Node<>((N) node.value(), node);
     }
 
     @Override
@@ -35,30 +45,32 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
 
     /** Returns the selected values in order. */
     public List<N> values() {
-        List<N> values = new ArrayList<>(nodes.size());
-        for (Node<N> node : nodes) {
-            values.add(node.value());
+        @Nullable Object[] values = new Object[nodes.size()];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = nodes.get(i).value();
         }
-        return Collections.unmodifiableList(values);
+        @SuppressWarnings("unchecked")
+        List<N> list = (List<N>) Arrays.asList(values);
+        return Collections.unmodifiableList(list);
     }
 
     /** Returns the normalized paths of the selected nodes in order. */
     public List<String> paths() {
-        List<String> paths = new ArrayList<>(nodes.size());
+        String[] paths = new String[nodes.size()];
         // A node below an earlier selected node, as in $..*, continues from that node's path instead of
         // building its own from the root; deep documents would otherwise take time quadratic in their depth.
         IdentityHashMap<Located, String> known = new IdentityHashMap<>();
-        for (Node<N> node : nodes) {
-            Located location = node.internalLocation();
-            if (location.depth() < Located.REUSE_DEPTH) {
-                paths.add(node.path());
+        for (int i = 0; i < paths.length; i++) {
+            Located node = nodes.get(i);
+            if (node.depth() < Located.REUSE_DEPTH) {
+                paths[i] = node.normalizedPath();
             } else {
-                String path = node.path(known::get);
-                known.put(location, path);
-                paths.add(path);
+                String path = node.normalizedPath(known::get);
+                known.put(node, path);
+                paths[i] = path;
             }
         }
-        return Collections.unmodifiableList(paths);
+        return Collections.unmodifiableList(Arrays.asList(paths));
     }
 
     /**
@@ -80,6 +92,6 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
 
     /** Returns the first selected node, or empty if no node was selected; see {@link #single()} on null values. */
     public Optional<Node<N>> first() {
-        return nodes.isEmpty() ? Optional.empty() : Optional.of(nodes.get(0));
+        return nodes.isEmpty() ? Optional.empty() : Optional.of(get(0));
     }
 }

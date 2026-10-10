@@ -3,7 +3,6 @@ package io.github.treetrail.jsonpath;
 import io.github.treetrail.jsonpath.internal.Located;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -40,20 +39,6 @@ public final class Node<N extends @Nullable Object> {
             path = p;
         }
         return p;
-    }
-
-    /** Returns the path, continuing from the path of an ancestor that {@code known} has one for. */
-    String path(Function<Located, @Nullable String> known) {
-        String p = path;
-        if (p == null) {
-            p = location.normalizedPath(known);
-            path = p;
-        }
-        return p;
-    }
-
-    Located internalLocation() {
-        return location;
     }
 
     /** Returns the location of the node as a {@link NormalizedPath}. */
