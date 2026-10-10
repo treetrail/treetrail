@@ -36,9 +36,10 @@ at commit `9d1a415` (2026-09-17), 706 cases, on Java 17, 21 and 25. All cases pa
   equals the literal `8.95` even though the binary value differs slightly.
 - **Strings** are compared by Unicode code points, without normalization: `"é"` (U+00E9) and
   `"é"` are different. `length()` counts code points.
-- **Unicode categories** in regular expressions (`\p{L}` and so on) come from the JDK
-  (`Character.getType`): Unicode 13.0 on Java 17, 15.0 on Java 21, 16.0 on Java 25. Code points
-  assigned in later Unicode versions can match differently depending on the Java version.
+- **Unicode categories** in regular expressions (`\p{L}` and so on) come from Unicode 16.0 on every Java
+  version, from tables generated from the Unicode Character Database
+  (`scripts/GenerateUnicodeCategories.java`), not from the JDK, whose Unicode version differs (13.0 on
+  Java 17, 15.0 on Java 21). A new Unicode version can change matches and is noted in the changelog.
 - **Invalid regular expressions** make `match()` and `search()` return false, as the RFC requires. That
   includes expressions beyond the limits below.
 - **Results** are node lists and may contain the same node more than once (`$[0,0]`). Each node has a
