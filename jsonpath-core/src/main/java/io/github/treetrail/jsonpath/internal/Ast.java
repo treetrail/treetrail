@@ -52,8 +52,16 @@ public final class Ast {
     /** Something that produces a value, a node list or a logical value. */
     public sealed interface Operand extends Argument permits Literal, QueryOperand, FunctionCall {}
 
-    /** A literal; {@code value} uses the {@link io.github.treetrail.jsonpath.JavaObjectModel} (null = JSON null). */
-    public record Literal(@Nullable Object value) implements Operand {}
+    /**
+     * A literal; {@code value} uses the {@link io.github.treetrail.jsonpath.JavaObjectModel} (null = JSON null),
+     * {@code val} is the same value as a {@link Val}, created once.
+     */
+    public record Literal(@Nullable Object value, Val val) implements Operand {
+
+        public Literal(@Nullable Object value) {
+            this(value, Val.literal(value));
+        }
+    }
 
     public record QueryOperand(Query query) implements Operand {}
 

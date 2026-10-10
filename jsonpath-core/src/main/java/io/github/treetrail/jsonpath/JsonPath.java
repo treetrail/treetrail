@@ -8,6 +8,7 @@ import io.github.treetrail.jsonpath.internal.Parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -97,6 +98,54 @@ public final class JsonPath {
             nodes.add(new Node<>(value, l.location()));
         }
         return new NodeList<>(nodes);
+    }
+
+    /**
+     * Whether the query selects at least one node in a document made of plain Java objects. Stops at the
+     * first node, so it is cheaper than {@code query(document).isEmpty()} for queries that select many.
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
+     * @throws JsonPathEvaluationException if the thread is interrupted
+     */
+    public boolean exists(@Nullable Object document) {
+        return exists(document, JavaObjectModel.INSTANCE);
+    }
+
+    /**
+     * Whether the query selects at least one node in a document of the given model; stops at the first.
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
+     * @throws JsonPathEvaluationException if the thread is interrupted
+     */
+    public <N extends @Nullable Object> boolean exists(N document, JsonModel<N> model) {
+        return new Evaluator(document, model, limits).exists(query);
+    }
+
+    /**
+     * Returns the first node the query selects in a document made of plain Java objects, in the order of
+     * {@link #query(Object)}, without selecting the others.
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
+     * @throws JsonPathEvaluationException if the thread is interrupted
+     */
+    public Optional<Node<@Nullable Object>> first(@Nullable Object document) {
+        return first(document, JavaObjectModel.INSTANCE);
+    }
+
+    /**
+     * Returns the first node the query selects in a document of the given model, without selecting the others.
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
+     * @throws JsonPathEvaluationException if the thread is interrupted
+     */
+    public <N extends @Nullable Object> Optional<Node<N>> first(N document, JsonModel<N> model) {
+        Located first = new Evaluator(document, model, limits).first(query);
+        if (first == null) {
+            return Optional.empty();
+        }
+        @SuppressWarnings("unchecked")
+        N value = (N) first.value();
+        return Optional.of(new Node<>(value, first.location()));
     }
 
     /** Whether the query is singular, that is, selects at most one node (RFC 9535, section 2.3.5.1). */

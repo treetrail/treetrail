@@ -75,7 +75,7 @@ class EvaluationLimitsTest {
         assertThatThrownBy(() -> path.withLimits(EvaluationLimits.DEFAULT.withMaxResultSize(999))
                         .query(numbers(1_000)))
                 .isInstanceOf(JsonPathLimitExceededException.class)
-                .hasMessageContaining("1000");
+                .hasMessageContaining("more than 999 nodes");
     }
 
     @Test

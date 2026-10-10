@@ -72,7 +72,18 @@ public final class IRegexp {
         this.program = program;
     }
 
-    /** Returns the compiled expression, or empty if {@code regexp} is not a valid I-Regexp. */
+    /**
+     * Compiles an expression for one query, without the shared cache: the query holds it, for example a
+     * literal pattern in {@code match(@.a, 'x.*')}. Its automata still count against the shared memory budget.
+     */
+    public static Optional<IRegexp> compileForQuery(String regexp) {
+        return doCompile(regexp);
+    }
+
+    /**
+     * Returns the compiled expression, or empty if {@code regexp} is not a valid I-Regexp. Compiled
+     * expressions are cached, for patterns that come from documents ({@code match(@.a, @.pattern)}).
+     */
     public static Optional<IRegexp> compile(String regexp) {
         Optional<IRegexp> cached = CACHE.get(regexp);
         if (cached != null) {

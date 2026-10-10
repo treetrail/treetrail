@@ -415,7 +415,7 @@ public final class Parser {
         for (int i = 0; i < arguments.size(); i++) {
             checkArgument(arguments.get(i), function.parameters().get(i), positions.get(i));
         }
-        return new FunctionCall(function, List.copyOf(arguments));
+        return Functions.specialize(new FunctionCall(function, List.copyOf(arguments)));
     }
 
     /** An argument is parsed as a logical expression; a bare operand is unwrapped. */

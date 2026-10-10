@@ -72,13 +72,38 @@ public final class Evaluator {
         this.maxDepth = limits.maxDepth();
     }
 
+    /** Receives the nodes a query selects, in order; returns false to stop the evaluation. */
+    private interface Sink {
+        boolean accept(Located node);
+    }
+
+    /** Runs the query and returns the nodes it selects. */
     public List<Located> run(Query query) {
-        List<Located> result = evaluate(query, root);
-        if (result.size() > maxResultSize) {
-            throw new JsonPathLimitExceededException(
-                    "Query selected " + result.size() + " nodes, more than the limit of " + maxResultSize);
-        }
+        List<Located> result = new ArrayList<>();
+        evaluate(query, root, node -> {
+            if (result.size() >= maxResultSize) {
+                throw new JsonPathLimitExceededException(
+                        "Query selected more than " + maxResultSize + " nodes, the limit");
+            }
+            result.add(node);
+            return true;
+        });
         return result;
+    }
+
+    /** Whether the query selects at least one node; stops at the first. */
+    public boolean exists(Query query) {
+        boolean[] found = {false};
+        evaluate(query, root, node -> {
+            found[0] = true;
+            return false;
+        });
+        return found[0];
+    }
+
+    /** Returns the first node the query selects, or null; stops there. */
+    public @Nullable Located first(Query query) {
+        return firstFrom(query, root);
     }
 
     /**
@@ -112,51 +137,98 @@ public final class Evaluator {
     /** Runs a query inside a filter; absolute queries are evaluated once per run. */
     private List<Located> query(Query query, Located current) {
         if (!query.absolute()) {
-            return evaluate(query, current);
+            List<Located> nodes = new ArrayList<>();
+            evaluate(query, current, nodes::add);
+            return nodes;
         }
         if (absoluteNodes == null) {
             absoluteNodes = new IdentityHashMap<>();
         }
         List<Located> nodes = absoluteNodes.get(query);
         if (nodes == null) {
-            nodes = evaluate(query, root);
+            List<Located> evaluated = new ArrayList<>();
+            evaluate(query, root, evaluated::add);
+            nodes = evaluated;
             absoluteNodes.put(query, nodes);
         }
         return nodes;
     }
 
-    private List<Located> evaluate(Query query, Located current) {
-        List<Located> nodes = List.of(current);
-        for (Segment segment : query.segments()) {
-            List<Located> out = new ArrayList<>();
-            for (Located node : nodes) {
-                if (segment.descendant()) {
-                    for (Located descendant : descendantsAndSelf(node)) {
-                        select(segment, descendant, out);
-                    }
-                } else {
-                    select(segment, node, out);
-                }
-            }
-            nodes = out;
+    /** The first node a query inside a filter selects, or null; absolute queries use their result of this run. */
+    private @Nullable Located firstOf(Query query, Located current) {
+        if (query.absolute()) {
+            List<Located> nodes = query(query, current);
+            return nodes.isEmpty() ? null : nodes.get(0);
         }
-        return nodes;
+        return firstFrom(query, current);
     }
 
-    /** The node and all its descendants, each node before its children, children in order. */
-    private List<Located> descendantsAndSelf(Located start) {
-        List<Located> result = new ArrayList<>();
+    /** Evaluates a query from a start node until it selects the first node. */
+    private @Nullable Located firstFrom(Query query, Located start) {
+        Located[] first = {null};
+        evaluate(query, start, node -> {
+            first[0] = node;
+            return false;
+        });
+        return first[0];
+    }
+
+    /**
+     * Evaluates a query from a start node and passes each selected node to the sink, in order. The nodes
+     * go through the segments depth first: each node a segment selects is passed on to the next segment
+     * before the segment selects the next one. This keeps the order of RFC 9535 (the result of a segment
+     * is the concatenation of its results for each input node) without building a list per segment, and
+     * lets the sink stop the evaluation early.
+     */
+    private void evaluate(Query query, Located start, Sink sink) {
+        List<Segment> segments = query.segments();
+        apply(segments, 0, start, sink);
+    }
+
+    /** Applies the segments from {@code index} on to one node; returns false if the sink stopped. */
+    private boolean apply(List<Segment> segments, int index, Located node, Sink sink) {
+        if (index == segments.size()) {
+            return sink.accept(node);
+        }
+        Segment segment = segments.get(index);
+        if (!segment.descendant()) {
+            return select(segment, node, null, segments, index + 1, sink);
+        }
+        // Descendant segment: the node and all its descendants in document order (each node before its
+        // children, children in order), each with the segment's selectors. The children of a node are
+        // computed once, both for the walk and for wildcard and filter selectors.
         Deque<Located> stack = new ArrayDeque<>();
-        stack.push(start);
+        stack.push(node);
         while (!stack.isEmpty()) {
-            Located node = stack.pop();
-            result.add(node);
-            List<Located> children = children(node);
+            Located current = stack.pop();
+            List<Located> children = children(current);
+            if (!select(segment, current, children, segments, index + 1, sink)) {
+                return false;
+            }
             for (int i = children.size() - 1; i >= 0; i--) {
                 stack.push(children.get(i));
             }
         }
-        return result;
+        return true;
+    }
+
+    /**
+     * Applies a segment's selectors to a node and passes what they select on to the next segment.
+     * {@code children} are the node's children if the caller has computed them already, else null.
+     */
+    private boolean select(
+            Segment segment,
+            Located node,
+            @Nullable List<Located> children,
+            List<Segment> segments,
+            int next,
+            Sink sink) {
+        for (Selector selector : segment.selectors()) {
+            if (!select(selector, node, children, segments, next, sink)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<Located> children(Located node) {
@@ -198,75 +270,100 @@ public final class Evaluator {
         return List.of();
     }
 
-    private void select(Segment segment, Located node, List<Located> out) {
-        for (Selector selector : segment.selectors()) {
-            select(selector, node, out);
-        }
-    }
-
-    private void select(Selector selector, Located node, List<Located> out) {
-        try {
-            selectFrom(selector, node, out);
-        } catch (JsonPathEvaluationException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            throw modelFailure(e, node);
-        }
-    }
-
     /**
      * Wraps an exception from the model or a function, typically a value that is not JSON, with the
-     * location of the node being processed. Exceptions of nested queries carry their own, closer node.
+     * location of the node being processed. Exceptions of nested queries and of later segments carry
+     * their own, closer node.
      */
     private static JsonPathEvaluationException modelFailure(RuntimeException e, Located node) {
         String reason = e.getMessage() == null ? e.getClass().getName() : e.getMessage();
         return new JsonPathEvaluationException(reason, node.location().normalizedPath(), e);
     }
 
-    private void selectFrom(Selector selector, Located node, List<Located> out) {
-        Object value = node.value();
-        JsonKind kind = model.kind(value);
-        if (selector instanceof Name nameSelector) {
-            String name = nameSelector.name();
-            if (kind == JsonKind.OBJECT) {
-                Object member = model.findMember(value, name);
-                if (member != null || model.hasMember(value, name)) {
-                    visit(1);
-                    out.add(new Located(member, node.location().child(name)));
+    private boolean select(
+            Selector selector,
+            Located node,
+            @Nullable List<Located> children,
+            List<Segment> segments,
+            int next,
+            Sink sink) {
+        if (selector instanceof Wildcard || selector instanceof Filter) {
+            List<Located> candidates;
+            if (children == null) {
+                candidates = children(node);
+            } else {
+                // Produced again by this selector: counted like a second visit, as when computed again.
+                visit(children.size());
+                candidates = children;
+            }
+            Expr expr = selector instanceof Filter filter ? filter.expr() : null;
+            for (Located child : candidates) {
+                if (expr != null && !matches(expr, child)) {
+                    continue;
+                }
+                if (!apply(segments, next, child, sink)) {
+                    return false;
                 }
             }
-        } else if (selector instanceof Wildcard) {
-            out.addAll(children(node));
-        } else if (selector instanceof Index indexSelector) {
-            if (kind == JsonKind.ARRAY) {
-                int size = model.size(value);
-                long index = indexSelector.index();
-                long normalized = index >= 0 ? index : size + index;
-                if (normalized >= 0 && normalized < size) {
-                    int i = (int) normalized;
-                    visit(1);
-                    out.add(new Located(model.element(value, i), node.location().child(i)));
+            return true;
+        }
+        Located selected;
+        List<Located> sliced = null;
+        try {
+            Object value = node.value();
+            JsonKind kind = model.kind(value);
+            selected = null;
+            if (selector instanceof Name nameSelector) {
+                if (kind == JsonKind.OBJECT) {
+                    String name = nameSelector.name();
+                    Object member = model.findMember(value, name);
+                    if (member != null || model.hasMember(value, name)) {
+                        visit(1);
+                        selected = new Located(member, node.location().child(name));
+                    }
+                }
+            } else if (selector instanceof Index indexSelector) {
+                if (kind == JsonKind.ARRAY) {
+                    int size = model.size(value);
+                    long index = indexSelector.index();
+                    long normalized = index >= 0 ? index : size + index;
+                    if (normalized >= 0 && normalized < size) {
+                        int i = (int) normalized;
+                        visit(1);
+                        selected = new Located(
+                                model.element(value, i), node.location().child(i));
+                    }
+                }
+            } else if (kind == JsonKind.ARRAY) {
+                sliced = new ArrayList<>();
+                slice((Slice) selector, node, sliced);
+            }
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
+        if (selected != null) {
+            return apply(segments, next, selected, sink);
+        }
+        if (sliced != null) {
+            for (Located element : sliced) {
+                if (!apply(segments, next, element, sink)) {
+                    return false;
                 }
             }
-        } else if (selector instanceof Slice slice) {
-            if (kind == JsonKind.ARRAY) {
-                slice(slice, node, out);
-            }
-        } else if (selector instanceof Filter filter) {
-            Expr expr = filter.expr();
-            for (Located child : children(node)) {
-                boolean selected;
-                try {
-                    selected = test(expr, child);
-                } catch (JsonPathEvaluationException e) {
-                    throw e;
-                } catch (RuntimeException e) {
-                    throw modelFailure(e, child);
-                }
-                if (selected) {
-                    out.add(child);
-                }
-            }
+        }
+        return true;
+    }
+
+    /** Tests a filter expression on a candidate node; failures carry the candidate's location. */
+    private boolean matches(Expr expr, Located child) {
+        try {
+            return test(expr, child);
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, child);
         }
     }
 
@@ -338,7 +435,7 @@ public final class Evaluator {
     /** Converts a query or function result to a logical value (NodesType: non-empty). */
     private boolean logical(Operand operand, Located current) {
         if (operand instanceof QueryOperand query) {
-            return !query(query.query(), current).isEmpty();
+            return firstOf(query.query(), current) != null;
         }
         FunctionCall call = (FunctionCall) operand;
         FunctionDefinition.Implementation implementation = call.function().implementation();
@@ -353,11 +450,11 @@ public final class Evaluator {
 
     private Val value(Operand operand, Located current) {
         if (operand instanceof Literal literal) {
-            return Val.literal(literal.value());
+            return literal.val();
         }
         if (operand instanceof QueryOperand query) {
-            List<Located> nodes = query(query.query(), current);
-            return nodes.isEmpty() ? Val.NOTHING : Val.of(nodes.get(0).value(), model);
+            Located first = firstOf(query.query(), current);
+            return first == null ? Val.NOTHING : Val.of(first.value(), model);
         }
         FunctionCall call = (FunctionCall) operand;
         return ((ValueFunction) call.function().implementation()).body().apply(arguments(call, current));
