@@ -1,6 +1,9 @@
 package io.github.treetrail.jsonpath.internal;
 
 import io.github.treetrail.jsonpath.JsonKind;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.Arguments;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.LogicalFunction;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.ValueFunction;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -12,20 +15,23 @@ import java.util.Optional;
 public final class Functions {
 
     private static final FunctionDefinition.Type VALUE = FunctionDefinition.Type.VALUE;
-    private static final FunctionDefinition.Type LOGICAL = FunctionDefinition.Type.LOGICAL;
     private static final FunctionDefinition.Type NODES = FunctionDefinition.Type.NODES;
 
     public static final Map<String, FunctionDefinition> BUILT_IN = Map.of(
-            "length", new FunctionDefinition("length", List.of(VALUE), VALUE, Functions::length),
-            "count", new FunctionDefinition("count", List.of(NODES), VALUE, Functions::count),
-            "match", new FunctionDefinition("match", List.of(VALUE, VALUE), LOGICAL, args -> regex(args, true)),
-            "search", new FunctionDefinition("search", List.of(VALUE, VALUE), LOGICAL, args -> regex(args, false)),
-            "value", new FunctionDefinition("value", List.of(NODES), VALUE, Functions::value));
+            "length", new FunctionDefinition("length", List.of(VALUE), new ValueFunction(Functions::length)),
+            "count", new FunctionDefinition("count", List.of(NODES), new ValueFunction(Functions::count)),
+            "match",
+                    new FunctionDefinition(
+                            "match", List.of(VALUE, VALUE), new LogicalFunction(args -> regex(args, true))),
+            "search",
+                    new FunctionDefinition(
+                            "search", List.of(VALUE, VALUE), new LogicalFunction(args -> regex(args, false))),
+            "value", new FunctionDefinition("value", List.of(NODES), new ValueFunction(Functions::value)));
 
     private Functions() {}
 
-    private static Object length(List<Object> args) {
-        Val v = (Val) args.get(0);
+    private static Val length(Arguments args) {
+        Val v = args.value(0);
         if (v.isNothing()) {
             return Val.NOTHING;
         }
@@ -46,21 +52,21 @@ public final class Functions {
         }
     }
 
-    private static Object count(List<Object> args) {
-        return Val.literal(BigDecimal.valueOf(((List<?>) args.get(0)).size()));
+    private static Val count(Arguments args) {
+        return Val.literal(BigDecimal.valueOf(args.nodes(0).size()));
     }
 
-    private static Object value(List<Object> args) {
-        List<?> nodes = (List<?>) args.get(0);
+    private static Val value(Arguments args) {
+        List<Val> nodes = args.nodes(0);
         if (nodes.size() != 1) {
             return Val.NOTHING;
         }
         return nodes.get(0);
     }
 
-    private static Object regex(List<Object> args, boolean fullMatch) {
-        Val subject = (Val) args.get(0);
-        Val regexp = (Val) args.get(1);
+    private static boolean regex(Arguments args, boolean fullMatch) {
+        Val subject = args.value(0);
+        Val regexp = args.value(1);
         if (subject.isNothing()
                 || regexp.isNothing()
                 || subject.kind() != JsonKind.STRING

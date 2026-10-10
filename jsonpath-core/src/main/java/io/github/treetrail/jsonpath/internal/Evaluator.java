@@ -25,6 +25,10 @@ import io.github.treetrail.jsonpath.internal.Ast.Selector;
 import io.github.treetrail.jsonpath.internal.Ast.Slice;
 import io.github.treetrail.jsonpath.internal.Ast.Test;
 import io.github.treetrail.jsonpath.internal.Ast.Wildcard;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.Arguments;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.LogicalFunction;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.NodesFunction;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition.ValueFunction;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -337,11 +341,14 @@ public final class Evaluator {
             return !query(query.query(), current).isEmpty();
         }
         FunctionCall call = (FunctionCall) operand;
-        Object result = call(call, current);
-        if (call.function().result() == FunctionDefinition.Type.NODES) {
-            return !((List<?>) result).isEmpty();
+        FunctionDefinition.Implementation implementation = call.function().implementation();
+        if (implementation instanceof LogicalFunction function) {
+            return function.body().test(arguments(call, current));
         }
-        return (Boolean) result;
+        return !((NodesFunction) implementation)
+                .body()
+                .apply(arguments(call, current))
+                .isEmpty();
     }
 
     private Val value(Operand operand, Located current) {
@@ -352,7 +359,8 @@ public final class Evaluator {
             List<Located> nodes = query(query.query(), current);
             return nodes.isEmpty() ? Val.NOTHING : Val.of(nodes.get(0).value(), model);
         }
-        return (Val) call((FunctionCall) operand, current);
+        FunctionCall call = (FunctionCall) operand;
+        return ((ValueFunction) call.function().implementation()).body().apply(arguments(call, current));
     }
 
     private List<Val> nodes(Operand operand, Located current) {
@@ -372,9 +380,8 @@ public final class Evaluator {
             }
             return values;
         }
-        @SuppressWarnings("unchecked")
-        List<Val> result = (List<Val>) call((FunctionCall) operand, current);
-        return result;
+        FunctionCall call = (FunctionCall) operand;
+        return ((NodesFunction) call.function().implementation()).body().apply(arguments(call, current));
     }
 
     private List<Val> values(List<Located> nodes) {
@@ -385,19 +392,19 @@ public final class Evaluator {
         return values;
     }
 
-    private Object call(FunctionCall call, Located current) {
+    /** Evaluates the arguments of a call as the declared parameter types require (RFC 9535, section 2.4.3). */
+    private Arguments arguments(FunctionCall call, Located current) {
         List<FunctionDefinition.Type> parameters = call.function().parameters();
-        List<Object> args = new ArrayList<>(parameters.size());
-        for (int i = 0; i < parameters.size(); i++) {
+        Object[] args = new Object[parameters.size()];
+        for (int i = 0; i < args.length; i++) {
             Argument argument = call.arguments().get(i);
-            switch (parameters.get(i)) {
-                case VALUE -> args.add(value((Operand) argument, current));
+            args[i] = switch (parameters.get(i)) {
+                case VALUE -> value((Operand) argument, current);
                 case LOGICAL ->
-                    args.add(
-                            argument instanceof Expr expr ? test(expr, current) : logical((Operand) argument, current));
-                case NODES -> args.add(nodes((Operand) argument, current));
-            }
+                    argument instanceof Expr expr ? test(expr, current) : logical((Operand) argument, current);
+                case NODES -> nodes((Operand) argument, current);
+            };
         }
-        return call.function().body().apply(args);
+        return new Arguments(args);
     }
 }
