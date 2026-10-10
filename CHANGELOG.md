@@ -69,6 +69,11 @@ a minor version may still change the API, which this file then says.
   Unicode escapes for control characters and other characters with hex digits in either case, shorthand
   names above U+FFFF, trailing commas, `-` after shorthand names and ordering comparisons with booleans.
   Against 2.0.0, the regenerated corpus differs on 299 of its 2000 queries; against 2.0.1, on none.
+- The benchmarks run each library in its own JVM and in ten forks; a unit test now checks that both
+  libraries select the same values. Running both libraries' queries in every benchmark JVM, and measuring
+  with one fork, had made Jayway's wildcard time depend on which of two JIT states one JVM reached
+  (about 49 or 69 µs). [docs/benchmarks.md](docs/benchmarks.md) has new numbers for all tables, measured
+  in one run.
 
 ## 0.2.0 – 2026-10-08
 

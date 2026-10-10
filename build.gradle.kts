@@ -183,7 +183,7 @@ subprojects {
 
     // The library targets Java 17, so its tests also run on Java 17 and 21; `test` itself runs on 25.
     // `check` (and so `build`) includes these runs. The OpenRewrite recipe needs JDK 25 to parse Java 25
-    // sources, and the benchmarks have no tests.
+    // sources, and the benchmarks' tests only check that both libraries select the same values.
     if (name != "jsonpath-rewrite" && name != "jsonpath-benchmarks") {
         val javaToolchains = extensions.getByType<JavaToolchainService>()
         val testSourceSet = extensions.getByType<SourceSetContainer>()["test"]
