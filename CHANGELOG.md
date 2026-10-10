@@ -83,6 +83,7 @@ a minor version may still change the API, which this file then says.
   keeps the queried document reachable through the parent links; the list `values()` returns does not.
   A model failure while producing a later child is now reported after the earlier children have been
   passed on, so `exists()` and `first()` can return before reaching it.
+  ([#75](https://github.com/treetrail/treetrail/pull/75))
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 
