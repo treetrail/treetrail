@@ -2,11 +2,12 @@ package io.github.treetrail.jsonpath;
 
 import io.github.treetrail.jsonpath.internal.Ast;
 import io.github.treetrail.jsonpath.internal.Evaluator;
-import io.github.treetrail.jsonpath.internal.Functions;
+import io.github.treetrail.jsonpath.internal.FunctionDefinition;
 import io.github.treetrail.jsonpath.internal.Located;
 import io.github.treetrail.jsonpath.internal.Parser;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -29,11 +30,14 @@ public final class JsonPath {
 
     private final String expression;
     private final Ast.Query query;
+    private final Map<String, FunctionDefinition> functions;
     private final EvaluationLimits limits;
 
-    private JsonPath(String expression, Ast.Query query, EvaluationLimits limits) {
+    private JsonPath(
+            String expression, Ast.Query query, Map<String, FunctionDefinition> functions, EvaluationLimits limits) {
         this.expression = expression;
         this.query = query;
+        this.functions = functions;
         this.limits = limits;
     }
 
@@ -44,13 +48,26 @@ public final class JsonPath {
      * @throws NullPointerException if {@code expression} is null
      */
     public static JsonPath compile(String expression) {
+        return JsonPathCompiler.DEFAULT.compile(expression);
+    }
+
+    /**
+     * Returns a compiler for queries with function extensions or other settings.
+     *
+     * @see FunctionExtension
+     */
+    public static JsonPathCompiler compiler() {
+        return JsonPathCompiler.DEFAULT;
+    }
+
+    static JsonPath compile(String expression, Map<String, FunctionDefinition> functions, EvaluationLimits limits) {
         Objects.requireNonNull(expression, "expression");
-        return new JsonPath(expression, Parser.parse(expression, Functions.BUILT_IN), EvaluationLimits.DEFAULT);
+        return new JsonPath(expression, Parser.parse(expression, functions), functions, limits);
     }
 
     /** Returns this query with other limits for running it. */
     public JsonPath withLimits(EvaluationLimits limits) {
-        return new JsonPath(expression, query, Objects.requireNonNull(limits, "limits"));
+        return new JsonPath(expression, query, functions, Objects.requireNonNull(limits, "limits"));
     }
 
     /** Returns the limits for running this query. */
@@ -158,10 +175,16 @@ public final class JsonPath {
         return expression;
     }
 
-    /** Two queries are equal if they were compiled from the same expression and have the same limits. */
+    /**
+     * Two queries are equal if they were compiled from the same expression with the same function extensions
+     * and have the same limits.
+     */
     @Override
     public boolean equals(@Nullable Object o) {
-        return o instanceof JsonPath other && expression.equals(other.expression) && limits.equals(other.limits);
+        return o instanceof JsonPath other
+                && expression.equals(other.expression)
+                && limits.equals(other.limits)
+                && functions.equals(other.functions);
     }
 
     @Override

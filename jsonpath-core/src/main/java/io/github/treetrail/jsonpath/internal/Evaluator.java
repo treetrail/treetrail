@@ -1,6 +1,8 @@
 package io.github.treetrail.jsonpath.internal;
 
 import io.github.treetrail.jsonpath.EvaluationLimits;
+import io.github.treetrail.jsonpath.FunctionType;
+import io.github.treetrail.jsonpath.FunctionValue;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPathEvaluationException;
@@ -457,7 +459,9 @@ public final class Evaluator {
             return first == null ? Val.NOTHING : Val.of(first.value(), model);
         }
         FunctionCall call = (FunctionCall) operand;
-        return ((ValueFunction) call.function().implementation()).body().apply(arguments(call, current));
+        FunctionDefinition function = call.function();
+        return Val.from(
+                ((ValueFunction) function.implementation()).body().apply(arguments(call, current)), function.name());
     }
 
     private List<Val> nodes(Operand operand, Located current) {
@@ -478,7 +482,14 @@ public final class Evaluator {
             return values;
         }
         FunctionCall call = (FunctionCall) operand;
-        return ((NodesFunction) call.function().implementation()).body().apply(arguments(call, current));
+        FunctionDefinition function = call.function();
+        List<FunctionValue> result =
+                ((NodesFunction) function.implementation()).body().apply(arguments(call, current));
+        List<Val> values = new ArrayList<>(result.size());
+        for (FunctionValue value : result) {
+            values.add(Val.from(value, function.name()));
+        }
+        return values;
     }
 
     private List<Val> values(List<Located> nodes) {
@@ -491,7 +502,7 @@ public final class Evaluator {
 
     /** Evaluates the arguments of a call as the declared parameter types require (RFC 9535, section 2.4.3). */
     private Arguments arguments(FunctionCall call, Located current) {
-        List<FunctionDefinition.Type> parameters = call.function().parameters();
+        List<FunctionType> parameters = call.function().parameters();
         Object[] args = new Object[parameters.size()];
         for (int i = 0; i < args.length; i++) {
             Argument argument = call.arguments().get(i);
