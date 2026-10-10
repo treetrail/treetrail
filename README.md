@@ -342,6 +342,9 @@ its minimum in `build.gradle.kts`. Coverage reports are in `build/reports/jacoco
 Java sources are formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format):
 `./gradlew spotlessApply` formats them, and the build fails on unformatted code.
 
+[CONTRIBUTING.md](CONTRIBUTING.md) explains how to report bugs and propose changes;
+[docs/support.md](docs/support.md) lists the versioning policy and the tested Java and library versions.
+
 ## License
 
 [Apache License 2.0](LICENSE). The Compliance Test Suite included in `jsonpath-model-testkit` is licensed
