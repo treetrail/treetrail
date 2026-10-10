@@ -136,7 +136,7 @@ class NormalizedPathTest {
 
     @Test
     void buildsThePathsOfDeepResultsFromTheirAncestors() {
-        // Names that need escaping, indices, and more depth than Location.REUSE_DEPTH.
+        // Names that need escaping, indices, and more depth than Located.REUSE_DEPTH.
         StringBuilder json = new StringBuilder();
         for (int i = 0; i < 40; i++) {
             json.append(i % 3 == 0 ? "[" : "{\"k'\\n" + i + "\": ");

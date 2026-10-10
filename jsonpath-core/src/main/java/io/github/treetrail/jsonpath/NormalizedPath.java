@@ -1,6 +1,6 @@
 package io.github.treetrail.jsonpath;
 
-import io.github.treetrail.jsonpath.internal.Location;
+import io.github.treetrail.jsonpath.internal.Located;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -148,7 +148,11 @@ public final class NormalizedPath {
         if (s == null) {
             StringBuilder sb = new StringBuilder("$");
             for (Step step : steps) {
-                Location.appendStep(sb, step instanceof Index index ? (Object) index.index() : ((Name) step).name());
+                if (step instanceof Index index) {
+                    Located.appendIndex(sb, index.index());
+                } else {
+                    Located.appendName(sb, ((Name) step).name());
+                }
             }
             s = sb.toString();
             string = s;

@@ -31,11 +31,11 @@ import io.github.treetrail.jsonpath.internal.FunctionDefinition.Arguments;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.LogicalFunction;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.NodesFunction;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.ValueFunction;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -68,7 +68,7 @@ public final class Evaluator {
     @SuppressWarnings("unchecked")
     public Evaluator(Object document, JsonModel<?> model, EvaluationLimits limits) {
         this.model = (JsonModel<@Nullable Object>) model;
-        this.root = new Located(document, Location.ROOT);
+        this.root = Located.root(document);
         this.maxVisitedNodes = limits.maxVisitedNodes();
         this.maxResultSize = limits.maxResultSize();
         this.maxDepth = limits.maxDepth();
@@ -194,48 +194,95 @@ public final class Evaluator {
         }
         Segment segment = segments.get(index);
         if (!segment.descendant()) {
-            return select(segment, node, null, segments, index + 1, sink);
+            return select(segment, node, null, 0, 0, segments, index + 1, sink);
         }
         // Descendant segment: the node and all its descendants in document order (each node before its
-        // children, children in order), each with the segment's selectors. The children of a node are
-        // computed once, both for the walk and for wildcard and filter selectors.
-        Deque<Located> stack = new ArrayDeque<>();
+        // children, children in order), each with the segment's selectors. The nodes still to visit are on one
+        // stack, the next on top. A node's children are pushed in order, so that wildcard and filter selectors
+        // take them from there, and then reversed, so that the first is visited next; no list per node.
+        NodeStack stack = new NodeStack();
         stack.push(node);
-        while (!stack.isEmpty()) {
+        while (stack.size > 0) {
             Located current = stack.pop();
-            List<Located> children = children(current);
-            if (!select(segment, current, children, segments, index + 1, sink)) {
+            int from = stack.size;
+            pushChildren(current, stack);
+            int to = stack.size;
+            if (!select(segment, current, stack.nodes, from, to, segments, index + 1, sink)) {
                 return false;
             }
-            for (int i = children.size() - 1; i >= 0; i--) {
-                stack.push(children.get(i));
-            }
+            stack.reverse(from, to);
         }
         return true;
+    }
+
+    /** The nodes a descendant segment still has to visit. */
+    private static final class NodeStack {
+
+        Located[] nodes = new Located[16];
+        int size;
+
+        void push(Located node) {
+            if (size == nodes.length) {
+                nodes = Arrays.copyOf(nodes, size * 2);
+            }
+            nodes[size++] = node;
+        }
+
+        /** Returns the top node; its slot is overwritten by later pushes, the stack lives for one walk only. */
+        Located pop() {
+            return nodes[--size];
+        }
+
+        void reverse(int from, int to) {
+            for (int i = from, j = to - 1; i < j; i++, j--) {
+                Located node = nodes[i];
+                nodes[i] = nodes[j];
+                nodes[j] = node;
+            }
+        }
     }
 
     /**
      * Applies a segment's selectors to a node and passes what they select on to the next segment.
-     * {@code children} are the node's children if the caller has computed them already, else null.
+     * {@code children[from, to)} are the node's children if the caller has computed them already, else
+     * {@code children} is null.
      */
     private boolean select(
             Segment segment,
             Located node,
-            @Nullable List<Located> children,
+            Located @Nullable [] children,
+            int from,
+            int to,
             List<Segment> segments,
             int next,
             Sink sink) {
         for (Selector selector : segment.selectors()) {
-            if (!select(selector, node, children, segments, next, sink)) {
+            if (!select(selector, node, children, from, to, segments, next, sink)) {
                 return false;
             }
         }
         return true;
     }
 
-    private List<Located> children(Located node) {
+    /** Pushes the children of a node, in order, for the walk of a descendant segment. */
+    private void pushChildren(Located node, NodeStack stack) {
         try {
-            return childrenOf(node);
+            Object value = node.value();
+            JsonKind kind = model.kind(value);
+            if (kind == JsonKind.OBJECT) {
+                checkDepth(node);
+                visit(model.memberCount(value));
+                for (Map.Entry<String, Object> member : model.members(value)) {
+                    stack.push(node.child(member.getValue(), member.getKey()));
+                }
+            } else if (kind == JsonKind.ARRAY) {
+                checkDepth(node);
+                int size = model.size(value);
+                visit(size);
+                for (int i = 0; i < size; i++) {
+                    stack.push(node.child(model.element(value, i), i));
+                }
+            }
         } catch (JsonPathEvaluationException e) {
             throw e;
         } catch (RuntimeException e) {
@@ -243,33 +290,11 @@ public final class Evaluator {
         }
     }
 
-    private List<Located> childrenOf(Located node) {
-        Object value = node.value();
-        JsonKind kind = model.kind(value);
-        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY)
-                && node.location().depth() >= maxDepth) {
+    /** Fails for children of a node at the depth limit. */
+    private void checkDepth(Located node) {
+        if (node.depth() >= maxDepth) {
             throw tooDeep(maxDepth);
         }
-        if (kind == JsonKind.OBJECT) {
-            int count = model.memberCount(value);
-            visit(count);
-            List<Located> children = new ArrayList<>(count);
-            for (Map.Entry<String, Object> member : model.members(value)) {
-                children.add(new Located(member.getValue(), node.location().child(member.getKey())));
-            }
-            return children;
-        }
-        if (kind == JsonKind.ARRAY) {
-            int size = model.size(value);
-            visit(size);
-            List<Located> children = new ArrayList<>(size);
-            for (int i = 0; i < size; i++) {
-                children.add(
-                        new Located(model.element(value, i), node.location().child(i)));
-            }
-            return children;
-        }
-        return List.of();
     }
 
     /**
@@ -279,49 +304,44 @@ public final class Evaluator {
      */
     private static JsonPathEvaluationException modelFailure(RuntimeException e, Located node) {
         String reason = e.getMessage() == null ? e.getClass().getName() : e.getMessage();
-        return new JsonPathEvaluationException(reason, node.location().normalizedPath(), e);
+        return new JsonPathEvaluationException(reason, node.normalizedPath(), e);
     }
 
     private boolean select(
             Selector selector,
             Located node,
-            @Nullable List<Located> children,
+            Located @Nullable [] children,
+            int from,
+            int to,
             List<Segment> segments,
             int next,
             Sink sink) {
         if (selector instanceof Wildcard || selector instanceof Filter) {
-            List<Located> candidates;
-            if (children == null) {
-                candidates = children(node);
-            } else {
-                // Produced again by this selector: counted like a second visit, as when computed again.
-                visit(children.size());
-                candidates = children;
-            }
             Expr expr = selector instanceof Filter filter ? filter.expr() : null;
-            for (Located child : candidates) {
-                if (expr != null && !matches(expr, child)) {
-                    continue;
-                }
-                if (!apply(segments, next, child, sink)) {
+            if (children == null) {
+                return selectChildren(node, expr, segments, next, sink);
+            }
+            // Produced again by this selector: counted like a second visit, as when computed again.
+            visit(to - from);
+            for (int i = from; i < to; i++) {
+                if (!selectChild(children[i], expr, segments, next, sink)) {
                     return false;
                 }
             }
             return true;
         }
-        Located selected;
-        List<Located> sliced = null;
+        Located selected = null;
+        long length = -1;
         try {
             Object value = node.value();
             JsonKind kind = model.kind(value);
-            selected = null;
             if (selector instanceof Name nameSelector) {
                 if (kind == JsonKind.OBJECT) {
                     String name = nameSelector.name();
                     Object member = model.findMember(value, name);
                     if (member != null || model.hasMember(value, name)) {
                         visit(1);
-                        selected = new Located(member, node.location().child(name));
+                        selected = node.child(member, name);
                     }
                 }
             } else if (selector instanceof Index indexSelector) {
@@ -332,13 +352,11 @@ public final class Evaluator {
                     if (normalized >= 0 && normalized < size) {
                         int i = (int) normalized;
                         visit(1);
-                        selected = new Located(
-                                model.element(value, i), node.location().child(i));
+                        selected = node.child(model.element(value, i), i);
                     }
                 }
             } else if (kind == JsonKind.ARRAY) {
-                sliced = new ArrayList<>();
-                slice((Slice) selector, node, sliced);
+                length = model.size(value);
             }
         } catch (JsonPathEvaluationException e) {
             throw e;
@@ -348,14 +366,82 @@ public final class Evaluator {
         if (selected != null) {
             return apply(segments, next, selected, sink);
         }
-        if (sliced != null) {
-            for (Located element : sliced) {
-                if (!apply(segments, next, element, sink)) {
+        return length < 0 || slice((Slice) selector, node, length, segments, next, sink);
+    }
+
+    /**
+     * Selects the children of a node that pass a filter, or all of them for a wildcard ({@code filter} null),
+     * one by one as the model produces them.
+     */
+    private boolean selectChildren(Located node, @Nullable Expr filter, List<Segment> segments, int next, Sink sink) {
+        Object value = node.value();
+        Iterator<Map.Entry<String, @Nullable Object>> members;
+        int size;
+        try {
+            JsonKind kind = model.kind(value);
+            if (kind == JsonKind.OBJECT) {
+                checkDepth(node);
+                visit(model.memberCount(value));
+                members = model.members(value).iterator();
+                size = 0;
+            } else if (kind == JsonKind.ARRAY) {
+                checkDepth(node);
+                size = model.size(value);
+                visit(size);
+                members = null;
+            } else {
+                return true;
+            }
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
+        if (members != null) {
+            for (Located child = nextMember(node, members); child != null; child = nextMember(node, members)) {
+                if (!selectChild(child, filter, segments, next, sink)) {
                     return false;
                 }
             }
+            return true;
+        }
+        for (int i = 0; i < size; i++) {
+            if (!selectChild(element(node, i), filter, segments, next, sink)) {
+                return false;
+            }
         }
         return true;
+    }
+
+    /** Passes a child on to the next segment if it passes the filter, if any. */
+    private boolean selectChild(Located child, @Nullable Expr filter, List<Segment> segments, int next, Sink sink) {
+        return (filter != null && !matches(filter, child)) || apply(segments, next, child, sink);
+    }
+
+    /** The next member of an object node, or null after the last. */
+    private @Nullable Located nextMember(Located node, Iterator<Map.Entry<String, @Nullable Object>> members) {
+        try {
+            if (!members.hasNext()) {
+                return null;
+            }
+            Map.Entry<String, @Nullable Object> member = members.next();
+            return node.child(member.getValue(), member.getKey());
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
+    }
+
+    /** The element of an array node at an index that exists. */
+    private Located element(Located node, int index) {
+        try {
+            return node.child(model.element(node.value(), index), index);
+        } catch (JsonPathEvaluationException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw modelFailure(e, node);
+        }
     }
 
     /** Tests a filter expression on a candidate node; failures carry the candidate's location. */
@@ -369,13 +455,11 @@ public final class Evaluator {
         }
     }
 
-    /** Array slice (RFC 9535, section 2.3.4.2). */
-    private void slice(Slice slice, Located node, List<Located> out) {
-        Object array = node.value();
-        long len = model.size(array);
+    /** Array slice (RFC 9535, section 2.3.4.2): passes the selected elements of an array of length {@code len} on. */
+    private boolean slice(Slice slice, Located node, long len, List<Segment> segments, int next, Sink sink) {
         long step = slice.step() == null ? 1 : slice.step();
         if (step == 0) {
-            return;
+            return true;
         }
         long start = slice.start() != null ? slice.start() : (step >= 0 ? 0 : len - 1);
         long end = slice.end() != null ? slice.end() : (step >= 0 ? len : -len - 1);
@@ -385,20 +469,25 @@ public final class Evaluator {
             long lower = Math.min(Math.max(nStart, 0), len);
             long upper = Math.min(Math.max(nEnd, 0), len);
             for (long i = lower; i < upper; i += step) {
-                add(array, (int) i, node, out);
+                if (!sliced(node, (int) i, segments, next, sink)) {
+                    return false;
+                }
             }
         } else {
             long upper = Math.min(Math.max(nStart, -1), len - 1);
             long lower = Math.min(Math.max(nEnd, -1), len - 1);
             for (long i = upper; lower < i; i += step) {
-                add(array, (int) i, node, out);
+                if (!sliced(node, (int) i, segments, next, sink)) {
+                    return false;
+                }
             }
         }
+        return true;
     }
 
-    private void add(@Nullable Object array, int index, Located parent, List<Located> out) {
+    private boolean sliced(Located node, int index, List<Segment> segments, int next, Sink sink) {
         visit(1);
-        out.add(new Located(model.element(array, index), parent.location().child(index)));
+        return apply(segments, next, element(node, index), sink);
     }
 
     // ---- logical expressions ----

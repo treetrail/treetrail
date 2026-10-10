@@ -1,25 +1,28 @@
 package io.github.treetrail.jsonpath;
 
-import io.github.treetrail.jsonpath.internal.Location;
+import io.github.treetrail.jsonpath.internal.Located;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
  * A node selected by a query: a value together with its location in the document.
+ *
+ * <p>The location links to the node's ancestors in the document, so a node keeps the whole document it was
+ * selected from reachable. To keep only the values of a query on a large document, use
+ * {@link NodeList#values()}.
  *
  * @param <N> the node type of the object model
  */
 public final class Node<N extends @Nullable Object> {
 
     private final N value;
-    private final Location location;
+    private final Located location;
     // Computed on first use; a race only computes the same path twice.
     private @Nullable String path;
     private @Nullable NormalizedPath normalizedPath;
 
-    Node(N value, Location location) {
+    Node(N value, Located location) {
         this.value = value;
         this.location = location;
     }
@@ -40,20 +43,6 @@ public final class Node<N extends @Nullable Object> {
             path = p;
         }
         return p;
-    }
-
-    /** Returns the path, continuing from the path of an ancestor that {@code known} has one for. */
-    String path(Function<Location, @Nullable String> known) {
-        String p = path;
-        if (p == null) {
-            p = location.normalizedPath(known);
-            path = p;
-        }
-        return p;
-    }
-
-    Location internalLocation() {
-        return location;
     }
 
     /** Returns the location of the node as a {@link NormalizedPath}. */

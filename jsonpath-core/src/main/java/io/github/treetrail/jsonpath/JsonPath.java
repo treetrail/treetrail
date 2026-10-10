@@ -5,8 +5,6 @@ import io.github.treetrail.jsonpath.internal.Evaluator;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition;
 import io.github.treetrail.jsonpath.internal.Located;
 import io.github.treetrail.jsonpath.internal.Parser;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -107,14 +105,7 @@ public final class JsonPath {
      * @throws JsonPathEvaluationException if the thread is interrupted
      */
     public <N extends @Nullable Object> NodeList<N> query(N document, JsonModel<N> model) {
-        List<Located> located = new Evaluator(document, model, limits).run(query);
-        List<Node<N>> nodes = new ArrayList<>(located.size());
-        for (Located l : located) {
-            @SuppressWarnings("unchecked")
-            N value = (N) l.value();
-            nodes.add(new Node<>(value, l.location()));
-        }
-        return new NodeList<>(nodes);
+        return new NodeList<>(new Evaluator(document, model, limits).run(query));
     }
 
     /**
@@ -157,12 +148,7 @@ public final class JsonPath {
      */
     public <N extends @Nullable Object> Optional<Node<N>> first(N document, JsonModel<N> model) {
         Located first = new Evaluator(document, model, limits).first(query);
-        if (first == null) {
-            return Optional.empty();
-        }
-        @SuppressWarnings("unchecked")
-        N value = (N) first.value();
-        return Optional.of(new Node<>(value, first.location()));
+        return first == null ? Optional.empty() : Optional.of(NodeList.of(first));
     }
 
     /** Whether the query is singular, that is, selects at most one node (RFC 9535, section 2.3.5.1). */

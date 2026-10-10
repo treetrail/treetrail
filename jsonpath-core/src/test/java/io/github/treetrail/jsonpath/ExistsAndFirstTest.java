@@ -47,6 +47,19 @@ class ExistsAndFirstTest {
     }
 
     @Test
+    void stopTheOuterSegmentsWhenAnInnerSegmentFindsTheFirstNode() {
+        Object document = JavaObjectModel.parse("{\"p\": {\"a\": [1, 2], \"b\": 3}, \"q\": {\"a\": [4, 5], \"b\": 6}}");
+        // Each query finds its first node below p; going on would also select nodes below q.
+        for (String query : List.of("$.*.*", "$.*[?@]", "$.*..a", "$.*.a[*]", "$.*.a[0:2]", "$.*.a[::-1]")) {
+            JsonPath path = JsonPath.compile(query);
+            NodeList<Object> all = path.query(document);
+
+            assertThat(all).as(query).hasSizeGreaterThan(1);
+            assertThat(path.first(document)).as(query).contains(all.get(0));
+        }
+    }
+
+    @Test
     void existenceTestsInFiltersStopAtTheFirstNode() {
         List<Object> items = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
