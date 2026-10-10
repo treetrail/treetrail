@@ -1,5 +1,6 @@
 package io.github.treetrail.jsonpath;
 
+import io.github.treetrail.jsonpath.internal.Location;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -147,41 +148,12 @@ public final class NormalizedPath {
         if (s == null) {
             StringBuilder sb = new StringBuilder("$");
             for (Step step : steps) {
-                if (step instanceof Index index) {
-                    sb.append('[').append(index.index()).append(']');
-                } else {
-                    sb.append("['");
-                    appendEscaped(sb, ((Name) step).name());
-                    sb.append("']");
-                }
+                Location.appendStep(sb, step instanceof Index index ? (Object) index.index() : ((Name) step).name());
             }
             s = sb.toString();
             string = s;
         }
         return s;
-    }
-
-    /** Escapes a member name as RFC 9535, section 2.7 prescribes. */
-    private static void appendEscaped(StringBuilder sb, String name) {
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            switch (c) {
-                case '\b' -> sb.append("\\b");
-                case '\f' -> sb.append("\\f");
-                case '\n' -> sb.append("\\n");
-                case '\r' -> sb.append("\\r");
-                case '\t' -> sb.append("\\t");
-                case '\'' -> sb.append("\\'");
-                case '\\' -> sb.append("\\\\");
-                default -> {
-                    if (c < 0x20) {
-                        sb.append("\\u00").append(c < 0x10 ? "0" : "1").append(Character.forDigit(c & 0xf, 16));
-                    } else {
-                        sb.append(c);
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -191,7 +163,8 @@ public final class NormalizedPath {
 
     @Override
     public int hashCode() {
-        return steps.hashCode();
+        // The text is canonical, so it hashes consistently with equals; Node hashes the same text.
+        return toString().hashCode();
     }
 
     /** Parser for the normalized-path grammar of RFC 9535, section 2.7. */

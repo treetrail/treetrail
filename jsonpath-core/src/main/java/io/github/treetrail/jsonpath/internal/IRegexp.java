@@ -160,14 +160,16 @@ public final class IRegexp {
 
     /** Whether the whole input matches ({@code match()}). */
     public boolean matches(String input) {
-        Boolean result = input.isEmpty() ? null : automaton(false).run(input);
-        return result != null ? result : RegexSimulation.run(program, input, false);
+        return input.isEmpty()
+                ? RegexSimulation.run(program, input, false)
+                : automaton(false).run(input);
     }
 
     /** Whether some substring of the input matches ({@code search()}). */
     public boolean find(String input) {
-        Boolean result = input.isEmpty() ? null : automaton(true).run(input);
-        return result != null ? result : RegexSimulation.run(program, input, true);
+        return input.isEmpty()
+                ? RegexSimulation.run(program, input, true)
+                : automaton(true).run(input);
     }
 
     /** Returns the automaton of the current generation for a mode, creating it if necessary. */

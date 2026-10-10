@@ -58,6 +58,16 @@ a minor version may still change the API, which this file then says.
   can no longer evict those of another. Discarding the regex automata when their shared 8 MiB budget is
   full now also reaches the expressions that queries hold.
   ([#12](https://github.com/treetrail/treetrail/issues/12))
+- Faster paths and regular expressions:
+  - `NodeList.paths()` builds the path of a node from that of a selected ancestor, so `$..*` on a document
+    5,000 levels deep takes 11 ms instead of 326 ms. `Node.path()` builds the text directly, without the
+    steps of a `NormalizedPath` (`$.store.book[*].title` on 1,000 books: 111 to 75 µs).
+  - The regex automaton reuses its working memory within a match instead of allocating it for every new
+    state (a new 5,000-instruction automaton on 300 inputs: 168 to 11 MB allocated, 2.8 to 0.6 ms). Where
+    its state budget runs out, matching continues from the current position instead of starting over.
+  - `<=` and `>=` compare numbers and strings once instead of twice.
+  - `NormalizedPath.hashCode()` hashes the path text, the same as `Node.hashCode()`.
+  ([#26](https://github.com/treetrail/treetrail/issues/26))
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 

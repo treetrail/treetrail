@@ -1,8 +1,10 @@
 package io.github.treetrail.jsonpath;
 
+import io.github.treetrail.jsonpath.internal.Location;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -43,8 +45,18 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
     /** Returns the normalized paths of the selected nodes in order. */
     public List<String> paths() {
         List<String> paths = new ArrayList<>(nodes.size());
+        // A node below an earlier selected node, as in $..*, continues from that node's path instead of
+        // building its own from the root; deep documents would otherwise take time quadratic in their depth.
+        IdentityHashMap<Location, String> known = new IdentityHashMap<>();
         for (Node<N> node : nodes) {
-            paths.add(node.path());
+            Location location = node.internalLocation();
+            if (location.depth() < Location.REUSE_DEPTH) {
+                paths.add(node.path());
+            } else {
+                String path = node.path(known::get);
+                known.put(location, path);
+                paths.add(path);
+            }
         }
         return Collections.unmodifiableList(paths);
     }

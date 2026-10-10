@@ -109,18 +109,34 @@ final class RegexSimulation {
     /** Whether the input matches (or, with {@code search}, contains a match), simulating all threads at once. */
     static boolean run(RegexProgram program, String input, boolean search) {
         RegexSimulation sim = new RegexSimulation(program, input, search);
-        int length = input.length();
         if (sim.add(0, 0)) {
             return true;
         }
-        int pos = 0;
+        return sim.runFrom(0);
+    }
+
+    /**
+     * Continues where {@link LazyDfa} stopped: at {@code pos}, before the end of the input, with the CHAR
+     * instructions of its current state as the threads. Its pending END instructions cannot pass before the
+     * end, and a match up to {@code pos} has already been reported.
+     */
+    static boolean resume(RegexProgram program, String input, boolean search, int[] chars, int pos) {
+        RegexSimulation sim = new RegexSimulation(program, input, search);
+        System.arraycopy(chars, 0, sim.current, 0, chars.length);
+        sim.currentSize = chars.length;
+        return sim.runFrom(pos);
+    }
+
+    private boolean runFrom(int start) {
+        int length = input.length();
+        int pos = start;
         while (pos < length) {
             int cp = input.codePointAt(pos);
             int nextPos = pos + Character.charCount(cp);
-            if (sim.step(cp, nextPos)) {
+            if (step(cp, nextPos)) {
                 return true;
             }
-            if (sim.isDead()) {
+            if (isDead()) {
                 return false;
             }
             pos = nextPos;

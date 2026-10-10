@@ -80,6 +80,31 @@ class IRegexpMemoryTest {
     }
 
     @Test
+    void continuesWithTheSimulationWhereTheAutomatonIsFull() {
+        // 2^13 deterministic states, more than an automaton may hold: matching continues where it stops,
+        // also after a code point above U+FFFF and in search mode.
+        IRegexp regexp =
+                IRegexp.compile("(a|\uD83D\uDE00)*a(a|b|\uD83D\uDE00){12}").orElseThrow();
+        Pattern java = Pattern.compile("(?:a|\uD83D\uDE00)*a(?:a|b|\uD83D\uDE00){12}");
+        String[] symbols = {"a", "b", "\uD83D\uDE00"};
+        Random random = new Random(12);
+        for (int i = 0; i < 3_000; i++) {
+            StringBuilder input = new StringBuilder();
+            int length = 10 + random.nextInt(40);
+            for (int j = 0; j < length; j++) {
+                input.append(symbols[random.nextInt(3)]);
+            }
+            String s = input.toString();
+            assertThat(regexp.matches(s))
+                    .as("match %s", s)
+                    .isEqualTo(java.matcher(s).matches());
+            assertThat(regexp.find(s))
+                    .as("search %s", s)
+                    .isEqualTo(java.matcher(s).find());
+        }
+    }
+
+    @Test
     void boundsTransitionsOnNonAsciiCodePoints() {
         // Every distinct code point outside ASCII gets its own cached transition.
         IRegexp regexp = IRegexp.compile("\\p{Lo}*x").orElseThrow();

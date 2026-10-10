@@ -27,9 +27,9 @@ public final class Values {
             case EQ -> equal(left, right, maxDepth);
             case NE -> !equal(left, right, maxDepth);
             case LT -> less(left, right);
-            case LE -> less(left, right) || equal(left, right, maxDepth);
+            case LE -> lessOrEqual(left, right, maxDepth);
             case GT -> less(right, left);
-            case GE -> less(right, left) || equal(left, right, maxDepth);
+            case GE -> lessOrEqual(right, left, maxDepth);
             default -> throw new IllegalStateException();
         };
     }
@@ -54,6 +54,22 @@ public final class Values {
             return compareCodePoints(a.string(), b.string()) < 0;
         }
         return false;
+    }
+
+    /** {@code a < b || a == b}, comparing numbers and strings once. */
+    private static boolean lessOrEqual(Val a, Val b, int maxDepth) {
+        if (!a.isNothing() && !b.isNothing()) {
+            JsonKind ka = a.kind();
+            JsonKind kb = b.kind();
+            if (ka == JsonKind.NUMBER && kb == JsonKind.NUMBER) {
+                // INCOMPARABLE is positive: a number that is not finite is neither less nor equal.
+                return compareNumbers(a.model(), a.value(), b.model(), b.value()) <= 0;
+            }
+            if (ka == JsonKind.STRING && kb == JsonKind.STRING) {
+                return compareCodePoints(a.string(), b.string()) <= 0;
+            }
+        }
+        return equal(a, b, maxDepth);
     }
 
     /** Compares strings by Unicode scalar values (UTF-16 order differs above U+FFFF). */
