@@ -25,6 +25,11 @@ a minor version may still change the API, which this file then says.
   also across models, for example a Jackson tree against plain Java objects. The migration module and the
   compliance tests now use it instead of their own implementations.
   ([#21](https://github.com/treetrail/treetrail/issues/21))
+- Function extensions (RFC 9535, section 2.4): `FunctionExtension.value(...)`, `logical(...)` and `nodes(...)`
+  declare a function with typed parameters; `JsonPath.compiler().withFunctions(...)` compiles queries that use
+  it, type-checked like the built-in functions, which are written against the same types. Functions see
+  arguments as `FunctionValue` (independent of the JSON model) and cannot create arrays or objects.
+  ([#13](https://github.com/treetrail/treetrail/issues/13))
 - `JsonPath.exists(document)` and `JsonPath.first(document)` (also with a model): stop at the first node
   instead of selecting all of them. ([#12](https://github.com/treetrail/treetrail/issues/12))
 - `jsonpath-model-testkit`: tests for your own `JsonModel` implementation. `JsonModelTestKit.complianceTests`

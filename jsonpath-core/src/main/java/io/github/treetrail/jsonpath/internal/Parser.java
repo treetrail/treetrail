@@ -1,5 +1,6 @@
 package io.github.treetrail.jsonpath.internal;
 
+import io.github.treetrail.jsonpath.FunctionType;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
 import io.github.treetrail.jsonpath.internal.Ast.And;
 import io.github.treetrail.jsonpath.internal.Ast.Argument;
@@ -433,7 +434,7 @@ public final class Parser {
         if (operand instanceof QueryOperand query && !query.query().isSingular()) {
             throw error("Only singular queries can be compared", at);
         }
-        if (operand instanceof FunctionCall call && call.function().result() != FunctionDefinition.Type.VALUE) {
+        if (operand instanceof FunctionCall call && call.function().result() != FunctionType.VALUE) {
             throw error("Function result cannot be compared", at);
         }
     }
@@ -453,21 +454,21 @@ public final class Parser {
             if (operand instanceof Literal) {
                 throw error("A literal is not a valid test expression", at);
             }
-            if (operand instanceof FunctionCall call && call.function().result() == FunctionDefinition.Type.VALUE) {
+            if (operand instanceof FunctionCall call && call.function().result() == FunctionType.VALUE) {
                 throw error(
                         "Function '" + call.function().name() + "' returns a value and cannot be used as a test", at);
             }
         }
     }
 
-    private void checkArgument(Argument argument, FunctionDefinition.Type type, int at) {
+    private void checkArgument(Argument argument, FunctionType type, int at) {
         boolean ok = switch (type) {
             case VALUE ->
                 argument instanceof Literal
                         || (argument instanceof QueryOperand query
                                 && query.query().isSingular())
                         || (argument instanceof FunctionCall call
-                                && call.function().result() == FunctionDefinition.Type.VALUE);
+                                && call.function().result() == FunctionType.VALUE);
             case LOGICAL -> {
                 if (argument instanceof Expr expr) {
                     checkLogical(expr);
@@ -475,12 +476,12 @@ public final class Parser {
                 }
                 yield argument instanceof QueryOperand
                         || (argument instanceof FunctionCall call
-                                && call.function().result() != FunctionDefinition.Type.VALUE);
+                                && call.function().result() != FunctionType.VALUE);
             }
             case NODES ->
                 argument instanceof QueryOperand
                         || (argument instanceof FunctionCall call
-                                && call.function().result() == FunctionDefinition.Type.NODES);
+                                && call.function().result() == FunctionType.NODES);
         };
         if (!ok) {
             throw error("Argument does not match parameter type " + type, at);

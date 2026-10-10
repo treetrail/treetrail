@@ -1,12 +1,13 @@
 package io.github.treetrail.jsonpath.internal;
 
+import io.github.treetrail.jsonpath.FunctionArguments;
+import io.github.treetrail.jsonpath.FunctionType;
+import io.github.treetrail.jsonpath.FunctionValue;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.internal.Ast.FunctionCall;
 import io.github.treetrail.jsonpath.internal.Ast.Literal;
-import io.github.treetrail.jsonpath.internal.FunctionDefinition.Arguments;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.LogicalFunction;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition.ValueFunction;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,14 +17,15 @@ import java.util.Optional;
  */
 public final class Functions {
 
-    private static final FunctionDefinition.Type VALUE = FunctionDefinition.Type.VALUE;
-    private static final FunctionDefinition.Type NODES = FunctionDefinition.Type.NODES;
+    private static final FunctionType VALUE = FunctionType.VALUE;
+    private static final FunctionType NODES = FunctionType.NODES;
 
     private static final FunctionDefinition MATCH =
             new FunctionDefinition("match", List.of(VALUE, VALUE), new LogicalFunction(args -> regex(args, true)));
     private static final FunctionDefinition SEARCH =
             new FunctionDefinition("search", List.of(VALUE, VALUE), new LogicalFunction(args -> regex(args, false)));
 
+    /** The functions of RFC 9535, by name; written against the same types as function extensions. */
     public static final Map<String, FunctionDefinition> BUILT_IN = Map.of(
             "length", new FunctionDefinition("length", List.of(VALUE), new ValueFunction(Functions::length)),
             "count", new FunctionDefinition("count", List.of(NODES), new ValueFunction(Functions::count)),
@@ -33,38 +35,28 @@ public final class Functions {
 
     private Functions() {}
 
-    private static Val length(Arguments args) {
-        Val v = args.value(0);
+    private static FunctionValue length(FunctionArguments args) {
+        FunctionValue v = args.value(0);
         if (v.isNothing()) {
-            return Val.NOTHING;
+            return FunctionValue.nothing();
         }
-        switch (v.kind()) {
+        return switch (v.kind()) {
             case STRING -> {
                 String s = v.string();
-                return Val.literal(BigDecimal.valueOf(s.codePointCount(0, s.length())));
+                yield FunctionValue.of(s.codePointCount(0, s.length()));
             }
-            case ARRAY -> {
-                return Val.literal(BigDecimal.valueOf(v.model().size(v.value())));
-            }
-            case OBJECT -> {
-                return Val.literal(BigDecimal.valueOf(v.model().memberCount(v.value())));
-            }
-            default -> {
-                return Val.NOTHING;
-            }
-        }
+            case ARRAY, OBJECT -> FunctionValue.of(v.size());
+            default -> FunctionValue.nothing();
+        };
     }
 
-    private static Val count(Arguments args) {
-        return Val.literal(BigDecimal.valueOf(args.nodes(0).size()));
+    private static FunctionValue count(FunctionArguments args) {
+        return FunctionValue.of(args.nodes(0).size());
     }
 
-    private static Val value(Arguments args) {
-        List<Val> nodes = args.nodes(0);
-        if (nodes.size() != 1) {
-            return Val.NOTHING;
-        }
-        return nodes.get(0);
+    private static FunctionValue value(FunctionArguments args) {
+        List<FunctionValue> nodes = args.nodes(0);
+        return nodes.size() == 1 ? nodes.get(0) : FunctionValue.nothing();
     }
 
     /**
@@ -81,7 +73,7 @@ public final class Functions {
         }
         Optional<IRegexp> compiled = IRegexp.compileForQuery(pattern);
         LogicalFunction precompiled = new LogicalFunction(args -> {
-            Val subject = args.value(0);
+            FunctionValue subject = args.value(0);
             if (compiled.isEmpty() || subject.isNothing() || subject.kind() != JsonKind.STRING) {
                 return false;
             }
@@ -93,9 +85,9 @@ public final class Functions {
                 new FunctionDefinition(function.name(), function.parameters(), precompiled), call.arguments());
     }
 
-    private static boolean regex(Arguments args, boolean fullMatch) {
-        Val subject = args.value(0);
-        Val regexp = args.value(1);
+    private static boolean regex(FunctionArguments args, boolean fullMatch) {
+        FunctionValue subject = args.value(0);
+        FunctionValue regexp = args.value(1);
         if (subject.isNothing()
                 || regexp.isNothing()
                 || subject.kind() != JsonKind.STRING

@@ -164,6 +164,26 @@ regular expressions are limited in size. Regular expressions may also come from 
 `match(@.value, @.pattern)`; the caches for them hold about 10 MB at most, however many different
 expressions a document contains (see [docs/conformance.md](docs/conformance.md#limits)).
 
+### Function extensions
+
+RFC 9535 defines five functions (`length`, `count`, `match`, `search`, `value`) and allows more
+(section 2.4). Declare one with its parameter and result types, and compile the queries that use it with a
+compiler that knows it; there is no global registry:
+
+```java
+FunctionExtension startsWith = FunctionExtension.logical(
+        "starts_with",
+        List.of(FunctionType.VALUE, FunctionType.VALUE),
+        args -> args.value(0).kind() == JsonKind.STRING && args.value(0).string().startsWith(args.value(1).string()));
+
+JsonPath path = JsonPath.compiler().withFunctions(startsWith).compile("$.book[?starts_with(@.title, 'The')]");
+```
+
+Calls are type-checked when a query is compiled, as for the built-in functions. A function sees its
+arguments as `FunctionValue`s, whatever JSON library the document comes from, and returns a value
+(`FunctionValue.of(...)`, `nothing()`), a logical value or a list of node values. Queries that use an extension
+only work where the extension exists, so they are not portable to other implementations.
+
 ### Testing with AssertJ and Spring
 
 `jsonpath-assertj` adds AssertJ assertions on JSON text. Values compare as JSON values, so `399`,
