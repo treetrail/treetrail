@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
@@ -13,7 +14,6 @@ import io.github.treetrail.jsonpath.NodeList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +84,7 @@ public final class ComplianceSuite {
             actual.add(MAPPER.readValue(serialize.apply(value), Object.class));
         }
         if (test.containsKey("result")) {
-            assertThat(jsonEquals(actual, test.get("result")))
+            assertThat(JavaObjectModel.jsonEquals(actual, test.get("result")))
                     .as("values: expected %s but got %s", test.get("result"), actual)
                     .isTrue();
             if (test.containsKey("result_paths")) {
@@ -96,44 +96,11 @@ public final class ComplianceSuite {
         List<Object> alternativePaths = (List<Object>) test.get("results_paths");
         for (int i = 0; i < alternatives.size(); i++) {
             boolean pathsMatch = alternativePaths == null || nodes.paths().equals(alternativePaths.get(i));
-            if (jsonEquals(actual, alternatives.get(i)) && pathsMatch) {
+            if (JavaObjectModel.jsonEquals(actual, alternatives.get(i)) && pathsMatch) {
                 return;
             }
         }
         throw new AssertionError(
                 "No alternative matched: got " + actual + " at " + nodes.paths() + ", expected one of " + alternatives);
-    }
-
-    private static boolean jsonEquals(Object a, Object b) {
-        if (a instanceof Number && b instanceof Number) {
-            return new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString())) == 0;
-        }
-        if (a instanceof List && b instanceof List) {
-            List<?> la = (List<?>) a;
-            List<?> lb = (List<?>) b;
-            if (la.size() != lb.size()) {
-                return false;
-            }
-            for (int i = 0; i < la.size(); i++) {
-                if (!jsonEquals(la.get(i), lb.get(i))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        if (a instanceof Map && b instanceof Map) {
-            Map<?, ?> ma = (Map<?, ?>) a;
-            Map<?, ?> mb = (Map<?, ?>) b;
-            if (!ma.keySet().equals(mb.keySet())) {
-                return false;
-            }
-            for (Object key : ma.keySet()) {
-                if (!jsonEquals(ma.get(key), mb.get(key))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return a == null ? b == null : a.equals(b);
     }
 }

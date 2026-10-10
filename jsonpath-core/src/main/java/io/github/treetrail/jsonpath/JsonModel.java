@@ -1,5 +1,6 @@
 package io.github.treetrail.jsonpath;
 
+import io.github.treetrail.jsonpath.internal.Values;
 import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.Iterator;
@@ -31,6 +32,29 @@ import org.jspecify.annotations.Nullable;
  * @param <N> the node type of the object model
  */
 public interface JsonModel<N extends @Nullable Object> {
+
+    /**
+     * Returns whether two values are equal as JSON values, with the semantics of {@code ==} in filters: numbers
+     * by value, strings by content, arrays element by element and objects member by member regardless of
+     * order. The values may come from different models, for example a Jackson tree and plain Java objects:
+     *
+     * <pre>{@code
+     * JsonModel.jsonEquals(Jackson2Model.INSTANCE, node, JavaObjectModel.INSTANCE, Map.of("price", 399));
+     * }</pre>
+     *
+     * @throws JsonPathLimitExceededException if the values are nested more than 1,000 levels deep
+     * @throws IllegalArgumentException if a value is not a JSON value of its model
+     */
+    @SuppressWarnings("unchecked")
+    static <A extends @Nullable Object, B extends @Nullable Object> boolean jsonEquals(
+            JsonModel<A> modelA, A a, JsonModel<B> modelB, B b) {
+        return Values.jsonEquals(
+                (JsonModel<@Nullable Object>) modelA,
+                a,
+                (JsonModel<@Nullable Object>) modelB,
+                b,
+                EvaluationLimits.DEFAULT.maxDepth());
+    }
 
     /** Returns the kind of {@code value}. */
     JsonKind kind(N value);

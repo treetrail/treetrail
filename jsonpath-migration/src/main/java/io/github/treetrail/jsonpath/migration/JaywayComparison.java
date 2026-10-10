@@ -4,14 +4,15 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.PathNotFoundException;
+import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
 import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -178,41 +179,15 @@ public final class JaywayComparison {
         return true;
     }
 
-    /** JSON value equality: numbers by value, objects by members, arrays by elements. */
+    /**
+     * JSON value equality, as {@code ==} in filters. Values that are not JSON values of plain Java objects, such
+     * as results of a custom Jayway mapping provider, fall back to {@code equals}.
+     */
     static boolean jsonEquals(@Nullable Object a, @Nullable Object b) {
-        if (a instanceof Number && b instanceof Number) {
-            try {
-                return new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString())) == 0;
-            } catch (NumberFormatException e) {
-                return a.equals(b);
-            }
+        try {
+            return JavaObjectModel.jsonEquals(a, b);
+        } catch (IllegalArgumentException e) {
+            return Objects.equals(a, b);
         }
-        if (a instanceof List && b instanceof List) {
-            List<?> la = (List<?>) a;
-            List<?> lb = (List<?>) b;
-            if (la.size() != lb.size()) {
-                return false;
-            }
-            for (int i = 0; i < la.size(); i++) {
-                if (!jsonEquals(la.get(i), lb.get(i))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        if (a instanceof Map && b instanceof Map) {
-            Map<?, ?> ma = (Map<?, ?>) a;
-            Map<?, ?> mb = (Map<?, ?>) b;
-            if (!ma.keySet().equals(mb.keySet())) {
-                return false;
-            }
-            for (Object key : ma.keySet()) {
-                if (!jsonEquals(ma.get(key), mb.get(key))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return a == null ? b == null : a.equals(b);
     }
 }
