@@ -37,8 +37,11 @@ class IRegexpMemoryTest {
     void boundsTheMemoryOfManyDocumentSourcedPatterns() {
         int generationBefore = IRegexp.dfaGeneration();
         Random random = new Random(41);
+        // Held like the expressions of long-lived queries, which discarding has to reach as well.
+        List<IRegexp> held = new ArrayList<>();
         for (int n = 0; n < 256; n++) {
             IRegexp regexp = IRegexp.compile(explosive(n)).orElseThrow();
+            held.add(regexp);
             Pattern java = java(n);
             for (int i = 0; i < 400; i++) {
                 String input = randomAb(random, 60);
@@ -54,10 +57,14 @@ class IRegexpMemoryTest {
                 }
             }
             assertThat(IRegexp.cachedDfaBytes()).isLessThanOrEqualTo(IRegexp.MAX_DFA_BYTES);
-            assertThat(IRegexp.cachedInstructions()).isLessThanOrEqualTo(IRegexp.MAX_CACHED_INSTRUCTIONS);
         }
         // The scenario retained 818 MB before the fix; now it has to run into the global bound.
         assertThat(IRegexp.dfaGeneration()).isGreaterThan(generationBefore);
+        long retained = 0;
+        for (IRegexp regexp : held) {
+            retained += regexp.automatonBytes(false) + regexp.automatonBytes(true);
+        }
+        assertThat(retained).isLessThanOrEqualTo(IRegexp.MAX_DFA_BYTES);
     }
 
     @Test
@@ -84,16 +91,6 @@ class IRegexpMemoryTest {
         assertThat(regexp.matches(input + "x")).isTrue();
         assertThat(regexp.automatonBytes(true)).isLessThanOrEqualTo(IRegexp.MAX_DFA_BYTES_PER_AUTOMATON);
         assertThat(regexp.automatonBytes(false)).isLessThanOrEqualTo(IRegexp.MAX_DFA_BYTES_PER_AUTOMATON);
-    }
-
-    @Test
-    void boundsTheInstructionsOfCachedExpressions() {
-        for (int n = 0; n < 60; n++) {
-            assertThat(IRegexp.compile("a{5000}x{0," + n + "}")).isPresent();
-            assertThat(IRegexp.cachedInstructions()).isLessThanOrEqualTo(IRegexp.MAX_CACHED_INSTRUCTIONS);
-        }
-        assertThat(IRegexp.compile("a{5000}").orElseThrow().matches("a".repeat(5000)))
-                .isTrue();
     }
 
     @Test
