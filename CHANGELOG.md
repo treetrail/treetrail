@@ -61,6 +61,13 @@ a minor version may still change the API, which this file then says.
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 
+### Fixed
+
+- Unicode categories in regular expressions (`\p{L}`, `\p{Lu}` and so on) come from Unicode 16.0 on every
+  Java version instead of from the JDK, so a query matches the same on Java 17, 21 and 25. Before, code
+  points assigned after Unicode 13.0, such as U+0870, did not match `\p{L}` on Java 17.
+  ([#24](https://github.com/treetrail/treetrail/issues/24))
+
 ### Testing
 
 - The differential test runs against jsonpath-rfc9535 2.0.1, which fixes all six bugs it had found in

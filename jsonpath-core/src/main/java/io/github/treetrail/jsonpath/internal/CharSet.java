@@ -11,7 +11,7 @@ import java.util.Map;
  */
 final class CharSet {
 
-    /** Unicode general categories allowed by I-Regexp, as bit masks over {@link Character#getType(int)}. */
+    /** Unicode general categories allowed by I-Regexp, as bit masks over {@link UnicodeCategories#type(int)}. */
     static final Map<String, Long> CATEGORIES;
 
     static {
@@ -138,7 +138,7 @@ final class CharSet {
         if (categories == 0 && complementedCategories.length == 0) {
             return false;
         }
-        long type = bit(Character.getType(cp));
+        long type = bit(UnicodeCategories.type(cp));
         if ((categories & type) != 0) {
             return true;
         }
