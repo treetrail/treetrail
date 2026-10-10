@@ -5,4 +5,5 @@
 at commit `9d1a415a53f5dfb291bc874823892e49174e38eb` (2026-09-17).
 It is licensed under the BSD-2 license, see `LICENSE` and `NOTICE` in this directory.
 
-To update, replace `cts.json` with the file from a newer commit and update the commit above.
+To update, run `scripts/update-cts.sh` (or `scripts/update-cts.sh <commit>`). The workflow
+`.github/workflows/cts-update.yml` checks for new commits every week.
