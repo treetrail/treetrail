@@ -162,8 +162,10 @@ A run that exceeds a limit throws a `JsonPathLimitExceededException`. A run on a
 stops with a `JsonPathEvaluationException` and leaves the interrupt status set, so `Future.cancel(true)`
 can bound a query by time. Compiling is bounded as well: filters nest at most 64 levels deep, and
 regular expressions are limited in size. Regular expressions may also come from the document, as in
-`match(@.value, @.pattern)`; the caches for them hold about 10 MB at most, however many different
-expressions a document contains (see [docs/conformance.md](docs/conformance.md#limits)).
+`match(@.value, @.pattern)`; each such call in a query keeps its own bounded cache of compiled
+expressions, so documents read by one query cannot displace another query's, and the automata of all
+expressions share about 8 MiB, however many different expressions documents contain (see
+[docs/conformance.md](docs/conformance.md#limits)).
 
 ### Function extensions
 

@@ -56,7 +56,7 @@ at commit `9d1a415` (2026-09-17), 706 cases, on Java 17, 21 and 25. All cases pa
 | Nesting of groups in a regular expression | 100 | Invalid: `match()` and `search()` return false |
 | Cached deterministic states per regular expression and mode | 2,000, and about 1 MiB of memory | Matching continues without caching further states: slower, still linear |
 | Memory of all cached regex automata together | about 8 MiB | All cached automata are discarded and rebuilt on demand |
-| Cached compiled regular expressions | 256 expressions or 100,000 instructions | The cache is cleared and refilled |
+| Cached compiled regular expressions from documents, per `match()` or `search()` call of a query | 64 expressions or 40,000 instructions | That call's cache is cleared and refilled |
 | Visited nodes per query run | 100,000,000 (configurable) | `JsonPathLimitExceededException` |
 | Nesting depth of the document | 1,000 (configurable) | `JsonPathLimitExceededException` |
 | Nodes in a result | unlimited (configurable) | `JsonPathLimitExceededException` |

@@ -53,6 +53,11 @@ a minor version may still change the API, which this file then says.
   `match()`/`search()` is compiled once per query when it is a literal. On the benchmark documents:
   filter 8 %, descendant 14 %, regex 21 % (32 % on Jackson trees) and definite paths 31 % faster.
   ([#12](https://github.com/treetrail/treetrail/issues/12))
+- Patterns that `match()`/`search()` read from documents are cached per call in the query (64 expressions
+  or 40,000 instructions) instead of in one cache for all queries, so patterns from one query's documents
+  can no longer evict those of another. Discarding the regex automata when their shared 8 MiB budget is
+  full now also reaches the expressions that queries hold.
+  ([#12](https://github.com/treetrail/treetrail/issues/12))
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 
