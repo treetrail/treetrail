@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -83,7 +83,7 @@ class JsonModelDefaultsTest {
 
     @TestFactory
     Stream<DynamicTest> modelWithOnlyTheAbstractMethodsPassesTheComplianceSuite() {
-        return ComplianceSuite.tests(MINIMAL, JsonModelDefaultsTest::parse, JsonModelDefaultsTest::serialize);
+        return JsonModelTestKit.complianceTests(MINIMAL, JsonModelDefaultsTest::parse);
     }
 
     @Test
@@ -144,14 +144,6 @@ class JsonModelDefaultsTest {
     private static Object parse(String json) {
         try {
             return MAPPER.readValue(json, Object.class);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static String serialize(Object value) {
-        try {
-            return MAPPER.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

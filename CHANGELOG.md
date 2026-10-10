@@ -10,8 +10,10 @@ a minor version may still change the API, which this file then says.
 - Nullness annotations: every package is `@NullMarked` ([JSpecify](https://jspecify.dev)), and values that can
   be `null` are `@Nullable`, for example JSON `null` in `JavaObjectModel` (now a `JsonModel<@Nullable Object>`,
   so `query(Object)` returns a `NodeList<@Nullable Object>`), `JsonModel.findMember` and
-  `JsonModel.numberValue`. Kotlin and other null-aware tools see these types. JSpecify is a compile-time
-  dependency only (`requires static transitive org.jspecify`). No change in behavior.
+  `JsonModel.numberValue`. Kotlin and other null-aware tools see these types. The annotations come from
+  `org.jspecify:jspecify` (one small jar without dependencies): Gradle puts it on the compile class path
+  only, Maven also on the runtime class path; the module descriptors say `requires static transitive`.
+  No change in behavior.
   ([#19](https://github.com/treetrail/treetrail/issues/19))
 - `NormalizedPath`: a node's location as a value with typed steps (`Name`, `Index`), parsed from and printed
   as a normalized path, and converted to a JSON Pointer (RFC 6901) with `toJsonPointer()`.
@@ -23,6 +25,10 @@ a minor version may still change the API, which this file then says.
   also across models, for example a Jackson tree against plain Java objects. The migration module and the
   compliance tests now use it instead of their own implementations.
   ([#21](https://github.com/treetrail/treetrail/issues/21))
+- `jsonpath-model-testkit`: tests for your own `JsonModel` implementation. `JsonModelTestKit.complianceTests`
+  runs all 706 cases of the JSONPath Compliance Test Suite through it, `contractTests` checks each method of
+  `JsonModel`. JUnit dynamic tests, no Jackson dependency; the suite (BSD-2) is included.
+  ([#15](https://github.com/treetrail/treetrail/issues/15))
 
 ### Testing
 

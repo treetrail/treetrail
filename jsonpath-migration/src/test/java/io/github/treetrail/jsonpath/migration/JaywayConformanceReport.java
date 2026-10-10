@@ -1,7 +1,8 @@
 package io.github.treetrail.jsonpath.migration;
 
 import io.github.treetrail.jsonpath.migration.Comparison.Outcome;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.ComplianceCase;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -10,6 +11,8 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +47,6 @@ class JaywayConformanceReport {
         Files.writeString(out, md.toString(), StandardCharsets.UTF_8);
     }
 
-    @SuppressWarnings("unchecked")
     private static void section(StringBuilder md, boolean parenthesize) {
         JaywayComparison comparison = JaywayComparison.withDefaults();
         Map<Outcome, List<String>> valid = new EnumMap<>(Outcome.class);
@@ -52,12 +54,12 @@ class JaywayConformanceReport {
         int invalidCount = 0;
         List<String> invalidAccepted = new ArrayList<>();
 
-        for (Map<String, Object> test : ComplianceSuite.cases()) {
-            String selector = (String) test.get("selector");
+        for (ComplianceCase test : JsonModelTestKit.complianceCases()) {
+            String selector = test.selector();
             if (parenthesize) {
                 selector = withFilterParentheses(selector);
             }
-            if (Boolean.TRUE.equals(test.get("invalid_selector"))) {
+            if (test.invalidSelector()) {
                 invalidCount++;
                 if (jaywayAccepts(selector)) {
                     invalidAccepted.add(row(test, "accepted", null));
@@ -65,7 +67,7 @@ class JaywayConformanceReport {
                 continue;
             }
             validCount++;
-            Comparison c = comparison.compareJson(selector, json(test.get("document")));
+            Comparison c = comparison.compareJson(selector, Objects.requireNonNull(test.documentJson()));
             if (c.outcome() == Outcome.ONLY_JAYWAY_ACCEPTS || c.outcome() == Outcome.BOTH_REJECT) {
                 // The parenthesized form is always valid RFC 9535; only Jayway's view matters here.
                 c = new Comparison(
@@ -82,8 +84,7 @@ class JaywayConformanceReport {
             } else if (outcome == Outcome.SAME) {
                 outcome = Outcome.DIFFERENT_VALUES;
             }
-            String expected = String.valueOf(
-                    test.containsKey("result") ? test.get("result") : ((List<Object>) test.get("results")).get(0));
+            String expected = String.valueOf(test.results().get(0));
             valid.computeIfAbsent(outcome, k -> new ArrayList<>()).add(row(test, expected, c));
         }
 
@@ -154,17 +155,6 @@ class JaywayConformanceReport {
         return out.toString();
     }
 
-    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
-            new com.fasterxml.jackson.databind.ObjectMapper();
-
-    private static String json(Object document) {
-        try {
-            return MAPPER.writeValueAsString(document);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new java.io.UncheckedIOException(e);
-        }
-    }
-
     private static boolean jaywayAccepts(String selector) {
         try {
             com.jayway.jsonpath.JsonPath.compile(selector);
@@ -174,12 +164,8 @@ class JaywayConformanceReport {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static boolean matchesExpected(List<Object> jayway, Map<String, Object> test) {
-        if (test.containsKey("result")) {
-            return JaywayComparison.jsonEquals(jayway, test.get("result"));
-        }
-        for (Object alternative : (List<Object>) test.get("results")) {
+    private static boolean matchesExpected(List<@Nullable Object> jayway, ComplianceCase test) {
+        for (List<@Nullable Object> alternative : test.results()) {
             if (JaywayComparison.jsonEquals(jayway, alternative)) {
                 return true;
             }
@@ -187,14 +173,14 @@ class JaywayConformanceReport {
         return false;
     }
 
-    private static String row(Map<String, Object> test, String expected, Comparison c) {
+    private static String row(ComplianceCase test, String expected, @Nullable Comparison c) {
         String jayway = c == null
                 ? ""
                 : c.jaywayValues() != null ? String.valueOf(c.jaywayValues()) : String.valueOf(c.detail());
         if (c == null) {
-            return "| " + cell(test.get("name")) + " | `" + cell(test.get("selector")) + "` |\n";
+            return "| " + cell(test.name()) + " | `" + cell(test.selector()) + "` |\n";
         }
-        return "| " + cell(test.get("name")) + " | `" + cell(test.get("selector")) + "` | " + cell(expected) + " | "
+        return "| " + cell(test.name()) + " | `" + cell(test.selector()) + "` | " + cell(expected) + " | "
                 + cell(jayway) + " |\n";
     }
 

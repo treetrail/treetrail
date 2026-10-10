@@ -23,7 +23,7 @@ plugins {
 /** The modules published to Maven Central; jsonpath-benchmarks is a build tool. */
 val publishedModules = setOf(
     "jsonpath-core", "jsonpath-jackson2", "jsonpath-jackson3", "jsonpath-gson", "jsonpath-jsonp",
-    "jsonpath-migration", "jsonpath-rewrite", "jsonpath-assertj", "jsonpath-spring-test",
+    "jsonpath-migration", "jsonpath-rewrite", "jsonpath-assertj", "jsonpath-spring-test", "jsonpath-model-testkit",
 )
 
 /**
@@ -50,6 +50,9 @@ val apiBaselineVersion = "0.2.0"
  * needs a note in CHANGELOG.md.
  */
 val acceptedApiChanges = listOf<String>()
+
+/** Published modules that are not in the release named by [apiBaselineVersion] yet; cleared after a release. */
+val unreleasedModules = setOf("jsonpath-model-testkit")
 
 // Gradle's JVM resolution rules for the configurations below, which the root project resolves itself (for
 // example platform dependencies in the released modules' metadata).
@@ -92,6 +95,7 @@ val coverageMinimum = mapOf(
     "jsonpath-spring-test" to (0.95 to 0.74),
     "jsonpath-migration" to (0.73 to 0.54),
     "jsonpath-rewrite" to (0.88 to 0.76),
+    "jsonpath-model-testkit" to (0.92 to 0.82),
 )
 
 // Shared setup for all library modules.
@@ -265,56 +269,58 @@ subprojects {
             }
         }
 
-        // API compatibility: the module's public API must stay binary and source compatible with the last
-        // release, apart from acceptedApiChanges. The internal package is not exported and not compared.
-        // The released module is resolved in the root project: a project cannot depend on an older version of
-        // itself.
-        val moduleName = name
-        val baseline = rootProject.configurations.create("apiBaseline-$moduleName") {
-            isCanBeConsumed = false
-            val reference = configurations["runtimeClasspath"].attributes
-            attributes {
-                for (key in reference.keySet()) {
-                    @Suppress("UNCHECKED_CAST")
-                    attribute(key as Attribute<Any>, reference.getAttribute(key)!!)
+        if (name !in unreleasedModules) {
+            // API compatibility: the module's public API must stay binary and source compatible with the last
+            // release, apart from acceptedApiChanges. The internal package is not exported and not compared.
+            // The released module is resolved in the root project: a project cannot depend on an older version of
+            // itself.
+            val moduleName = name
+            val baseline = rootProject.configurations.create("apiBaseline-$moduleName") {
+                isCanBeConsumed = false
+                val reference = configurations["runtimeClasspath"].attributes
+                attributes {
+                    for (key in reference.keySet()) {
+                        @Suppress("UNCHECKED_CAST")
+                        attribute(key as Attribute<Any>, reference.getAttribute(key)!!)
+                    }
                 }
             }
+            rootProject.dependencies.add(baseline.name, "io.github.treetrail:$moduleName:$apiBaselineVersion")
+            val baselineFiles = baseline.incoming.files
+            val baselineJarName = "$moduleName-$apiBaselineVersion.jar"
+            val compileClasspath = configurations["compileClasspath"].incoming.files
+            val newJar = tasks.named<Jar>("jar").flatMap { it.archiveFile }
+            val report = layout.buildDirectory.file("reports/api-compatibility/$moduleName.html")
+            val excludes = (listOf("io.github.treetrail.jsonpath.internal") + acceptedApiChanges).joinToString(";")
+            val apiCompatibility = tasks.register<JavaExec>("apiCompatibility") {
+                description = "Checks that the public API is compatible with $moduleName $apiBaselineVersion."
+                group = "verification"
+                classpath = japicmp
+                mainClass = "japicmp.JApiCmp"
+                inputs.files(baselineFiles)
+                inputs.file(newJar)
+                inputs.files(compileClasspath)
+                inputs.property("excludes", excludes)
+                outputs.file(report)
+                argumentProviders.add(CommandLineArgumentProvider {
+                    val (baselineJar, baselineClasspath) = baselineFiles.files.partition { it.name == baselineJarName }
+                    listOf(
+                        "--old", baselineJar.single().path,
+                        "--new", newJar.get().asFile.path,
+                        // compileOnly dependencies such as Spring are not in the released POM, so the old class path
+                        // also gets the current compile class path, after the released dependencies.
+                        "--old-classpath", (baselineClasspath + compileClasspath.files).joinToString(File.pathSeparator),
+                        "--new-classpath", compileClasspath.asPath,
+                        "--exclude", excludes,
+                        "--only-modified",
+                        "--error-on-binary-incompatibility",
+                        "--error-on-source-incompatibility",
+                        "--html-file", report.get().asFile.path,
+                    )
+                })
+            }
+            tasks.named("check") { dependsOn(apiCompatibility) }
         }
-        rootProject.dependencies.add(baseline.name, "io.github.treetrail:$moduleName:$apiBaselineVersion")
-        val baselineFiles = baseline.incoming.files
-        val baselineJarName = "$moduleName-$apiBaselineVersion.jar"
-        val compileClasspath = configurations["compileClasspath"].incoming.files
-        val newJar = tasks.named<Jar>("jar").flatMap { it.archiveFile }
-        val report = layout.buildDirectory.file("reports/api-compatibility/$moduleName.html")
-        val excludes = (listOf("io.github.treetrail.jsonpath.internal") + acceptedApiChanges).joinToString(";")
-        val apiCompatibility = tasks.register<JavaExec>("apiCompatibility") {
-            description = "Checks that the public API is compatible with $moduleName $apiBaselineVersion."
-            group = "verification"
-            classpath = japicmp
-            mainClass = "japicmp.JApiCmp"
-            inputs.files(baselineFiles)
-            inputs.file(newJar)
-            inputs.files(compileClasspath)
-            inputs.property("excludes", excludes)
-            outputs.file(report)
-            argumentProviders.add(CommandLineArgumentProvider {
-                val (baselineJar, baselineClasspath) = baselineFiles.files.partition { it.name == baselineJarName }
-                listOf(
-                    "--old", baselineJar.single().path,
-                    "--new", newJar.get().asFile.path,
-                    // compileOnly dependencies such as Spring are not in the released POM, so the old class path
-                    // also gets the current compile class path, after the released dependencies.
-                    "--old-classpath", (baselineClasspath + compileClasspath.files).joinToString(File.pathSeparator),
-                    "--new-classpath", compileClasspath.asPath,
-                    "--exclude", excludes,
-                    "--only-modified",
-                    "--error-on-binary-incompatibility",
-                    "--error-on-source-incompatibility",
-                    "--html-file", report.get().asFile.path,
-                )
-            })
-        }
-        tasks.named("check") { dependsOn(apiCompatibility) }
 
         apply(plugin = "com.vanniktech.maven.publish")
         extensions.configure<PublishingExtension> {

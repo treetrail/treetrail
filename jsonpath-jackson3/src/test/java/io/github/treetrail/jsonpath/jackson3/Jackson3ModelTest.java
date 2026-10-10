@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathEvaluationException;
 import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,12 @@ class Jackson3ModelTest {
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
-        return ComplianceSuite.tests(Jackson3Model.INSTANCE, MAPPER::readTree, JsonNode::toString);
+        return JsonModelTestKit.complianceTests(Jackson3Model.INSTANCE, MAPPER::readTree);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> modelContract() {
+        return JsonModelTestKit.contractTests(Jackson3Model.INSTANCE, MAPPER::readTree);
     }
 
     @Test

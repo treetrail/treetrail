@@ -3,7 +3,7 @@ package io.github.treetrail.jsonpath;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.io.UncheckedIOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -22,32 +22,27 @@ class ComplianceTest {
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithJacksonDefaults() {
-        return ComplianceSuite.tests(
-                JavaObjectModel.INSTANCE, json -> parse(DEFAULTS, json), ComplianceTest::serialize);
+        return JsonModelTestKit.complianceTests(JavaObjectModel.INSTANCE, json -> parse(DEFAULTS, json));
     }
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithTheBuiltInParser() {
-        return ComplianceSuite.tests(JavaObjectModel.INSTANCE, JavaObjectModel::parse, ComplianceTest::serialize);
+        return JsonModelTestKit.complianceTests(JavaObjectModel.INSTANCE, JavaObjectModel::parse);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> modelContract() {
+        return JsonModelTestKit.contractTests(JavaObjectModel.INSTANCE, JavaObjectModel::parse);
     }
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithBigDecimals() {
-        return ComplianceSuite.tests(
-                JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json), ComplianceTest::serialize);
+        return JsonModelTestKit.complianceTests(JavaObjectModel.INSTANCE, json -> parse(DECIMALS, json));
     }
 
     private static Object parse(ObjectMapper mapper, String json) {
         try {
             return mapper.readValue(json, Object.class);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static String serialize(Object value) {
-        try {
-            return DECIMALS.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

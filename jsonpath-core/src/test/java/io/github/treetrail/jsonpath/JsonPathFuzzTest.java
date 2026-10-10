@@ -4,8 +4,8 @@ import com.code_intelligence.jazzer.junit.FuzzTest;
 import com.code_intelligence.jazzer.mutation.annotation.NotNull;
 import com.code_intelligence.jazzer.mutation.annotation.WithUtf8Length;
 import io.github.treetrail.jsonpath.internal.IRegexp;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
-import java.util.Map;
+import io.github.treetrail.jsonpath.testkit.ComplianceCase;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
@@ -92,15 +92,15 @@ class JsonPathFuzzTest {
     // ---- seeds: the Compliance Test Suite ----
 
     static Stream<Arguments> expressions() {
-        return ComplianceSuite.cases().stream().map(test -> Arguments.of(test.get("selector")));
+        return JsonModelTestKit.complianceCases().stream().map(test -> Arguments.of(test.selector()));
     }
 
     static Stream<Arguments> queries() {
-        return validCases().map(test -> Arguments.of(test.get("selector"), json(test.get("document"))));
+        return validCases().map(test -> Arguments.of(test.selector(), test.documentJson()));
     }
 
     static Stream<Arguments> documents() {
-        return validCases().map(test -> Arguments.of(json(test.get("document"))));
+        return validCases().map(test -> Arguments.of(test.documentJson()));
     }
 
     static Stream<Arguments> regularExpressions() {
@@ -118,11 +118,7 @@ class JsonPathFuzzTest {
                 Arguments.of("(a|b)*a(){00000001390468697}", "C"));
     }
 
-    private static Stream<Map<String, Object>> validCases() {
-        return ComplianceSuite.cases().stream().filter(test -> !Boolean.TRUE.equals(test.get("invalid_selector")));
-    }
-
-    private static String json(Object value) {
-        return TestJson.write(value);
+    private static Stream<ComplianceCase> validCases() {
+        return JsonModelTestKit.complianceCases().stream().filter(test -> !test.invalidSelector());
     }
 }

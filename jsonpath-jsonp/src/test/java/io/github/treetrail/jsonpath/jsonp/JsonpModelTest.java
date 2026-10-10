@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import jakarta.json.Json;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
@@ -18,7 +18,12 @@ class JsonpModelTest {
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
-        return ComplianceSuite.tests(JsonpModel.INSTANCE, JsonpModelTest::parse, JsonValue::toString);
+        return JsonModelTestKit.complianceTests(JsonpModel.INSTANCE, JsonpModelTest::parse);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> modelContract() {
+        return JsonModelTestKit.contractTests(JsonpModel.INSTANCE, JsonpModelTest::parse);
     }
 
     @Test
