@@ -78,6 +78,14 @@ NormalizedPath.parse("$['store']['book'][0]['title']").equals(location); // true
 `Number`, `Boolean` and `null`. That is what most JSON libraries produce when asked for untyped
 output, for example Jackson's `objectMapper.readValue(json, Object.class)`.
 
+To ask only whether a query selects anything, or for the first node, use `exists` and `first`. They stop
+at the first node instead of selecting all of them:
+
+```java
+JsonPath.compile("$..[?@.status == 'failed']").exists(document); // true or false
+JsonPath.compile("$.store.book[*]").first(document);              // Optional<Node<Object>>
+```
+
 JSON text needs no JSON library: `queryJson` parses it with a small, strict parser built into the core
 (`JavaObjectModel.parse`), which keeps exact numbers and rejects duplicate member names.
 

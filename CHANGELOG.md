@@ -25,10 +25,23 @@ a minor version may still change the API, which this file then says.
   also across models, for example a Jackson tree against plain Java objects. The migration module and the
   compliance tests now use it instead of their own implementations.
   ([#21](https://github.com/treetrail/treetrail/issues/21))
+- `JsonPath.exists(document)` and `JsonPath.first(document)` (also with a model): stop at the first node
+  instead of selecting all of them. ([#12](https://github.com/treetrail/treetrail/issues/12))
 - `jsonpath-model-testkit`: tests for your own `JsonModel` implementation. `JsonModelTestKit.complianceTests`
   runs all 706 cases of the JSONPath Compliance Test Suite through it, `contractTests` checks each method of
   `JsonModel`. JUnit dynamic tests, no Jackson dependency; the suite (BSD-2) is included.
   ([#15](https://github.com/treetrail/treetrail/issues/15))
+
+### Changed
+
+- Faster queries: nodes pass through the segments one by one instead of in a list per segment, existence
+  tests in filters (`[?@..x]`) and comparisons with singular queries stop at the first node, descendant
+  segments compute each node's children once, literals are converted once per query, and the pattern of
+  `match()`/`search()` is compiled once per query when it is a literal. On the benchmark documents:
+  filter 8 %, descendant 14 %, regex 21 % (32 % on Jackson trees) and definite paths 31 % faster.
+  ([#12](https://github.com/treetrail/treetrail/issues/12))
+- A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
+  "Query selected more than N nodes, the limit".
 
 ### Testing
 
