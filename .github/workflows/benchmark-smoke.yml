@@ -1,0 +1,42 @@
+name: Benchmark smoke run
+
+# A short JMH run of QueryBenchmark on pull requests that change the query engine or the benchmarks, and every
+# week. It catches large performance regressions only: scripts/benchmark-smoke/check.py compares this library
+# with Jayway JsonPath within the same run and fails if this library becomes more than 25 % slower than Jayway
+# on a query. The numbers in docs/benchmarks.md come from full runs on a quiet machine, not from here.
+
+on:
+  pull_request:
+    paths:
+      - "jsonpath-core/src/main/**"
+      - "jsonpath-benchmarks/**"
+      - "scripts/benchmark-smoke/**"
+      - ".github/workflows/benchmark-smoke.yml"
+  schedule:
+    - cron: "23 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Run QueryBenchmark briefly
+        run: >
+          ./gradlew :jsonpath-benchmarks:jmh
+          "-PjmhArgs=QueryBenchmark -f 2 -wi 2 -w 1s -i 3 -r 1s -rff build/jmh-smoke.json"
+      - name: Compare with Jayway JsonPath
+        run: python3 scripts/benchmark-smoke/check.py jsonpath-benchmarks/build/jmh-smoke.json

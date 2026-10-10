@@ -80,6 +80,11 @@ a minor version may still change the API, which this file then says.
 
 ### Testing
 
+- Broader benchmarks (docs/benchmarks.md): a 10 MB document (this library 1.1× to 1.8× faster than Jayway
+  JsonPath), bytes allocated per query (1.4× to 3.4× fewer than Jayway), and the other Java implementations of
+  RFC 9535, SJF4J and ajp. A short benchmark run on pull requests fails if this library becomes more than 25 %
+  slower than Jayway on a query. `-PjmhArgs` now replaces the `jmh` task's default options.
+  ([#23](https://github.com/treetrail/treetrail/issues/23))
 - The differential test runs against jsonpath-rfc9535 2.0.1, which fixes all six bugs it had found in
   the reference ([#24](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/24)–[#27](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/27)).
   The list of known differences is now empty. The query generator no longer avoids those bugs: it writes

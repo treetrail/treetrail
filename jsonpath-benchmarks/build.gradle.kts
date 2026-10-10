@@ -12,6 +12,8 @@ dependencies {
     implementation(project(":jsonpath-core"))
     implementation(project(":jsonpath-jackson2"))
     implementation(libs.jayway.jsonpath)
+    implementation(libs.sjf4j)
+    implementation(libs.ajp)
     implementation(libs.jmh.core)
     annotationProcessor(libs.jmh.generator)
 
@@ -37,7 +39,12 @@ tasks.register<JavaExec>("jmh") {
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
     // Ten forks: some benchmarks run at one of two speeds per JVM, depending on what the JIT compiler happens to
     // compile first (Jayway's wildcard query: about 49 or 69 µs), so a single fork can land on either.
-    val extra = providers.gradleProperty("jmhArgs").map { it.split(" ") }.getOrElse(emptyList())
-    args = listOf("-f", "10", "-wi", "3", "-w", "1s", "-i", "5", "-r", "1s",
-        "-rf", "json", "-rff", layout.buildDirectory.file("jmh-results.json").get().asFile.path) + extra
+    // Options in -PjmhArgs replace these defaults, for example -PjmhArgs="QueryBenchmark -f 2 -prof gc".
+    val extra = providers.gradleProperty("jmhArgs").map { it.split(" ").filter { arg -> arg.isNotEmpty() } }
+        .getOrElse(emptyList())
+    val defaults = listOf(
+        "-f" to "10", "-wi" to "3", "-w" to "1s", "-i" to "5", "-r" to "1s",
+        "-rf" to "json", "-rff" to layout.buildDirectory.file("jmh-results.json").get().asFile.path,
+    )
+    args = defaults.filter { (option, _) -> option !in extra }.flatMap { (option, value) -> listOf(option, value) } + extra
 }
