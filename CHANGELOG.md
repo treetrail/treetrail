@@ -30,6 +30,9 @@ a minor version may still change the API, which this file then says.
   it, type-checked like the built-in functions, which are written against the same types. Functions see
   arguments as `FunctionValue` (independent of the JSON model) and cannot create arrays or objects.
   ([#13](https://github.com/treetrail/treetrail/issues/13))
+- `jsonpath-jayway-functions`: Jayway JsonPath's aggregates `min`, `max`, `sum`, `avg` and `stddev` as function
+  extensions for filters, computed exactly with `BigDecimal`; `JaywayFunctions.compiler()`. Not RFC 9535.
+  ([#13](https://github.com/treetrail/treetrail/issues/13))
 - `JsonPath.exists(document)` and `JsonPath.first(document)` (also with a model): stop at the first node
   instead of selecting all of them. ([#12](https://github.com/treetrail/treetrail/issues/12))
 - `jsonpath-model-testkit`: tests for your own `JsonModel` implementation. `JsonModelTestKit.complianceTests`

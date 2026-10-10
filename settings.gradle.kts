@@ -14,6 +14,7 @@ include("jsonpath-migration")
 include("jsonpath-assertj")
 include("jsonpath-spring-test")
 include("jsonpath-model-testkit")
+include("jsonpath-jayway-functions")
 include("jsonpath-rewrite")
 include("jsonpath-benchmarks")
 
