@@ -8,8 +8,8 @@ for JSONPath.
   and every node carries its normalized path, for example `$['store']['book'][0]`. There is no
   configuration that changes what a query returns.
 - **Works on the JSON tree you already have:** Jackson 2 and 3, Gson, JSON-P or plain Java objects,
-  without conversion. The core depends on nothing but the JDK; other object models plug in through
-  the small `JsonModel` interface.
+  without conversion. The core needs nothing but the JDK and the JSpecify annotations (one small jar);
+  other object models plug in through the small `JsonModel` interface.
 - **Safe with untrusted queries:** regular expressions in `match()` and `search()` follow
   [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) and run on an automaton without
   backtracking, in time linear in the input: `(a*)*b` on 100,000 characters finishes in milliseconds.
@@ -49,7 +49,7 @@ dependencies {
 ```
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration` and `jsonpath-rewrite`. Every release is
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite` and `jsonpath-model-testkit`. Every release is
 signed, ships a CycloneDX SBOM per module and has a build provenance attestation; see
 [docs/releasing.md](docs/releasing.md#what-a-release-contains). Changes are listed in
 [CHANGELOG.md](CHANGELOG.md).
@@ -107,6 +107,26 @@ Each adapter passes the full Compliance Test Suite with documents parsed by its 
 default settings. For other object models, implement the ten abstract methods of `JsonModel<N>` and
 call `query(document, model)`; override its default methods, such as `members()`, where your library
 can answer faster.
+
+`jsonpath-model-testkit` checks such a model: it runs all cases of the Compliance Test Suite through it,
+with documents parsed by your library, and tests each method of `JsonModel`, for example the difference
+between a missing member and a member that is JSON `null`. Add it as a test dependency:
+
+```java
+class MyModelTest {
+    @TestFactory
+    Stream<DynamicTest> complianceSuite() {
+        return JsonModelTestKit.complianceTests(MyModel.INSTANCE, MyLibrary::parse);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> contract() {
+        return JsonModelTestKit.contractTests(MyModel.INSTANCE, MyLibrary::parse);
+    }
+}
+```
+
+The built-in adapters run these tests too.
 
 Compiled queries are immutable and thread-safe. Compile once, reuse often.
 Invalid queries throw a `JsonPathSyntaxException` with the position of the problem and an excerpt of
@@ -287,5 +307,5 @@ Java sources are formatted with [palantir-java-format](https://github.com/palant
 
 ## License
 
-[Apache License 2.0](LICENSE). The vendored Compliance Test Suite (test sources only) is licensed
+[Apache License 2.0](LICENSE). The Compliance Test Suite included in `jsonpath-model-testkit` is licensed
 under BSD-2, see [NOTICE](NOTICE).

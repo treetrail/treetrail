@@ -3,8 +3,8 @@ Copyright 2026 Christoph Sens
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-The test sources include the JSONPath Compliance Test Suite
+jsonpath-model-testkit includes the JSONPath Compliance Test Suite
 (https://github.com/jsonpath-standard/jsonpath-compliance-test-suite),
 Copyright 2020 VMware, Inc., licensed under the BSD-2 license
-(see jsonpath-core/src/testFixtures/resources/cts/LICENSE). It is used for testing only
-and is not part of the published artifacts.
+(see jsonpath-model-testkit/src/main/resources/io/github/treetrail/jsonpath/testkit/cts/LICENSE,
+also included in that jar). The other modules use it for testing only.

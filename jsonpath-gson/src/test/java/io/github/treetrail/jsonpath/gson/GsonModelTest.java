@@ -3,7 +3,6 @@ package io.github.treetrail.jsonpath.gson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,7 +10,7 @@ import com.google.gson.JsonParser;
 import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -20,13 +19,15 @@ import org.junit.jupiter.api.TestFactory;
 class GsonModelTest {
 
     private static final Gson GSON = new Gson();
-    /** Writes results back with null members, which Gson drops by default. */
-    private static final Gson GSON_WITH_NULLS =
-            new GsonBuilder().serializeNulls().create();
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
-        return ComplianceSuite.tests(GsonModel.INSTANCE, JsonParser::parseString, JsonElement::toString);
+        return JsonModelTestKit.complianceTests(GsonModel.INSTANCE, JsonParser::parseString);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> modelContract() {
+        return JsonModelTestKit.contractTests(GsonModel.INSTANCE, JsonParser::parseString);
     }
 
     /**
@@ -35,8 +36,7 @@ class GsonModelTest {
      */
     @TestFactory
     Stream<DynamicTest> complianceTestSuiteWithUntypedGsonOutput() {
-        return ComplianceSuite.tests(
-                JavaObjectModel.INSTANCE, json -> GSON.fromJson(json, Object.class), GSON_WITH_NULLS::toJson);
+        return JsonModelTestKit.complianceTests(JavaObjectModel.INSTANCE, json -> GSON.fromJson(json, Object.class));
     }
 
     @Test

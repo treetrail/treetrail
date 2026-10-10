@@ -4,7 +4,8 @@ dependencies {
     api(project(":jsonpath-core"))
     api(libs.jakarta.json.api)
 
-    testImplementation(testFixtures(project(":jsonpath-core")))
+    testImplementation(project(":jsonpath-model-testkit"))
+    testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
     // Any JSON-P implementation works; the tests use Eclipse Parsson.

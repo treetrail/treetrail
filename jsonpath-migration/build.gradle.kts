@@ -7,7 +7,8 @@ dependencies {
     compileOnly(libs.jayway.jsonpath)
 
     testImplementation(libs.jayway.jsonpath)
-    testImplementation(testFixtures(project(":jsonpath-core")))
+    testImplementation(project(":jsonpath-model-testkit"))
+    testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
     testImplementation(libs.jackson2.databind)

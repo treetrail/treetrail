@@ -6,7 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.ComplianceCase;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -26,13 +27,13 @@ class JsonParseTest {
     @Test
     void parsesEveryComplianceSuiteDocumentLikeJackson() throws JsonProcessingException {
         int documents = 0;
-        for (Map<String, Object> test : ComplianceSuite.cases()) {
-            if (!test.containsKey("document")) {
+        for (ComplianceCase test : JsonModelTestKit.complianceCases()) {
+            String json = test.documentJson();
+            if (json == null) {
                 continue;
             }
-            String json = JACKSON.writeValueAsString(test.get("document"));
             assertThat(jsonEquals(JavaObjectModel.parse(json), JACKSON.readValue(json, Object.class)))
-                    .as("document of %s", test.get("name"))
+                    .as("document of %s", test.name())
                     .isTrue();
             documents++;
         }

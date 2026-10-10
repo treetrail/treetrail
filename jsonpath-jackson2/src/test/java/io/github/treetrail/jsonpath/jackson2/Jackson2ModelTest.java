@@ -13,7 +13,7 @@ import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathEvaluationException;
 import io.github.treetrail.jsonpath.NodeList;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -30,7 +30,12 @@ class Jackson2ModelTest {
 
     @TestFactory
     Stream<DynamicTest> complianceTestSuite() {
-        return ComplianceSuite.tests(Jackson2Model.INSTANCE, Jackson2ModelTest::parse, JsonNode::toString);
+        return JsonModelTestKit.complianceTests(Jackson2Model.INSTANCE, Jackson2ModelTest::parse);
+    }
+
+    @TestFactory
+    Stream<DynamicTest> modelContract() {
+        return JsonModelTestKit.contractTests(Jackson2Model.INSTANCE, Jackson2ModelTest::parse);
     }
 
     @Test

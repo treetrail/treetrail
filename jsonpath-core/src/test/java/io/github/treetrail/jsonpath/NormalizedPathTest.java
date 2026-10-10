@@ -6,10 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.github.treetrail.jsonpath.NormalizedPath.Index;
 import io.github.treetrail.jsonpath.NormalizedPath.Name;
 import io.github.treetrail.jsonpath.NormalizedPath.Step;
-import io.github.treetrail.jsonpath.testing.ComplianceSuite;
+import io.github.treetrail.jsonpath.testkit.ComplianceCase;
+import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -19,11 +19,11 @@ class NormalizedPathTest {
     @Test
     void roundTripsTheLocationOfEveryNodeSelectedInTheComplianceSuite() {
         int nodes = 0;
-        for (Map<String, Object> test : ComplianceSuite.cases()) {
-            if (Boolean.TRUE.equals(test.get("invalid_selector"))) {
+        for (ComplianceCase test : JsonModelTestKit.complianceCases()) {
+            if (test.invalidSelector()) {
                 continue;
             }
-            for (Node<?> node : JsonPath.compile((String) test.get("selector")).query(test.get("document"))) {
+            for (Node<?> node : JsonPath.compile(test.selector()).query(test.document())) {
                 NormalizedPath path = NormalizedPath.parse(node.path());
                 assertThat(path).as(node.path()).isEqualTo(node.normalizedPath());
                 assertThat(path.toString()).isEqualTo(node.path());
@@ -35,16 +35,10 @@ class NormalizedPathTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void parsesEveryResultPathOfTheComplianceSuiteBackToTheSameText() {
         List<String> paths = new ArrayList<>();
-        for (Map<String, Object> test : ComplianceSuite.cases()) {
-            if (test.get("result_paths") instanceof List<?> resultPaths) {
-                paths.addAll((List<String>) resultPaths);
-            }
-            if (test.get("results_paths") instanceof List<?> alternatives) {
-                alternatives.forEach(alternative -> paths.addAll((List<String>) alternative));
-            }
+        for (ComplianceCase test : JsonModelTestKit.complianceCases()) {
+            test.resultPaths().forEach(paths::addAll);
         }
         assertThat(paths).hasSizeGreaterThan(500);
         for (String path : paths) {
