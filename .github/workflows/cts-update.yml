@@ -1,0 +1,73 @@
+name: Compliance Test Suite update
+
+# Dependabot does not see the vendored cts.json. Every Monday this checks the main branch of the JSONPath
+# Compliance Test Suite; if it has new commits, scripts/update-cts.sh updates the suite, the commit is pushed
+# to the branch cts-update, and an issue links to opening the pull request. A pull request opened by a
+# person runs CI with the new cases; this workflow does not open it itself, because pull requests created
+# with the workflow token run no CI and the repository does not let Actions create pull requests.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Update the suite
+        id: cts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/update-cts.sh
+      - name: Push the update to cts-update
+        if: steps.cts.outputs.new_commit != ''
+        env:
+          NEW_COMMIT: ${{ steps.cts.outputs.new_commit }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c cts-update
+          git commit -am "Update the JSONPath Compliance Test Suite to ${NEW_COMMIT:0:7}"
+          git push --force origin cts-update
+      - name: Open or update the issue
+        if: steps.cts.outputs.new_commit != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLD_COMMIT: ${{ steps.cts.outputs.old_commit }}
+          NEW_COMMIT: ${{ steps.cts.outputs.new_commit }}
+          OLD_CASES: ${{ steps.cts.outputs.old_cases }}
+          NEW_CASES: ${{ steps.cts.outputs.new_cases }}
+        run: |
+          suite=https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
+          here=https://github.com/${GITHUB_REPOSITORY}
+          prefix="Update the JSONPath Compliance Test Suite"
+          title="$prefix to ${NEW_COMMIT:0:7}"
+          body=$(cat <<EOF
+          The [JSONPath Compliance Test Suite]($suite) has new commits:
+          [\`${OLD_COMMIT:0:7}...${NEW_COMMIT:0:7}\`]($suite/compare/$OLD_COMMIT...$NEW_COMMIT), $OLD_CASES → $NEW_CASES cases.
+
+          The branch [\`cts-update\`]($here/tree/cts-update) has the update made by \`scripts/update-cts.sh\`.
+          [Open the pull request]($here/compare/main...cts-update?expand=1): its CI runs the new cases
+          against every JSON model. Add a changelog entry before merging.
+          EOF
+          )
+          number=$(gh issue list --state open --search "in:title \"$prefix\"" --json number,title \
+            --jq "map(select(.title | startswith(\"$prefix\"))) | .[0].number // empty")
+          if [[ -n "$number" ]]; then
+            gh issue edit "$number" --title "$title" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body" --label dependencies
+          fi
