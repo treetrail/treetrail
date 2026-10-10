@@ -2,7 +2,6 @@ package io.github.treetrail.jsonpath.benchmarks;
 
 import com.jayway.jsonpath.Configuration;
 import io.github.treetrail.jsonpath.JsonPath;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -16,74 +15,62 @@ import org.openjdk.jmh.annotations.State;
 /**
  * Query throughput on a bookstore document: both libraries get the same precompiled expression and
  * the same document (plain Java objects, which Jayway's default json-smart provider reads directly).
+ *
+ * <p>Each library has its own state, so that a benchmark's JVM only runs the library it measures: running
+ * the other library's query during setup changes which code the JIT compiler sees first and measurably
+ * shifted Jayway's wildcard time. {@code BenchmarkFairnessTest} checks that both select the same values.
  */
-@State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 public class QueryBenchmark {
 
-    /** Expressions written so that both libraries accept them and select the same nodes. */
-    @Param({"definite", "wildcard", "filter", "descendant", "regex"})
-    public String query;
+    /** The parameters and the document, shared by both libraries' states. */
+    @State(Scope.Benchmark)
+    public abstract static class Bookstore {
 
-    @Param({"1000"})
-    public int books;
+        @Param({"definite", "wildcard", "filter", "descendant", "regex"})
+        public String query;
 
-    private Object document;
-    private JsonPath rfc;
-    private com.jayway.jsonpath.JsonPath jayway;
-    private final Configuration jaywayConfiguration = Configuration.defaultConfiguration();
+        @Param({"1000"})
+        public int books;
 
-    @Setup
-    public void setup() {
-        document = Documents.store(books);
-        String rfcExpression;
-        String jaywayExpression;
-        switch (query) {
-            case "definite" -> {
-                rfcExpression = "$.store.bicycle.color";
-                jaywayExpression = rfcExpression;
-            }
-            case "wildcard" -> {
-                rfcExpression = "$.store.book[*].title";
-                jaywayExpression = rfcExpression;
-            }
-            case "filter" -> {
-                rfcExpression = "$.store.book[?(@.price < 10 && @.category == 'fiction')].title";
-                jaywayExpression = rfcExpression;
-            }
-            case "descendant" -> {
-                rfcExpression = "$..price";
-                jaywayExpression = rfcExpression;
-            }
-            case "regex" -> {
-                rfcExpression = "$.store.book[?match(@.author, 'H.*')].title";
-                jaywayExpression = "$.store.book[?(@.author =~ /H.*/)].title";
-            }
-            default -> throw new IllegalArgumentException(query);
-        }
-        rfc = JsonPath.compile(rfcExpression);
-        jayway = com.jayway.jsonpath.JsonPath.compile(jaywayExpression);
-        checkSameResult();
+        Object document;
     }
 
-    /** Guards the fairness of the comparison: both must select the same values. */
-    private void checkSameResult() {
-        List<Object> ours = rfc.query(document).values();
-        Object theirs = jayway.read(document, jaywayConfiguration);
-        List<?> theirList = theirs instanceof List ? (List<?>) theirs : List.of(theirs);
-        if (!ours.equals(theirList)) {
-            throw new IllegalStateException(query + ": results differ, " + ours.size() + " vs " + theirList.size());
+    /** The document and the expression compiled by this library. */
+    @State(Scope.Benchmark)
+    public static class Rfc9535 extends Bookstore {
+
+        JsonPath path;
+
+        @Setup
+        public void setup() {
+            document = Documents.store(books);
+            path = JsonPath.compile(Queries.rfc9535(query));
+        }
+    }
+
+    /** The document and the expression compiled by Jayway JsonPath, with its default configuration. */
+    @State(Scope.Benchmark)
+    public static class Jayway extends Bookstore {
+
+        com.jayway.jsonpath.JsonPath path;
+        final Configuration configuration = Configuration.defaultConfiguration();
+
+        @Setup
+        public void setup() {
+            document = Documents.store(books);
+            path = com.jayway.jsonpath.JsonPath.compile(Queries.jayway(query));
         }
     }
 
     @Benchmark
-    public Object rfc9535() {
-        return rfc.query(document).values();
+    public Object rfc9535(Rfc9535 state) {
+        return state.path.query(state.document).values();
     }
 
     @Benchmark
-    public Object jayway() {
-        return jayway.read(document, jaywayConfiguration);
+    public Object jayway(Jayway state) {
+        return state.path.read(state.document, state.configuration);
     }
 }

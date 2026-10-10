@@ -24,34 +24,58 @@ import org.openjdk.jmh.annotations.Warmup;
  * <p>Since JDK 9, java.util.regex defuses many textbook cases such as {@code (a|a)*b} or
  * {@code (a+)+b}; triply nested quantifiers are still exponential on JDK 25.
  */
-@State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 2, time = 1)
 @Measurement(iterations = 3, time = 1)
 public class HostileRegexBenchmark {
 
-    @Param({"10", "15", "20", "24"})
-    public int length;
+    /** The parameter and the document, shared by both libraries' states. */
+    @State(Scope.Benchmark)
+    public abstract static class Input {
 
-    private Object document;
-    private final JsonPath rfc = JsonPath.compile("$[?match(@.s, '((a+)+)+b')]");
-    private final com.jayway.jsonpath.JsonPath jayway =
-            com.jayway.jsonpath.JsonPath.compile("$[?(@.s =~ /((a+)+)+b/)]");
-    private final Configuration jaywayConfiguration = Configuration.defaultConfiguration();
+        @Param({"10", "15", "20", "24"})
+        public int length;
 
-    @Setup
-    public void setup() {
-        document = List.of(Map.of("s", "a".repeat(length) + "!"));
+        Object document;
+
+        void createDocument() {
+            document = List.of(Map.of("s", "a".repeat(length) + "!"));
+        }
+    }
+
+    /** As in {@link QueryBenchmark}, each library has its own state, so a benchmark's JVM only runs that library. */
+    @State(Scope.Benchmark)
+    public static class Rfc9535 extends Input {
+
+        final JsonPath path = JsonPath.compile("$[?match(@.s, '((a+)+)+b')]");
+
+        @Setup
+        public void setup() {
+            createDocument();
+        }
+    }
+
+    /** The expression for Jayway JsonPath, which uses java.util.regex. */
+    @State(Scope.Benchmark)
+    public static class Jayway extends Input {
+
+        final com.jayway.jsonpath.JsonPath path = com.jayway.jsonpath.JsonPath.compile("$[?(@.s =~ /((a+)+)+b/)]");
+        final Configuration configuration = Configuration.defaultConfiguration();
+
+        @Setup
+        public void setup() {
+            createDocument();
+        }
     }
 
     @Benchmark
-    public Object rfc9535() {
-        return rfc.query(document).values();
+    public Object rfc9535(Rfc9535 state) {
+        return state.path.query(state.document).values();
     }
 
     @Benchmark
-    public Object jayway() {
-        return jayway.read(document, jaywayConfiguration);
+    public Object jayway(Jayway state) {
+        return state.path.read(state.document, state.configuration);
     }
 }

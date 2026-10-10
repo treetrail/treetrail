@@ -7,8 +7,6 @@ import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.jackson2.Jackson2Model;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -22,82 +20,63 @@ import org.openjdk.jmh.annotations.State;
 /**
  * The queries of {@link QueryBenchmark} against a Jackson 2 tree, the most common setup in practice:
  * this library through {@link Jackson2Model}, Jayway JsonPath through its {@link JacksonJsonNodeJsonProvider}.
- * Both query the same {@link JsonNode} tree without converting it.
+ * Both query the same {@link JsonNode} tree without converting it. As in {@link QueryBenchmark}, each library
+ * has its own state, and {@code BenchmarkFairnessTest} checks that both select the same nodes.
  */
-@State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 public class JacksonQueryBenchmark {
 
-    @Param({"definite", "wildcard", "filter", "descendant", "regex"})
-    public String query;
+    /** The parameters and the document, shared by both libraries' states. */
+    @State(Scope.Benchmark)
+    public abstract static class Bookstore {
 
-    @Param({"1000"})
-    public int books;
+        @Param({"definite", "wildcard", "filter", "descendant", "regex"})
+        public String query;
 
-    private JsonNode document;
-    private JsonPath rfc;
-    private com.jayway.jsonpath.JsonPath jayway;
-    private final Configuration jaywayConfiguration = Configuration.builder()
-            .jsonProvider(new JacksonJsonNodeJsonProvider())
-            .mappingProvider(new JacksonMappingProvider())
-            .build();
+        @Param({"1000"})
+        public int books;
 
-    @Setup
-    public void setup() {
-        document = new ObjectMapper().valueToTree(Documents.store(books));
-        String rfcExpression;
-        String jaywayExpression;
-        switch (query) {
-            case "definite" -> {
-                rfcExpression = "$.store.bicycle.color";
-                jaywayExpression = rfcExpression;
-            }
-            case "wildcard" -> {
-                rfcExpression = "$.store.book[*].title";
-                jaywayExpression = rfcExpression;
-            }
-            case "filter" -> {
-                rfcExpression = "$.store.book[?(@.price < 10 && @.category == 'fiction')].title";
-                jaywayExpression = rfcExpression;
-            }
-            case "descendant" -> {
-                rfcExpression = "$..price";
-                jaywayExpression = rfcExpression;
-            }
-            case "regex" -> {
-                rfcExpression = "$.store.book[?match(@.author, 'H.*')].title";
-                jaywayExpression = "$.store.book[?(@.author =~ /H.*/)].title";
-            }
-            default -> throw new IllegalArgumentException(query);
-        }
-        rfc = JsonPath.compile(rfcExpression);
-        jayway = com.jayway.jsonpath.JsonPath.compile(jaywayExpression);
-        checkSameResult();
+        JsonNode document;
     }
 
-    /** Guards the fairness of the comparison: both must select the same values. */
-    private void checkSameResult() {
-        List<JsonNode> ours = rfc.query(document, Jackson2Model.INSTANCE).values();
-        JsonNode theirs = jayway.read(document, jaywayConfiguration);
-        List<JsonNode> theirList = new ArrayList<>();
-        if (theirs.isArray() && !query.equals("definite")) {
-            theirs.forEach(theirList::add);
-        } else {
-            theirList.add(theirs);
+    /** The tree and the expression compiled by this library. */
+    @State(Scope.Benchmark)
+    public static class Rfc9535 extends Bookstore {
+
+        JsonPath path;
+
+        @Setup
+        public void setup() {
+            document = new ObjectMapper().valueToTree(Documents.store(books));
+            path = JsonPath.compile(Queries.rfc9535(query));
         }
-        if (ours.isEmpty() || !ours.equals(theirList)) {
-            throw new IllegalStateException(query + ": results differ, " + ours.size() + " vs " + theirList.size());
+    }
+
+    /** The tree and the expression compiled by Jayway JsonPath, with its Jackson providers. */
+    @State(Scope.Benchmark)
+    public static class Jayway extends Bookstore {
+
+        com.jayway.jsonpath.JsonPath path;
+        final Configuration configuration = Configuration.builder()
+                .jsonProvider(new JacksonJsonNodeJsonProvider())
+                .mappingProvider(new JacksonMappingProvider())
+                .build();
+
+        @Setup
+        public void setup() {
+            document = new ObjectMapper().valueToTree(Documents.store(books));
+            path = com.jayway.jsonpath.JsonPath.compile(Queries.jayway(query));
         }
     }
 
     @Benchmark
-    public Object rfc9535() {
-        return rfc.query(document, Jackson2Model.INSTANCE).values();
+    public Object rfc9535(Rfc9535 state) {
+        return state.path.query(state.document, Jackson2Model.INSTANCE).values();
     }
 
     @Benchmark
-    public Object jayway() {
-        return jayway.read(document, jaywayConfiguration);
+    public Object jayway(Jayway state) {
+        return state.path.read(state.document, state.configuration);
     }
 }
