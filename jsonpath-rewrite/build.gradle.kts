@@ -1,4 +1,16 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "OpenRewrite recipe that finds Jayway JsonPath expressions in a code base and assesses each one against RFC 9535."
+
+treetrail {
+    coverage(line = 0.92, branch = 0.83)
+    // The recipe needs JDK 25 to parse Java 25 sources.
+    testOnOlderJdks = false
+    // A ScanningRecipe now (#18), whose getVisitor() is final; the recipe class is final, so nothing overrode it.
+    acceptedApiChanges.add("io.github.treetrail.jsonpath.rewrite.FindJaywayJsonPathExpressions#getVisitor()")
+}
 
 dependencies {
     implementation(project(":jsonpath-core"))

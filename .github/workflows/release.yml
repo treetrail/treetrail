@@ -82,11 +82,12 @@ jobs:
         with:
           cache-read-only: true
       # Build the published files first and attest them before anything leaves the runner: if the
-      # attestation fails, nothing is published (Maven Central releases cannot be replaced).
+      # attestation fails, nothing is published (Maven Central releases cannot be replaced). Built fresh,
+      # without the build cache, so that no output of an earlier run ends up in a release.
       - name: Assemble publication
         run: |
           read -ra tasks <<< "$ASSEMBLE_TASKS"
-          ./gradlew "${tasks[@]}" -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache
+          ./gradlew "${tasks[@]}" -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache --no-build-cache
           scripts/collect-release-files.sh "${{ needs.verify.outputs.version }}" "$RUNNER_TEMP/release"
           (cd "$RUNNER_TEMP/release" && sha256sum -- * > "$RUNNER_TEMP/published.sha256")
       - name: Attest build provenance
@@ -94,7 +95,7 @@ jobs:
         with:
           subject-checksums: ${{ runner.temp }}/published.sha256
       - name: Publish to Maven Central
-        run: ./gradlew publishAndReleaseToMavenCentral -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache
+        run: ./gradlew publishAndReleaseToMavenCentral -PreleaseVersion=${{ needs.verify.outputs.version }} --no-configuration-cache --no-build-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}

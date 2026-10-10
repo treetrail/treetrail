@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "JSONPath (RFC 9535) for Java: passes the JSONPath Compliance Test Suite, no dependencies besides the JSpecify annotations, works on any JSON tree through a small JsonModel interface."
+
+treetrail {
+    coverage(line = 0.96, branch = 0.91)
+}
 
 dependencies {
     // The core has no runtime dependencies on purpose.

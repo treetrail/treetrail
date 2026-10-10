@@ -4,6 +4,10 @@
 //   ./gradlew :jsonpath-benchmarks:jmh -PjmhArgs="Query.*"   a subset (JMH command line)
 //   ./gradlew :jsonpath-benchmarks:test                      checks that both libraries select the same values
 
+plugins {
+    id("treetrail.java-conventions")
+}
+
 dependencies {
     implementation(project(":jsonpath-core"))
     implementation(project(":jsonpath-jackson2"))

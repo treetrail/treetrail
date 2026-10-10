@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "JSONPath (RFC 9535) assertions for Spring MockMvc and WebTestClient, a replacement for Spring's Jayway-based jsonPath(...) matchers."
+
+treetrail {
+    coverage(line = 0.95, branch = 0.74)
+}
 
 dependencies {
     api(project(":jsonpath-core"))

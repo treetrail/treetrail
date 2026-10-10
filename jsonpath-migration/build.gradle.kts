@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "Compares JSONPath expressions between Jayway JsonPath and Treetrail (RFC 9535) and reports every difference, with rewrite hints."
+
+treetrail {
+    coverage(line = 0.73, branch = 0.54)
+}
 
 dependencies {
     api(project(":jsonpath-core"))

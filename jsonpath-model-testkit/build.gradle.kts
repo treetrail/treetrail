@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "Tests for JsonModel implementations: runs the JSONPath Compliance Test Suite (RFC 9535) and the JsonModel contract against your model, as JUnit dynamic tests."
+
+treetrail {
+    coverage(line = 0.92, branch = 0.82)
+}
 
 dependencies {
     api(project(":jsonpath-core"))

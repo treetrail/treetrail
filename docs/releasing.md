@@ -42,19 +42,22 @@ gh attestation verify jsonpath-core-0.1.0.jar --repo treetrail/treetrail
    uploads the files as a workflow artifact, without publishing.
 3. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`.
 4. Approve the `maven-central` deployment when the workflow asks.
-5. Once the release is on Maven Central, set `apiBaselineVersion` in `build.gradle.kts` to the new version
-   and clear `acceptedApiChanges` and `unreleasedModules`, so that the API of every module is compared with
-   the new release from then on.
+5. Once the release is on Maven Central, set `treetrail.apiBaselineVersion` in `gradle.properties` to the new
+   version and clear `treetrail.unreleasedModules` there and `acceptedApiChanges` in the modules' build files
+   (`grep -r acceptedApiChanges */build.gradle.kts`), so that the API of every module is compared with the new
+   release from then on.
 
 ## API compatibility
 
 `./gradlew build` runs `apiCompatibility` in every published module: [japicmp](https://github.com/siom79/japicmp)
-compares the module's public API with the release named by `apiBaselineVersion` and fails on binary or source
-incompatible changes. The `internal` package is not exported and not compared. Modules that are not in that release yet are listed in `unreleasedModules` and skipped. A report is written to
-`build/reports/api-compatibility/<module>.html`.
+compares the module's public API with the release named by `treetrail.apiBaselineVersion` in `gradle.properties`
+and fails on binary or source incompatible changes. The `internal` package is not exported and not compared.
+Modules that are not in that release yet are listed in `treetrail.unreleasedModules` and skipped. A report is
+written to `build/reports/api-compatibility/<module>.html`. The check is part of the convention plugin
+`treetrail.published-conventions` in `build-logic`.
 
 Before 1.0, a minor release may still break the API. An intended incompatible change goes into
-`acceptedApiChanges` in `build.gradle.kts`, in japicmp's exclude syntax
+`treetrail { acceptedApiChanges.add(...) }` in the module's `build.gradle.kts`, in japicmp's exclude syntax
 (`io.github.treetrail.jsonpath.JsonPath#compile(java.lang.String)`), together with a note in `CHANGELOG.md`.
 
 Maven Central releases cannot be changed or deleted. A broken release is fixed with a new version.

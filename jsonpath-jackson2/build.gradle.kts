@@ -1,4 +1,12 @@
+plugins {
+    id("treetrail.published-conventions")
+}
+
 description = "Treetrail JSONPath (RFC 9535) on Jackson 2 trees (com.fasterxml.jackson.databind.JsonNode)."
+
+treetrail {
+    coverage(line = 0.90, branch = 0.87)
+}
 
 dependencies {
     api(project(":jsonpath-core"))
