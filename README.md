@@ -49,7 +49,8 @@ dependencies {
 ```
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite` and `jsonpath-model-testkit`. Every release is
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit` and
+`jsonpath-jayway-functions`. Every release is
 signed, ships a CycloneDX SBOM per module and has a build provenance attestation; see
 [docs/releasing.md](docs/releasing.md#what-a-release-contains). Changes are listed in
 [CHANGELOG.md](CHANGELOG.md).
@@ -184,6 +185,10 @@ arguments as `FunctionValue`s, whatever JSON library the document comes from, an
 (`FunctionValue.of(...)`, `nothing()`), a logical value or a list of node values. Queries that use an extension
 only work where the extension exists, so they are not portable to other implementations.
 
+`jsonpath-jayway-functions` provides Jayway JsonPath's aggregates `min`, `max`, `sum`, `avg` and `stddev` this
+way, for filters such as `$.orders[?sum(@.items[*].price) > 100]`: `JaywayFunctions.compiler()` compiles
+queries with them. They ease a migration from Jayway; they are not part of RFC 9535.
+
 ### Testing with AssertJ and Spring
 
 `jsonpath-assertj` adds AssertJ assertions on JSON text. Values compare as JSON values, so `399`,
@@ -242,7 +247,7 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 | `Option.DEFAULT_PATH_LEAF_TO_NULL` | `single()` is empty for a missing member and holds a node with a `null` value for JSON `null`; `.map(Node::value).orElse(null)` returns `null` in both cases |
 | `Option.SUPPRESS_EXCEPTIONS` | Not needed: missing paths select nothing instead of throwing; only invalid expressions throw, when they are compiled |
 | `$.items.length()` | `JsonPath.compile("$.items[*]").query(document).size()`, or `length(@.items)` inside a filter |
-| `.min()`, `.max()`, `.sum()`, `.avg()` | Select the values and aggregate them in Java, e.g. with `values().stream()` |
+| `.min()`, `.max()`, `.sum()`, `.avg()` | Select the values and aggregate them in Java, e.g. with `values().stream()`. Inside filters, `jsonpath-jayway-functions` offers `min(@.prices[*])` and the others as function extensions; they are not RFC 9535 |
 | `[?(@.name =~ /^a.*/i)]` | `[?match(@.name, '[aA].*')]` for a full match, `search()` for a substring; I-Regexp has no flags and no `\d`, `\w`, `\s` |
 | `[?(@.size in ['S', 'M'])]` | `[?@.size == 'S' \|\| @.size == 'M']` |
 | `JsonPath.parse(json).set("$.store.book[*].price", 0)` | Queries are read-only, but adapters return your library's own nodes: `query(document, Jackson2Model.INSTANCE)` and then `((ObjectNode) node.value()).put("price", 0)` on each selected book |

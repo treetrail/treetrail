@@ -24,6 +24,7 @@ plugins {
 val publishedModules = setOf(
     "jsonpath-core", "jsonpath-jackson2", "jsonpath-jackson3", "jsonpath-gson", "jsonpath-jsonp",
     "jsonpath-migration", "jsonpath-rewrite", "jsonpath-assertj", "jsonpath-spring-test", "jsonpath-model-testkit",
+    "jsonpath-jayway-functions",
 )
 
 /**
@@ -55,7 +56,7 @@ val acceptedApiChanges = listOf(
 )
 
 /** Published modules that are not in the release named by [apiBaselineVersion] yet; cleared after a release. */
-val unreleasedModules = setOf("jsonpath-model-testkit")
+val unreleasedModules = setOf("jsonpath-model-testkit", "jsonpath-jayway-functions")
 
 // Gradle's JVM resolution rules for the configurations below, which the root project resolves itself (for
 // example platform dependencies in the released modules' metadata).
@@ -99,6 +100,7 @@ val coverageMinimum = mapOf(
     "jsonpath-migration" to (0.73 to 0.54),
     "jsonpath-rewrite" to (0.92 to 0.83),
     "jsonpath-model-testkit" to (0.92 to 0.82),
+    "jsonpath-jayway-functions" to (0.99 to 0.99),
 )
 
 // Shared setup for all library modules.

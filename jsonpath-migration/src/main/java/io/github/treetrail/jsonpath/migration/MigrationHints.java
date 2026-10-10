@@ -30,7 +30,8 @@ public final class MigrationHints {
         }
         if (PATH_FUNCTION.matcher(expression).find()) {
             return "Aggregate functions like .min(), .max(), .sum() are not part of RFC 9535. "
-                    + "Select the values and aggregate them in Java.";
+                    + "Select the values and aggregate them in Java; inside filters, jsonpath-jayway-functions "
+                    + "offers min(), max(), sum(), avg() and stddev() as function extensions (not RFC 9535).";
         }
         if (REGEX_OPERATOR.matcher(expression).find()) {
             return "Replace =~ /regex/ with match(@.x, 'regex') for a full match or search(@.x, 'regex') "
