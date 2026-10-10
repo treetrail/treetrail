@@ -1,6 +1,6 @@
 package io.github.treetrail.jsonpath;
 
-import io.github.treetrail.jsonpath.internal.Location;
+import io.github.treetrail.jsonpath.internal.Located;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,10 +47,10 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
         List<String> paths = new ArrayList<>(nodes.size());
         // A node below an earlier selected node, as in $..*, continues from that node's path instead of
         // building its own from the root; deep documents would otherwise take time quadratic in their depth.
-        IdentityHashMap<Location, String> known = new IdentityHashMap<>();
+        IdentityHashMap<Located, String> known = new IdentityHashMap<>();
         for (Node<N> node : nodes) {
-            Location location = node.internalLocation();
-            if (location.depth() < Location.REUSE_DEPTH) {
+            Located location = node.internalLocation();
+            if (location.depth() < Located.REUSE_DEPTH) {
                 paths.add(node.path());
             } else {
                 String path = node.path(known::get);

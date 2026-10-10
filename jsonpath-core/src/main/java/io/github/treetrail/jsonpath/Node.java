@@ -1,6 +1,6 @@
 package io.github.treetrail.jsonpath;
 
-import io.github.treetrail.jsonpath.internal.Location;
+import io.github.treetrail.jsonpath.internal.Located;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -14,12 +14,12 @@ import org.jspecify.annotations.Nullable;
 public final class Node<N extends @Nullable Object> {
 
     private final N value;
-    private final Location location;
+    private final Located location;
     // Computed on first use; a race only computes the same path twice.
     private @Nullable String path;
     private @Nullable NormalizedPath normalizedPath;
 
-    Node(N value, Location location) {
+    Node(N value, Located location) {
         this.value = value;
         this.location = location;
     }
@@ -43,7 +43,7 @@ public final class Node<N extends @Nullable Object> {
     }
 
     /** Returns the path, continuing from the path of an ancestor that {@code known} has one for. */
-    String path(Function<Location, @Nullable String> known) {
+    String path(Function<Located, @Nullable String> known) {
         String p = path;
         if (p == null) {
             p = location.normalizedPath(known);
@@ -52,7 +52,7 @@ public final class Node<N extends @Nullable Object> {
         return p;
     }
 
-    Location internalLocation() {
+    Located internalLocation() {
         return location;
     }
 

@@ -68,7 +68,7 @@ public final class Evaluator {
     @SuppressWarnings("unchecked")
     public Evaluator(Object document, JsonModel<?> model, EvaluationLimits limits) {
         this.model = (JsonModel<@Nullable Object>) model;
-        this.root = new Located(document, Location.ROOT);
+        this.root = Located.root(document);
         this.maxVisitedNodes = limits.maxVisitedNodes();
         this.maxResultSize = limits.maxResultSize();
         this.maxDepth = limits.maxDepth();
@@ -246,8 +246,7 @@ public final class Evaluator {
     private List<Located> childrenOf(Located node) {
         Object value = node.value();
         JsonKind kind = model.kind(value);
-        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY)
-                && node.location().depth() >= maxDepth) {
+        if ((kind == JsonKind.OBJECT || kind == JsonKind.ARRAY) && node.depth() >= maxDepth) {
             throw tooDeep(maxDepth);
         }
         if (kind == JsonKind.OBJECT) {
@@ -255,7 +254,7 @@ public final class Evaluator {
             visit(count);
             List<Located> children = new ArrayList<>(count);
             for (Map.Entry<String, Object> member : model.members(value)) {
-                children.add(new Located(member.getValue(), node.location().child(member.getKey())));
+                children.add(node.child(member.getValue(), member.getKey()));
             }
             return children;
         }
@@ -264,8 +263,7 @@ public final class Evaluator {
             visit(size);
             List<Located> children = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
-                children.add(
-                        new Located(model.element(value, i), node.location().child(i)));
+                children.add(node.child(model.element(value, i), i));
             }
             return children;
         }
@@ -279,7 +277,7 @@ public final class Evaluator {
      */
     private static JsonPathEvaluationException modelFailure(RuntimeException e, Located node) {
         String reason = e.getMessage() == null ? e.getClass().getName() : e.getMessage();
-        return new JsonPathEvaluationException(reason, node.location().normalizedPath(), e);
+        return new JsonPathEvaluationException(reason, node.normalizedPath(), e);
     }
 
     private boolean select(
@@ -321,7 +319,7 @@ public final class Evaluator {
                     Object member = model.findMember(value, name);
                     if (member != null || model.hasMember(value, name)) {
                         visit(1);
-                        selected = new Located(member, node.location().child(name));
+                        selected = node.child(member, name);
                     }
                 }
             } else if (selector instanceof Index indexSelector) {
@@ -332,8 +330,7 @@ public final class Evaluator {
                     if (normalized >= 0 && normalized < size) {
                         int i = (int) normalized;
                         visit(1);
-                        selected = new Located(
-                                model.element(value, i), node.location().child(i));
+                        selected = node.child(model.element(value, i), i);
                     }
                 }
             } else if (kind == JsonKind.ARRAY) {
@@ -398,7 +395,7 @@ public final class Evaluator {
 
     private void add(@Nullable Object array, int index, Located parent, List<Located> out) {
         visit(1);
-        out.add(new Located(model.element(array, index), parent.location().child(index)));
+        out.add(parent.child(model.element(array, index), index));
     }
 
     // ---- logical expressions ----

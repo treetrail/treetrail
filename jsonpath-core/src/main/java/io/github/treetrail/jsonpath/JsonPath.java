@@ -112,7 +112,7 @@ public final class JsonPath {
         for (Located l : located) {
             @SuppressWarnings("unchecked")
             N value = (N) l.value();
-            nodes.add(new Node<>(value, l.location()));
+            nodes.add(new Node<>(value, l));
         }
         return new NodeList<>(nodes);
     }
@@ -162,7 +162,7 @@ public final class JsonPath {
         }
         @SuppressWarnings("unchecked")
         N value = (N) first.value();
-        return Optional.of(new Node<>(value, first.location()));
+        return Optional.of(new Node<>(value, first));
     }
 
     /** Whether the query is singular, that is, selects at most one node (RFC 9535, section 2.3.5.1). */
