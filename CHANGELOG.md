@@ -68,6 +68,21 @@ a minor version may still change the API, which this file then says.
   - `<=` and `>=` compare numbers and strings once instead of twice.
   - `NormalizedPath.hashCode()` hashes the path text, the same as `Node.hashCode()`.
   ([#26](https://github.com/treetrail/treetrail/issues/26))
+- Cheaper queries and node lists, with the same API:
+  - A visited node is one object: its value, its parent node and the step from there. Before, it took a
+    second object for the location and a boxed `Integer` for array indices.
+  - Wildcard and filter selectors and slices take the children of a node from the model one by one instead
+    of building a list of them first; descendant segments share one stack for the whole walk.
+  - `query()` returns the evaluator's list of nodes; `Node` objects are created when `get(i)`, iteration,
+    `first()` or `single()` ask for them (equal to earlier ones, but not the same objects), and `values()`
+    copies the values into one array.
+
+  On the 1,000-book benchmark document as plain Java objects: wildcard 25.9 to 12.9 µs and 169 to 83 KB
+  allocated, descendant 127.9 to 84.5 µs and 649 to 342 KB, regex 41.0 to 31.6 µs, filter 83.0 to 75.9 µs,
+  definite paths 0.056 to 0.036 µs; on Jackson trees wildcard 31.2 to 15.9 µs. A `Node` or `NodeList` now
+  keeps the queried document reachable through the parent links; the list `values()` returns does not.
+  A model failure while producing a later child is now reported after the earlier children have been
+  passed on, so `exists()` and `first()` can return before reaching it.
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 
