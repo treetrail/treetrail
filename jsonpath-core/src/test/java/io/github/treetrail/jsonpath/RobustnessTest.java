@@ -71,6 +71,8 @@ class RobustnessTest {
 
         assertThat(JsonPath.compile("$[?@ > 1]").query(doc).values()).containsExactly(2);
         assertThat(JsonPath.compile("$[?@ <= 2]").query(doc).values()).containsExactly(2);
+        assertThat(JsonPath.compile("$[?@ >= @]").query(doc).values()).containsExactly(2);
+        assertThat(JsonPath.compile("$[?@ <= @]").query(doc).values()).containsExactly(2);
         assertThat(JsonPath.compile("$[?@ == 2]").query(doc).values()).containsExactly(2);
         assertThat(JsonPath.compile("$[?@ != 2]").query(doc).values())
                 .containsExactly(Double.POSITIVE_INFINITY, Double.NaN, Float.NEGATIVE_INFINITY);

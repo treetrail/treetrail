@@ -44,7 +44,7 @@ final class LazyDfa {
         this.program = program;
         this.search = search;
         this.generation = generation;
-        this.start = closureState(null, -1, true);
+        this.start = closureState(null, -1, true, new Scratch(program));
     }
 
     /**
@@ -71,19 +71,24 @@ final class LazyDfa {
         IRegexp.releaseShared(cost, generation);
     }
 
-    /** Returns the result, or null if the state budget is exhausted. */
-    @Nullable
-    Boolean run(String input) {
+    /**
+     * Returns whether the input matches. Where the state budget is exhausted, the set-of-states simulation
+     * takes over at the current position, with the threads of the current state.
+     */
+    boolean run(String input) {
         State state = start;
         if (state == null) {
-            return null;
+            return RegexSimulation.run(program, input, search);
         }
         if (search && state.match) {
             return true;
         }
+        // Allocated on the first transition that is not cached yet, then reused for this input.
+        Scratch scratch = null;
         int length = input.length();
         int pos = 0;
         while (pos < length) {
+            int at = pos;
             char c = input.charAt(pos);
             int cp;
             if (c < ASCII) {
@@ -95,9 +100,12 @@ final class LazyDfa {
             }
             State following = state.transition(cp);
             if (following == null) {
-                following = closureState(state, cp, false);
+                if (scratch == null) {
+                    scratch = new Scratch(program);
+                }
+                following = closureState(state, cp, false, scratch);
                 if (following == null) {
-                    return null;
+                    return RegexSimulation.resume(program, input, search, state.chars, at);
                 }
                 state.cache(cp, following);
             }
@@ -113,28 +121,51 @@ final class LazyDfa {
     }
 
     /**
+     * Working memory for computing states: the sets are filled anew for each state, and {@code visited}
+     * holds the mark of the closure that last visited an instruction, so it never needs clearing.
+     */
+    private static final class Scratch {
+        final int[] visited;
+        int mark;
+        final int[] chars;
+        final int[] ends;
+        int charCount;
+        int endCount;
+        boolean match;
+        final int[] stack;
+
+        Scratch(RegexProgram program) {
+            int size = program.ops.length;
+            visited = new int[size];
+            chars = new int[size];
+            ends = new int[size];
+            stack = new int[2 * size + 2];
+        }
+    }
+
+    /**
      * Computes the state after reading {@code cp} in {@code from}, or the start state if
      * {@code from} is null. Returns null if the state budget is exhausted.
      */
-    private @Nullable State closureState(@Nullable State from, int cp, boolean atStart) {
-        boolean[] visited = new boolean[program.ops.length];
-        int[] chars = new int[program.ops.length];
-        int[] ends = new int[program.ops.length];
-        int[] counts = new int[3]; // chars, ends, match
-        int[] stack = new int[2 * program.ops.length + 2];
+    private @Nullable State closureState(@Nullable State from, int cp, boolean atStart, Scratch scratch) {
+        scratch.mark++;
+        scratch.charCount = 0;
+        scratch.endCount = 0;
+        scratch.match = false;
         if (from == null) {
-            closure(0, atStart, visited, chars, ends, counts, stack);
+            closure(0, atStart, scratch);
         } else {
             for (int pc : from.chars) {
                 if (program.sets[pc].matches(cp)) {
-                    closure(program.next[pc], false, visited, chars, ends, counts, stack);
+                    closure(program.next[pc], false, scratch);
                 }
             }
             if (search) {
-                closure(0, false, visited, chars, ends, counts, stack);
+                closure(0, false, scratch);
             }
         }
-        StateKey key = new StateKey(sorted(chars, counts[0]), sorted(ends, counts[1]), counts[2] > 0);
+        StateKey key = new StateKey(
+                sorted(scratch.chars, scratch.charCount), sorted(scratch.ends, scratch.endCount), scratch.match);
         State state = states.get(key);
         if (state != null) {
             return state;
@@ -155,20 +186,22 @@ final class LazyDfa {
         return created;
     }
 
-    private void closure(
-            int startPc, boolean atStart, boolean[] visited, int[] chars, int[] ends, int[] counts, int[] stack) {
+    private void closure(int startPc, boolean atStart, Scratch scratch) {
+        int[] visited = scratch.visited;
+        int[] stack = scratch.stack;
+        int mark = scratch.mark;
         int top = 0;
         stack[top++] = startPc;
         while (top > 0) {
             int pc = stack[--top];
-            if (visited[pc]) {
+            if (visited[pc] == mark) {
                 continue;
             }
-            visited[pc] = true;
+            visited[pc] = mark;
             switch (program.ops[pc]) {
-                case CHAR -> chars[counts[0]++] = pc;
-                case END -> ends[counts[1]++] = pc;
-                case MATCH -> counts[2] = 1;
+                case CHAR -> scratch.chars[scratch.charCount++] = pc;
+                case END -> scratch.ends[scratch.endCount++] = pc;
+                case MATCH -> scratch.match = true;
                 case BEGIN -> {
                     if (atStart) {
                         stack[top++] = program.next[pc];

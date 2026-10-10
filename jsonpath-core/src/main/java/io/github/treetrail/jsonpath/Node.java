@@ -3,6 +3,7 @@ package io.github.treetrail.jsonpath;
 import io.github.treetrail.jsonpath.internal.Location;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -15,6 +16,7 @@ public final class Node<N extends @Nullable Object> {
     private final N value;
     private final Location location;
     // Computed on first use; a race only computes the same path twice.
+    private @Nullable String path;
     private @Nullable NormalizedPath normalizedPath;
 
     Node(N value, Location location) {
@@ -32,7 +34,26 @@ public final class Node<N extends @Nullable Object> {
      * {@code $['store']['book'][0]}.
      */
     public String path() {
-        return normalizedPath().toString();
+        String p = path;
+        if (p == null) {
+            p = location.normalizedPath();
+            path = p;
+        }
+        return p;
+    }
+
+    /** Returns the path, continuing from the path of an ancestor that {@code known} has one for. */
+    String path(Function<Location, @Nullable String> known) {
+        String p = path;
+        if (p == null) {
+            p = location.normalizedPath(known);
+            path = p;
+        }
+        return p;
+    }
+
+    Location internalLocation() {
+        return location;
     }
 
     /** Returns the location of the node as a {@link NormalizedPath}. */
@@ -56,13 +77,13 @@ public final class Node<N extends @Nullable Object> {
             return false;
         }
         Node<?> other = (Node<?>) o;
-        return Objects.equals(value, other.value) && normalizedPath().equals(other.normalizedPath());
+        return Objects.equals(value, other.value) && path().equals(other.path());
     }
 
     @Override
     public int hashCode() {
         // The path alone: equal nodes have equal paths, and hashing a deep value would be costly.
-        return normalizedPath().hashCode();
+        return path().hashCode();
     }
 
     @Override

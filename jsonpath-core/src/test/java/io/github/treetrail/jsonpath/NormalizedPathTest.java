@@ -134,6 +134,32 @@ class NormalizedPathTest {
         assertThat(first.hashCode()).isEqualTo(NormalizedPath.parse("$['a']").hashCode());
     }
 
+    @Test
+    void buildsThePathsOfDeepResultsFromTheirAncestors() {
+        // Names that need escaping, indices, and more depth than Location.REUSE_DEPTH.
+        StringBuilder json = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            json.append(i % 3 == 0 ? "[" : "{\"k'\\n" + i + "\": ");
+        }
+        json.append("1");
+        for (int i = 39; i >= 0; i--) {
+            json.append(i % 3 == 0 ? "]" : "}");
+        }
+        for (String query : List.of("$..*", "$..[0]", "$..*..*", "$[0]..*", "$..[?@]")) {
+            NodeList<Object> nodes = JsonPath.compile(query).queryJson(json.toString());
+            List<String> fromRoot = new ArrayList<>();
+            for (Node<Object> node : nodes) {
+                fromRoot.add(node.normalizedPath().toString());
+            }
+
+            assertThat(nodes).as(query).isNotEmpty();
+            assertThat(nodes.paths()).as(query).isEqualTo(fromRoot);
+            for (Node<Object> node : nodes) {
+                assertThat(NormalizedPath.parse(node.path())).isEqualTo(node.normalizedPath());
+            }
+        }
+    }
+
     private static List<Object> asLocation(List<Step> steps) {
         List<Object> location = new ArrayList<>();
         for (Step step : steps) {
