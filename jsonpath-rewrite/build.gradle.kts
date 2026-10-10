@@ -21,6 +21,7 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.rewrite.test)
+    testImplementation(libs.rewrite.kotlin)
     testImplementation(libs.assertj)
     testRuntimeOnly(libs.rewrite.java.jdk25)
     testRuntimeOnly(libs.junit.platform.launcher)

@@ -256,8 +256,10 @@ the same results (`./gradlew jaywayReport2`).
 The `jsonpath-rewrite` module contains the [OpenRewrite](https://docs.openrewrite.org) recipe
 `io.github.treetrail.jsonpath.rewrite.FindJaywayJsonPathExpressions`. It finds expressions passed to
 Jayway JsonPath (`JsonPath.read`, `JsonPath.compile`, `ReadContext.read`, the write API) and to
-Spring's `MockMvcResultMatchers.jsonPath`, marks each call site with an assessment and fills the data
-table `JsonPathExpressions` with one row per expression:
+Spring's `jsonPath(...)` of MockMvc and `WebTestClient`, in Java and Kotlin sources, marks each call site
+with an assessment and fills the data table `JsonPathExpressions` with one row per expression. Expressions
+in compile-time constants are resolved, and Spring's format templates (`jsonPath("$.items[%d].name", 0)`)
+are assessed with their arguments:
 
 | Assessment | Meaning |
 | --- | --- |

@@ -60,6 +60,8 @@ rewrite-bom = { module = "org.openrewrite:rewrite-bom", version.ref = "rewrite-b
 rewrite-java = { module = "org.openrewrite:rewrite-java" }
 rewrite-java-jdk25 = { module = "org.openrewrite:rewrite-java-25" }
 rewrite-test = { module = "org.openrewrite:rewrite-test" }
+# Not in the rewrite BOM, but released with the same version.
+rewrite-kotlin = { module = "org.openrewrite:rewrite-kotlin", version.ref = "rewrite-bom" }
 jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }

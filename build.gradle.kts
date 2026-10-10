@@ -49,7 +49,10 @@ val apiBaselineVersion = "0.2.0"
  * (`package.Class#member(ParameterType)`). Before 1.0 a minor release may still break the API; every entry
  * needs a note in CHANGELOG.md.
  */
-val acceptedApiChanges = listOf<String>()
+val acceptedApiChanges = listOf(
+    // A ScanningRecipe now (#18), whose getVisitor() is final; the recipe class is final, so nothing overrode it.
+    "io.github.treetrail.jsonpath.rewrite.FindJaywayJsonPathExpressions#getVisitor()",
+)
 
 /** Published modules that are not in the release named by [apiBaselineVersion] yet; cleared after a release. */
 val unreleasedModules = setOf("jsonpath-model-testkit")
@@ -94,7 +97,7 @@ val coverageMinimum = mapOf(
     "jsonpath-assertj" to (0.89 to 0.74),
     "jsonpath-spring-test" to (0.95 to 0.74),
     "jsonpath-migration" to (0.73 to 0.54),
-    "jsonpath-rewrite" to (0.88 to 0.76),
+    "jsonpath-rewrite" to (0.92 to 0.83),
     "jsonpath-model-testkit" to (0.92 to 0.82),
 )
 
