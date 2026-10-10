@@ -34,6 +34,11 @@ a minor version may still change the API, which this file then says.
 
 ### Changed
 
+- `FindJaywayJsonPathExpressions` (jsonpath-rewrite) also finds expressions in compile-time constants
+  (`static final String`, also of other classes and built with `+`), assesses Spring's format templates such as
+  `jsonPath("$.items[%d].name", 0)` with their arguments, covers `WebTestClient`'s `jsonPath(...)` and Kotlin
+  sources. It is now a `ScanningRecipe`, so `getVisitor()` is final; the recipe class was already final.
+  ([#18](https://github.com/treetrail/treetrail/issues/18))
 - Faster queries: nodes pass through the segments one by one instead of in a list per segment, existence
   tests in filters (`[?@..x]`) and comparisons with singular queries stop at the first node, descendant
   segments compute each node's children once, literals are converted once per query, and the pattern of
