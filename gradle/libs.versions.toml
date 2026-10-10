@@ -12,6 +12,9 @@ jayway = "3.0.0"
 # The latest 2.x release, still widely used; jsonpath-migration is also tested against it.
 jayway2 = "2.10.0"
 jmh = "1.37"
+# Other RFC 9535 implementations for Java, compared in jsonpath-benchmarks only.
+sjf4j = "1.3.3"
+ajp = "0.0.7"
 spring = "7.0.9"
 jakarta-servlet = "6.1.0"
 jakarta-json = "2.1.3"
@@ -52,6 +55,8 @@ spring-test = { module = "org.springframework:spring-test" }
 spring-webmvc = { module = "org.springframework:spring-webmvc" }
 spring-webflux = { module = "org.springframework:spring-webflux" }
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api", version.ref = "jakarta-servlet" }
+sjf4j = { module = "org.sjf4j:sjf4j", version.ref = "sjf4j" }
+ajp = { module = "org.xmljacquard:ajp", version.ref = "ajp" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generator = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 jakarta-json-api = { module = "jakarta.json:jakarta.json-api", version.ref = "jakarta-json" }

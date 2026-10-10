@@ -1,5 +1,7 @@
 package io.github.treetrail.jsonpath.benchmarks;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,5 +43,14 @@ final class Documents {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("store", store);
         return root;
+    }
+
+    /** The bookstore of {@link #store(int)} as JSON text. */
+    static String json(int books) {
+        try {
+            return new ObjectMapper().writeValueAsString(store(books));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }
