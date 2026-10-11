@@ -35,9 +35,9 @@ Treetrail is on Maven Central. From 1.0.0 on, its API is stable and follows
 
 ```kotlin
 dependencies {
-    implementation("io.github.treetrail:jsonpath-core:0.2.0")
+    implementation("io.github.treetrail:jsonpath-core:1.0.0")
     // or an adapter, which brings jsonpath-core along:
-    implementation("io.github.treetrail:jsonpath-jackson2:0.2.0")
+    implementation("io.github.treetrail:jsonpath-jackson2:1.0.0")
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 <dependency>
     <groupId>io.github.treetrail</groupId>
     <artifactId>jsonpath-core</artifactId>
-    <version>0.2.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 

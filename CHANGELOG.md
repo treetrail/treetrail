@@ -4,7 +4,18 @@ All notable changes to Treetrail. Versions follow [Semantic Versioning](https://
 only a new major version changes the API incompatibly ([docs/support.md](docs/support.md#versioning)). Before
 1.0, minor versions could, and this file says where they did.
 
-## Unreleased
+## 1.0.0 – unreleased
+
+The first release with a stable API: from now on, only a new major version changes it incompatibly, and
+[docs/support.md](docs/support.md#versioning) says what counts as API. New since 0.2.0: function extensions,
+with Jayway JsonPath's aggregates as an optional module; node locations as typed `NormalizedPath`s and JSON
+Pointers; `exists()` and `first()`, which stop at the first node; JSpecify nullness annotations; a testkit for
+`JsonModel` implementations; and faster queries that allocate less.
+
+One change is incompatible with 0.2.0: `FindJaywayJsonPathExpressions.getVisitor()` in `jsonpath-rewrite` is
+final, because the recipe is now a `ScanningRecipe`. The recipe class was already final, so no code could
+override the method. Everything else in the 0.2.0 API stays source and binary compatible; changes in behaviour
+are listed below.
 
 ### Added
 
@@ -88,6 +99,9 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   ([#75](https://github.com/treetrail/treetrail/pull/75))
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
+- The CycloneDX SBOMs of a release are reproducible: their `metadata.timestamp` is the commit time instead of
+  the build time, so two builds of the same commit produce identical files.
+  ([#45](https://github.com/treetrail/treetrail/pull/45))
 
 ### Fixed
 
@@ -98,11 +112,12 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
 
 ### Testing
 
-- Broader benchmarks (docs/benchmarks.md): a 10 MB document (this library 1.1× to 1.8× faster than Jayway
-  JsonPath), bytes allocated per query (1.4× to 3.4× fewer than Jayway), and the other Java implementations of
-  RFC 9535, SJF4J and ajp. A short benchmark run on pull requests fails if this library becomes more than 25 %
-  slower than Jayway on a query. `-PjmhArgs` now replaces the `jmh` task's default options.
-  ([#23](https://github.com/treetrail/treetrail/issues/23))
+- Broader benchmarks (docs/benchmarks.md): Jackson trees as well as plain Java objects, a 10 MB document (this
+  library 1.1× to 1.8× faster than Jayway JsonPath), bytes allocated per query (1.4× to 3.4× fewer than
+  Jayway), and the other Java implementations of RFC 9535, SJF4J and ajp. A short benchmark run on pull
+  requests fails if this library becomes more than 25 % slower than Jayway on a query. `-PjmhArgs` now
+  replaces the `jmh` task's default options.
+  ([#23](https://github.com/treetrail/treetrail/issues/23), [#49](https://github.com/treetrail/treetrail/pull/49))
 - The differential test runs against jsonpath-rfc9535 2.0.1, which fixes all six bugs it had found in
   the reference ([#24](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/24)–[#27](https://github.com/jg-rp/python-jsonpath-rfc9535/issues/27)).
   The list of known differences is now empty. The query generator no longer avoids those bugs: it writes
@@ -114,6 +129,19 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   with one fork, had made Jayway's wildcard time depend on which of two JIT states one JVM reached
   (about 49 or 69 µs). [docs/benchmarks.md](docs/benchmarks.md) has new numbers for all tables, measured
   in one run.
+- Checks in every build: API compatibility with the last release (japicmp), a minimum line and branch
+  coverage per module (JaCoCo), Error Prone and NullAway on every compilation, and formatting with
+  palantir-java-format. Mutation testing with PIT runs every night and fails if the tests detect fewer
+  than 85 % of the mutations of the core (87 % of 1,399 when it was added).
+  ([#19](https://github.com/treetrail/treetrail/issues/19))
+- A weekly workflow checks the JSONPath Compliance Test Suite for new cases; an update comes as a branch and
+  an issue. ([#25](https://github.com/treetrail/treetrail/issues/25))
+
+### Documentation
+
+- [CONTRIBUTING.md](CONTRIBUTING.md), [docs/support.md](docs/support.md) with the versioning policy and the
+  tested Java and library versions, and issue forms for bugs and feature requests.
+  ([#25](https://github.com/treetrail/treetrail/issues/25))
 
 ## 0.2.0 – 2026-10-08
 
