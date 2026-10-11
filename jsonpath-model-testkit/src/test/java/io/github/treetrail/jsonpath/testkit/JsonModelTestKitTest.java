@@ -32,6 +32,15 @@ class JsonModelTestKitTest {
                 .isTrue();
     }
 
+    @Test
+    void readsTheTagsOfTheCases() {
+        List<ComplianceCase> cases = JsonModelTestKit.complianceCases();
+
+        assertThat(cases).filteredOn(c -> c.tags().contains("function")).hasSize(110);
+        assertThat(cases).filteredOn(c -> c.tags().isEmpty()).hasSize(706 - 487);
+        assertThat(cases.get(0).tags()).isEmpty();
+    }
+
     @TestFactory
     Stream<DynamicTest> theReferenceModelPassesEverything() {
         return Stream.concat(

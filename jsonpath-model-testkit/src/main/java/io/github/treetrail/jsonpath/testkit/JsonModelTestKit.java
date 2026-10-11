@@ -143,7 +143,8 @@ public final class JsonModelTestKit {
                 invalid,
                 test.containsKey("document") ? JsonText.write(test.get("document")) : null,
                 List.copyOf(results),
-                List.copyOf(paths));
+                List.copyOf(paths),
+                test.get("tags") instanceof List<?> tags ? strings(tags) : List.of());
     }
 
     private static List<@Nullable Object> values(@Nullable Object list) {
