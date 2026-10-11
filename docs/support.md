@@ -17,6 +17,7 @@ incompatible changes ([docs/releasing.md](releasing.md#api-compatibility)).
   `io.github.treetrail.jsonpath.jackson2` in `jsonpath-jackson2`. `jsonpath-migration`, `jsonpath-rewrite` and
   `jsonpath-spring-test` have no module descriptor, only an automatic module name, and one package each.
 - The Maven coordinates (`io.github.treetrail:jsonpath-*`) and the module names.
+- Java 17 as the minimum: every 1.x release runs on Java 17; a higher minimum needs a new major version.
 - Which nodes a query selects, as RFC 9535 defines it. A change counts as a fix if the old result contradicted
   RFC 9535, and is listed under **Fixed** in the changelog.
 - `JsonModel` is meant to be implemented: methods added to it are default methods. `FunctionValue` and
@@ -38,7 +39,8 @@ Fixes, including security fixes, go into the latest release. There are no mainte
 
 ## Java
 
-Java 17 or later. Every build runs the tests on Java 17, 21 and 25.
+Java 17 or later, for all 1.x releases: raising the minimum Java version needs a new major version. Every build
+runs the tests on Java 17, 21 and 25.
 
 ## Libraries
 

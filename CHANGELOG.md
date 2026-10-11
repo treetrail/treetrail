@@ -4,6 +4,13 @@ All notable changes to Treetrail. Versions follow [Semantic Versioning](https://
 only a new major version changes the API incompatibly ([docs/support.md](docs/support.md#versioning)). Before
 1.0, minor versions could, and this file says where they did.
 
+## Unreleased
+
+### Documentation
+
+- [docs/support.md](docs/support.md#java): Java 17 stays the minimum for all 1.x releases; a higher minimum
+  needs a new major version.
+
 ## 1.0.0 – 2026-10-11
 
 The first release with a stable API: from now on, only a new major version changes it incompatibly, and
