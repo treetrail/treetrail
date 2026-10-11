@@ -35,6 +35,8 @@ Not API, and free to change in any release:
 - The cases of the Compliance Test Suite that `jsonpath-model-testkit` runs: it ships the suite's current
   version, whose new cases can fail a model that passed before.
 - The Unicode version behind `\p{...}` in regular expressions; a new one is noted in the changelog.
+- The values of `EvaluationLimits.DEFAULT` and how a run counts visited nodes. A change is noted in the
+  changelog; code that relies on particular limits sets them with `withLimits(...)`.
 
 ## Supported releases
 

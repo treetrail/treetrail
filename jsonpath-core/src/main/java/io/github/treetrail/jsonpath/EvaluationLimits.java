@@ -29,6 +29,9 @@ public final class EvaluationLimits {
      * The limits every query starts with: at most 100,000,000 visited nodes, which bounds a query to a
      * few seconds of work, a nesting depth of 1,000 (the default of Jackson's parser) and no limit on the
      * result size.
+     *
+     * <p>These values are not part of the API and may change in any release, noted in the changelog. Code that
+     * relies on particular limits sets them explicitly, for example with {@code DEFAULT.withMaxVisitedNodes(...)}.
      */
     public static final EvaluationLimits DEFAULT = new EvaluationLimits(100_000_000L, Integer.MAX_VALUE, 1_000);
 
