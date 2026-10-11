@@ -15,10 +15,11 @@ and `jsonpath-jayway-functions`:
 - a CycloneDX SBOM of the runtime dependencies (classifier `cyclonedx`, extension `json`)
 
 The jars, POMs, module files and SBOMs are reproducible: two builds of the same commit produce identical
-bytes. The SBOM's `metadata.timestamp` is the commit time of `HEAD` (or `SOURCE_DATE_EPOCH`, if set), not
-the build time. Before publishing, the workflow attests the build provenance of all files (SLSA, GitHub artifact
-attestations) and afterwards checks that the published files are the attested ones. The GitHub release
-carries the same files. To verify a downloaded file:
+bytes, in GitHub Actions as well as locally. The SBOM's `metadata.timestamp` is the commit time of `HEAD` (or
+`SOURCE_DATE_EPOCH`, if set), not the build time, and its only external reference is the repository URL: it
+does not name the Git remote of the clone or the workflow run that built it. Before publishing, the workflow
+attests the build provenance of all files (SLSA, GitHub artifact attestations) and afterwards checks that the
+published files are the attested ones. The GitHub release carries the same files. To verify a downloaded file:
 
 ```bash
 gh attestation verify jsonpath-core-1.0.0.jar --repo treetrail/treetrail
