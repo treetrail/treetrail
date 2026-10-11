@@ -6,6 +6,8 @@ description = "JSONPath (RFC 9535) for Java: passes the JSONPath Compliance Test
 
 treetrail {
     coverage(line = 0.96, branch = 0.91)
+    // Removed before 1.0: normalizedPath().steps() gives the same location with typed steps (#57).
+    acceptedApiChanges.add("io.github.treetrail.jsonpath.Node#location()")
 }
 
 dependencies {
