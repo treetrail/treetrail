@@ -100,8 +100,9 @@ are listed below.
 - A run that exceeds `maxResultSize` stops as soon as it selects one node too many; the message now says
   "Query selected more than N nodes, the limit".
 - The CycloneDX SBOMs of a release are reproducible: their `metadata.timestamp` is the commit time instead of
-  the build time, so two builds of the same commit produce identical files.
-  ([#45](https://github.com/treetrail/treetrail/pull/45))
+  the build time, and they name neither the workflow run nor the Git remote of the clone, so two builds of the
+  same commit produce identical files, in GitHub Actions as well as locally.
+  ([#45](https://github.com/treetrail/treetrail/pull/45), [#82](https://github.com/treetrail/treetrail/pull/82))
 
 ### Fixed
 
