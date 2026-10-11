@@ -10,6 +10,8 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
 
 - [docs/support.md](docs/support.md#java): Java 17 stays the minimum for all 1.x releases; a higher minimum
   needs a new major version.
+- [docs/support.md](docs/support.md#versioning): an element is deprecated in at least one minor release before a
+  major version removes it.
 
 ## 1.0.0 – 2026-10-11
 
