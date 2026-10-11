@@ -5,6 +5,7 @@ import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
 import java.time.Instant
 import org.cyclonedx.gradle.CyclonedxDirectTask
+import org.cyclonedx.model.ExternalReference
 
 plugins {
     id("treetrail.library-conventions")
@@ -14,6 +15,9 @@ plugins {
 
 val libs = versionCatalogs.named("libs")
 val treetrail = extensions.getByType<TreetrailExtension>()
+
+/** The repository on GitHub, named in the POM and the SBOM. */
+val repositoryUrl = "https://github.com/treetrail/treetrail"
 
 /**
  * The build's timestamp in seconds since the epoch: SOURCE_DATE_EPOCH if set, otherwise the commit time of
@@ -38,6 +42,17 @@ val sbom = tasks.named<CyclonedxDirectTask>("cyclonedxDirectBom") {
     includeBomSerialNumber.set(false)
     xmlOutput.unsetConvention()
     jsonOutput.set(layout.buildDirectory.file("sbom/${project.name}-cyclonedx.json"))
+
+    // By default the plugin adds the CI run as build-system reference and takes the VCS reference from
+    // `git remote get-url origin`, so the SBOM would depend on where it was built. A fixed VCS reference
+    // instead, and no build-system reference: the build provenance attestation of a release names the run.
+    includeBuildSystem.set(false)
+    externalReferences.add(ExternalReference().apply {
+        type = ExternalReference.Type.VCS
+        url = repositoryUrl
+    })
+    // externalReferences is not a task input of the plugin.
+    inputs.property("vcsUrl", repositoryUrl)
 
     // The plugin always writes the current time as metadata.timestamp and has no option for it.
     // Replace it with the commit time, so that the SBOM is reproducible like the jars.
@@ -141,7 +156,7 @@ mavenPublishing {
     pom {
         name.set(project.name)
         description.set(provider { project.description })
-        url.set("https://github.com/treetrail/treetrail")
+        url.set(repositoryUrl)
         inceptionYear.set("2026")
         licenses {
             license {
@@ -158,13 +173,13 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/treetrail/treetrail")
-            connection.set("scm:git:https://github.com/treetrail/treetrail.git")
+            url.set(repositoryUrl)
+            connection.set("scm:git:${repositoryUrl}.git")
             developerConnection.set("scm:git:ssh://git@github.com/treetrail/treetrail.git")
         }
         issueManagement {
             system.set("GitHub")
-            url.set("https://github.com/treetrail/treetrail/issues")
+            url.set("$repositoryUrl/issues")
         }
     }
 }
