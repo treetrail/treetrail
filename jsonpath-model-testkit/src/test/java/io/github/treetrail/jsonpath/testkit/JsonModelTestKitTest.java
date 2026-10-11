@@ -6,8 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.github.treetrail.jsonpath.JavaObjectModel;
 import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DynamicTest;
@@ -30,6 +35,25 @@ class JsonModelTestKitTest {
         assertThat(first.selector()).isEqualTo("$");
         assertThat(JavaObjectModel.jsonEquals(first.document(), JavaObjectModel.parse(first.documentJson())))
                 .isTrue();
+    }
+
+    @Test
+    void readsTheTagsOfTheCases() throws IOException {
+        List<ComplianceCase> cases = JsonModelTestKit.complianceCases();
+        // Compared with the suite file itself rather than with counts, which change with each update of the suite.
+        String json;
+        try (InputStream in = Objects.requireNonNull(JsonModelTestKit.class.getResourceAsStream("cts/cts.json"))) {
+            json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        List<?> tests = (List<?>) ((Map<?, ?>) Objects.requireNonNull(JavaObjectModel.parse(json))).get("tests");
+
+        assertThat(cases).hasSameSizeAs(tests);
+        for (int i = 0; i < cases.size(); i++) {
+            Object tags = ((Map<?, ?>) tests.get(i)).get("tags");
+            assertThat(cases.get(i).tags()).isEqualTo(tags == null ? List.of() : tags);
+        }
+        assertThat(cases).anyMatch(c -> c.tags().contains("function"));
+        assertThat(cases).anyMatch(c -> c.tags().isEmpty());
     }
 
     @TestFactory

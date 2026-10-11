@@ -37,7 +37,8 @@ a minor version may still change the API, which this file then says.
   instead of selecting all of them. ([#12](https://github.com/treetrail/treetrail/issues/12))
 - `jsonpath-model-testkit`: tests for your own `JsonModel` implementation. `JsonModelTestKit.complianceTests`
   runs all 706 cases of the JSONPath Compliance Test Suite through it, `contractTests` checks each method of
-  `JsonModel`. JUnit dynamic tests, no Jackson dependency; the suite (BSD-2) is included.
+  `JsonModel`. JUnit dynamic tests, no Jackson dependency; the suite (BSD-2) is included. `complianceCases`
+  returns the cases themselves, with the suite's tags, for runners of your own.
   ([#15](https://github.com/treetrail/treetrail/issues/15))
 
 ### Changed

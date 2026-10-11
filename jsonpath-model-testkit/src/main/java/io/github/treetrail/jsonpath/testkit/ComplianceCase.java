@@ -16,6 +16,8 @@ import org.jspecify.annotations.Nullable;
  *     them
  * @param resultPaths the normalized paths of the selected nodes, one list per alternative of {@code results},
  *     or empty if the case does not give them
+ * @param tags the suite's tags of the case, such as {@code function}, {@code slice} or {@code unicode}; empty if
+ *     it has none
  */
 public record ComplianceCase(
         String name,
@@ -23,7 +25,8 @@ public record ComplianceCase(
         boolean invalidSelector,
         @Nullable String documentJson,
         List<List<@Nullable Object>> results,
-        List<List<String>> resultPaths) {
+        List<List<String>> resultPaths,
+        List<String> tags) {
 
     /**
      * Returns the document as plain Java objects ({@link JavaObjectModel}); {@code null} for JSON null.
