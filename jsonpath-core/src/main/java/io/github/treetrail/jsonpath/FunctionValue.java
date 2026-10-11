@@ -11,7 +11,8 @@ import java.util.Objects;
  *
  * <p>Function arguments are such values; results are created with {@link #of(String)} and its overloads,
  * {@link #ofNull()} and {@link #nothing()}, or are one of the arguments. Functions cannot create arrays or
- * objects. Values are read-only; do not implement this interface.
+ * objects. Values are read-only. Treetrail implements this interface and may add methods to it in later
+ * versions; do not implement it.
  */
 public interface FunctionValue {
 

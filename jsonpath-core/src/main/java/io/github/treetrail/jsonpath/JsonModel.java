@@ -10,8 +10,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Read-only view of a JSON tree in some object model (plain Java objects, Jackson, Gson, ...).
  *
- * <p>The library never parses JSON itself. Instead, a query runs against an existing tree through
- * this interface, so documents from any JSON library can be queried without conversion.
+ * <p>A query runs against an existing tree through this interface, so documents from any JSON library can be
+ * queried without conversion. Only {@link JavaObjectModel#parse(String)} parses JSON text itself, for documents
+ * that are not in a tree yet.
  *
  * <h2>Implementing a model</h2>
  *
