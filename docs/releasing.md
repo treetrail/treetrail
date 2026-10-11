@@ -61,6 +61,7 @@ written to `build/reports/api-compatibility/<module>.html`. The check is part of
 From 1.0 on, only a major release may break the API ([docs/support.md](support.md#versioning)). An intended
 incompatible change for the next major release goes into `treetrail { acceptedApiChanges.add(...) }` in the
 module's `build.gradle.kts`, in japicmp's exclude syntax
-(`io.github.treetrail.jsonpath.JsonPath#compile(java.lang.String)`), together with a note in `CHANGELOG.md`.
+(`io.github.treetrail.jsonpath.JsonPath#compile(java.lang.String)`), together with a note in `CHANGELOG.md`. An
+element may only be removed if a minor release has already shipped it as `@Deprecated`.
 
 Maven Central releases cannot be changed or deleted. A broken release is fixed with a new version.

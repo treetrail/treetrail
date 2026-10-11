@@ -7,6 +7,9 @@ and compiled against a 1.x release keeps compiling and working with every later 
 add features, patch versions fix bugs, and an incompatible change needs a new major version. Before 1.0, minor
 versions could change the API; [CHANGELOG.md](../CHANGELOG.md) says where they did.
 
+Nothing is removed without warning: an element that a major version removes is deprecated (`@Deprecated`, with
+the replacement in its Javadoc and in the changelog) in at least one minor release before.
+
 Every build compares the API of the published modules with the last release and fails on binary or source
 incompatible changes ([docs/releasing.md](releasing.md#api-compatibility)).
 
