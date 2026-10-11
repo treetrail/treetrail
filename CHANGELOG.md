@@ -12,6 +12,8 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   needs a new major version.
 - [docs/support.md](docs/support.md#versioning): an element is deprecated in at least one minor release before a
   major version removes it.
+- [docs/support.md](docs/support.md#versioning) and the Javadoc of `EvaluationLimits.DEFAULT`: the default limits
+  and how visited nodes are counted are not part of the API; set limits explicitly to rely on them.
 
 ## 1.0.0 – 2026-10-11
 
