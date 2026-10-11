@@ -105,6 +105,9 @@ public final class FindJaywayJsonPathExpressions extends ScanningRecipe<FindJayw
 
     private final transient JsonPathExpressions table = new JsonPathExpressions(this);
 
+    /** Creates the recipe; it has no options. */
+    public FindJaywayJsonPathExpressions() {}
+
     @Override
     public String getDisplayName() {
         return "Find Jayway JsonPath expressions";

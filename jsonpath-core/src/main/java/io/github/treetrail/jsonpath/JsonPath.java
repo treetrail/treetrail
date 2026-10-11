@@ -77,7 +77,8 @@ public final class JsonPath {
      * Runs the query against a document made of plain Java objects ({@link JavaObjectModel}).
      *
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public NodeList<@Nullable Object> query(@Nullable Object document) {
         return query(document, JavaObjectModel.INSTANCE);
@@ -92,7 +93,8 @@ public final class JsonPath {
      *
      * @throws InvalidJsonException if {@code json} is not valid JSON text
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public NodeList<@Nullable Object> queryJson(String json) {
         return query(JavaObjectModel.parse(json));
@@ -102,7 +104,8 @@ public final class JsonPath {
      * Runs the query against a document in the given object model.
      *
      * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> NodeList<N> query(N document, JsonModel<N> model) {
         return new NodeList<>(new Evaluator(document, model, limits).run(query));
@@ -112,8 +115,9 @@ public final class JsonPath {
      * Whether the query selects at least one node in a document made of plain Java objects. Stops at the
      * first node, so it is cheaper than {@code query(document).isEmpty()} for queries that select many.
      *
-     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before it finds a node
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public boolean exists(@Nullable Object document) {
         return exists(document, JavaObjectModel.INSTANCE);
@@ -122,8 +126,9 @@ public final class JsonPath {
     /**
      * Whether the query selects at least one node in a document of the given model; stops at the first.
      *
-     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before it finds a node
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> boolean exists(N document, JsonModel<N> model) {
         return new Evaluator(document, model, limits).exists(query);
@@ -133,8 +138,9 @@ public final class JsonPath {
      * Returns the first node the query selects in a document made of plain Java objects, in the order of
      * {@link #query(Object)}, without selecting the others.
      *
-     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before it finds a node
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public Optional<Node<@Nullable Object>> first(@Nullable Object document) {
         return first(document, JavaObjectModel.INSTANCE);
@@ -143,8 +149,9 @@ public final class JsonPath {
     /**
      * Returns the first node the query selects in a document of the given model, without selecting the others.
      *
-     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before
-     * @throws JsonPathEvaluationException if the thread is interrupted
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits} before it finds a node
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> Optional<Node<N>> first(N document, JsonModel<N> model) {
         Located first = new Evaluator(document, model, limits).first(query);

@@ -6,6 +6,8 @@ import java.util.List;
  * The arguments of one call of a function extension, in the order of its parameters. Read each with the
  * accessor of the parameter's declared type; every call has been checked against those types when the query
  * was compiled (RFC 9535, section 2.4.3).
+ *
+ * <p>Treetrail implements this interface and may add methods to it in later versions; do not implement it.
  */
 public interface FunctionArguments {
 

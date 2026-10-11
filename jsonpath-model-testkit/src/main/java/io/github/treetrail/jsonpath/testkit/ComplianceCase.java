@@ -25,7 +25,11 @@ public record ComplianceCase(
         List<List<@Nullable Object>> results,
         List<List<String>> resultPaths) {
 
-    /** Returns the document as plain Java objects ({@link JavaObjectModel}); {@code null} for JSON null. */
+    /**
+     * Returns the document as plain Java objects ({@link JavaObjectModel}); {@code null} for JSON null.
+     *
+     * @throws IllegalStateException if the case has an invalid selector and therefore no document
+     */
     public @Nullable Object document() {
         if (documentJson == null) {
             throw new IllegalStateException("The case '" + name + "' has an invalid selector and no document");
