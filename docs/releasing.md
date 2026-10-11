@@ -56,8 +56,9 @@ Modules that are not in that release yet are listed in `treetrail.unreleasedModu
 written to `build/reports/api-compatibility/<module>.html`. The check is part of the convention plugin
 `treetrail.published-conventions` in `build-logic`.
 
-Before 1.0, a minor release may still break the API. An intended incompatible change goes into
-`treetrail { acceptedApiChanges.add(...) }` in the module's `build.gradle.kts`, in japicmp's exclude syntax
+From 1.0 on, only a major release may break the API ([docs/support.md](support.md#versioning)). An intended
+incompatible change for the next major release goes into `treetrail { acceptedApiChanges.add(...) }` in the
+module's `build.gradle.kts`, in japicmp's exclude syntax
 (`io.github.treetrail.jsonpath.JsonPath#compile(java.lang.String)`), together with a note in `CHANGELOG.md`.
 
 Maven Central releases cannot be changed or deleted. A broken release is fixed with a new version.

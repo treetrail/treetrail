@@ -28,9 +28,10 @@ downloading the JDKs it does not find.
 - **Formatting** with palantir-java-format. `./gradlew spotlessApply` formats the sources.
 - **Error Prone and NullAway.** Every package is `@NullMarked`; mark values that can be `null` with
   `@Nullable`.
-- **API compatibility** of the published modules against the last release. Before 1.0 an incompatible
-  change is possible but deliberate: list it in `treetrail { acceptedApiChanges.add(...) }` in the module's
-  `build.gradle.kts` and explain it in the changelog. See [docs/releasing.md](docs/releasing.md#api-compatibility).
+- **API compatibility** of the published modules against the last release. From 1.0 on, an incompatible
+  change waits for the next major version ([docs/support.md](docs/support.md#versioning)); it is listed in
+  `treetrail { acceptedApiChanges.add(...) }` in the module's `build.gradle.kts` and explained in the changelog.
+  See [docs/releasing.md](docs/releasing.md#api-compatibility).
 - **Coverage:** each module sets a minimum line and branch coverage with `treetrail { coverage(...) }` in its
   `build.gradle.kts`. The shared build configuration is in `build-logic`, as convention plugins.
 

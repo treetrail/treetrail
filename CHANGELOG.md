@@ -1,7 +1,8 @@
 # Changelog
 
-All notable changes to Treetrail. Versions follow [Semantic Versioning](https://semver.org); before 1.0
-a minor version may still change the API, which this file then says.
+All notable changes to Treetrail. Versions follow [Semantic Versioning](https://semver.org): from 1.0.0 on,
+only a new major version changes the API incompatibly ([docs/support.md](docs/support.md#versioning)). Before
+1.0, minor versions could, and this file says where they did.
 
 ## Unreleased
 

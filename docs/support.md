@@ -2,16 +2,35 @@
 
 ## Versioning
 
-Treetrail follows [Semantic Versioning](https://semver.org). Before 1.0, a minor version may change the
-API; [CHANGELOG.md](../CHANGELOG.md) then says so. From 1.0 on, incompatible changes need a new major
-version.
+Treetrail follows [Semantic Versioning](https://semver.org). From 1.0.0 on, the API is stable: code written
+and compiled against a 1.x release keeps compiling and working with every later 1.x release. Minor versions
+add features, patch versions fix bugs, and an incompatible change needs a new major version. Before 1.0, minor
+versions could change the API; [CHANGELOG.md](../CHANGELOG.md) says where they did.
 
-The API of a module is its exported packages. `io.github.treetrail.jsonpath.internal` is not exported and
-can change in any release. Every build compares the API of the published modules with the last release
-([docs/releasing.md](releasing.md#api-compatibility)).
+Every build compares the API of the published modules with the last release and fails on binary or source
+incompatible changes ([docs/releasing.md](releasing.md#api-compatibility)).
 
-A change in which nodes a query selects counts as a fix if the old result contradicted RFC 9535, and is
-listed under **Fixed** in the changelog.
+### What counts as API
+
+- The public and protected types and members in the API package of each published module: the package its
+  module descriptor exports, for example `io.github.treetrail.jsonpath` in `jsonpath-core` and
+  `io.github.treetrail.jsonpath.jackson2` in `jsonpath-jackson2`. `jsonpath-migration`, `jsonpath-rewrite` and
+  `jsonpath-spring-test` have no module descriptor, only an automatic module name, and one package each.
+- The Maven coordinates (`io.github.treetrail:jsonpath-*`) and the module names.
+- Which nodes a query selects, as RFC 9535 defines it. A change counts as a fix if the old result contradicted
+  RFC 9535, and is listed under **Fixed** in the changelog.
+- `JsonModel` is meant to be implemented: methods added to it are default methods. `FunctionValue` and
+  `FunctionArguments` are implemented only by Treetrail and may gain methods in a minor version.
+
+Not API, and free to change in any release:
+
+- `io.github.treetrail.jsonpath.internal`, which `jsonpath-core` does not export.
+- The text of exception messages, of `toString()` and of migration hints. Code that needs details of an error
+  can use the exception's type and accessors, such as `JsonPathSyntaxException.position()`.
+- Speed and memory use, and the order of object members in models that have none, such as `HashMap`.
+- The cases of the Compliance Test Suite that `jsonpath-model-testkit` runs: it ships the suite's current
+  version, whose new cases can fail a model that passed before.
+- The Unicode version behind `\p{...}` in regular expressions; a new one is noted in the changelog.
 
 ## Supported releases
 
