@@ -12,10 +12,15 @@ with Jayway JsonPath's aggregates as an optional module; node locations as typed
 Pointers; `exists()` and `first()`, which stop at the first node; JSpecify nullness annotations; a testkit for
 `JsonModel` implementations; and faster queries that allocate less.
 
-One change is incompatible with 0.2.0: `FindJaywayJsonPathExpressions.getVisitor()` in `jsonpath-rewrite` is
-final, because the recipe is now a `ScanningRecipe`. The recipe class was already final, so no code could
-override the method. Everything else in the 0.2.0 API stays source and binary compatible; changes in behaviour
-are listed below.
+Two changes are incompatible with 0.2.0:
+
+- `Node.location()` is removed. It returned the location as untyped steps (`String` names and `Integer`
+  indices); `node.normalizedPath().steps()` returns the same steps typed as `NormalizedPath.Name` and
+  `NormalizedPath.Index`, and `NormalizedPath.toJsonPointer()` converts them to a JSON Pointer.
+- `FindJaywayJsonPathExpressions.getVisitor()` in `jsonpath-rewrite` is final, because the recipe is now a
+  `ScanningRecipe`. The recipe class was already final, so no code could override the method.
+
+Everything else in the 0.2.0 API stays source and binary compatible; changes in behaviour are listed below.
 
 ### Added
 
@@ -102,6 +107,10 @@ are listed below.
 - The CycloneDX SBOMs of a release are reproducible: their `metadata.timestamp` is the commit time instead of
   the build time, so two builds of the same commit produce identical files.
   ([#45](https://github.com/treetrail/treetrail/pull/45))
+
+### Removed
+
+- `Node.location()`; use `node.normalizedPath().steps()` (see above).
 
 ### Fixed
 

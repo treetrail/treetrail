@@ -1,10 +1,7 @@
 package io.github.treetrail.jsonpath.internal;
 
 import io.github.treetrail.jsonpath.NormalizedPath;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
@@ -63,23 +60,8 @@ public final class Located {
         return depth;
     }
 
-    /** The last step, a {@link String} name or an {@link Integer} index; only the root has none. */
-    private Object step() {
-        return name != null ? name : (Object) index;
-    }
-
     private Located parent() {
         return Objects.requireNonNull(parent);
-    }
-
-    /** Returns the steps from the root, each a {@link String} name or an {@link Integer} index. */
-    public List<Object> steps() {
-        List<Object> steps = new ArrayList<>(depth);
-        for (Located l = this; l.parent != null; l = l.parent) {
-            steps.add(l.step());
-        }
-        Collections.reverse(steps);
-        return Collections.unmodifiableList(steps);
     }
 
     /** Returns the location as a normalized path (RFC 9535, section 2.7). */

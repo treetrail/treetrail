@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.treetrail.jsonpath.NormalizedPath.Index;
+import io.github.treetrail.jsonpath.NormalizedPath.Name;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -103,7 +105,8 @@ class JsonPathTest {
         Node<Object> node =
                 JsonPath.compile("$.store.book[1].price").query(STORE).get(0);
 
-        assertThat(node.location()).containsExactly("store", "book", 1, "price");
+        assertThat(node.normalizedPath().steps())
+                .containsExactly(new Name("store"), new Name("book"), new Index(1), new Name("price"));
     }
 
     @Test

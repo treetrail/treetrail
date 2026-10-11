@@ -32,7 +32,7 @@ class JsonPathProperties {
 
             assertThat(selected).hasSize(1);
             assertThat(selected.get(0).path()).isEqualTo(node.path());
-            assertThat(selected.get(0).location()).isEqualTo(node.location());
+            assertThat(selected.get(0).normalizedPath()).isEqualTo(node.normalizedPath());
             assertThat(selected.get(0).value()).isSameAs(node.value());
             assertThat(JsonPath.compile(node.path()).isSingular()).isTrue();
         }

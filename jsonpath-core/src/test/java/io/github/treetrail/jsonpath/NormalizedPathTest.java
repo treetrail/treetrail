@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.treetrail.jsonpath.NormalizedPath.Index;
 import io.github.treetrail.jsonpath.NormalizedPath.Name;
-import io.github.treetrail.jsonpath.NormalizedPath.Step;
 import io.github.treetrail.jsonpath.testkit.ComplianceCase;
 import io.github.treetrail.jsonpath.testkit.JsonModelTestKit;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ class NormalizedPathTest {
                 NormalizedPath path = NormalizedPath.parse(node.path());
                 assertThat(path).as(node.path()).isEqualTo(node.normalizedPath());
                 assertThat(path.toString()).isEqualTo(node.path());
-                assertThat(asLocation(path.steps())).isEqualTo(node.location());
                 nodes++;
             }
         }
@@ -158,13 +156,5 @@ class NormalizedPathTest {
                 assertThat(NormalizedPath.parse(node.path())).isEqualTo(node.normalizedPath());
             }
         }
-    }
-
-    private static List<Object> asLocation(List<Step> steps) {
-        List<Object> location = new ArrayList<>();
-        for (Step step : steps) {
-            location.add(step instanceof Index index ? (Object) index.index() : ((Name) step).name());
-        }
-        return location;
     }
 }

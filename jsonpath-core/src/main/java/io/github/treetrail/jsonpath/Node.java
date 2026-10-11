@@ -1,7 +1,6 @@
 package io.github.treetrail.jsonpath;
 
 import io.github.treetrail.jsonpath.internal.Located;
-import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -53,11 +52,6 @@ public final class Node<N extends @Nullable Object> {
             normalizedPath = path;
         }
         return path;
-    }
-
-    /** Returns the location as steps from the root: {@link String} member names and {@link Integer} indices. */
-    public List<Object> location() {
-        return location.steps();
     }
 
     @Override
