@@ -21,7 +21,7 @@ attestations) and afterwards checks that the published files are the attested on
 carries the same files. To verify a downloaded file:
 
 ```bash
-gh attestation verify jsonpath-core-0.1.0.jar --repo treetrail/treetrail
+gh attestation verify jsonpath-core-1.0.0.jar --repo treetrail/treetrail
 ```
 
 ## One-time setup
@@ -37,10 +37,11 @@ gh attestation verify jsonpath-core-0.1.0.jar --repo treetrail/treetrail
 
 ## Making a release
 
-1. Make sure `main` is green and the README describes the release.
+1. Make sure `main` is green, the README describes the release and `CHANGELOG.md` has a section for it with
+   the release date.
 2. Optionally run the workflow manually (Actions → Release → Run workflow): a dry run that builds and
    uploads the files as a workflow artifact, without publishing.
-3. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`.
+3. Tag and push: `git tag v1.0.0 && git push origin v1.0.0`.
 4. Approve the `maven-central` deployment when the workflow asks.
 5. Once the release is on Maven Central, set `treetrail.apiBaselineVersion` in `gradle.properties` to the new
    version and clear `treetrail.unreleasedModules` there and `acceptedApiChanges` in the modules' build files
