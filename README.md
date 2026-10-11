@@ -29,7 +29,9 @@ for JSONPath.
 
 ## Installation
 
-Treetrail is on Maven Central. The API may still change before 1.0.
+Treetrail is on Maven Central. From 1.0.0 on, its API is stable and follows
+[semantic versioning](https://semver.org): no 1.x release breaks code written against an earlier one.
+[docs/support.md](docs/support.md#versioning) says what counts as API.
 
 ```kotlin
 dependencies {
