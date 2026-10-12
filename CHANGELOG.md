@@ -19,6 +19,9 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   targets, validation that reports every problem, `OverlayOptions` (fail on targets that select nothing, lenient
   merging, evaluation limits), the changes each action made, JSON and YAML I/O, and a command line
   ([README](README.md#openapi-overlays)).
+- New Gradle plugin `io.github.treetrail.openapi-overlay` (module `openapi-overlay-gradle-plugin`): applies
+  overlays in a build, for example before openapi-generator, in an isolated class loader
+  ([README](README.md#openapi-overlays)).
 
 ### Documentation
 
