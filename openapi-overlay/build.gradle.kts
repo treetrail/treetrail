@@ -2,7 +2,7 @@ plugins {
     id("treetrail.published-conventions")
 }
 
-description = "OpenAPI Overlay (1.0, 1.1, 1.2) for Java: applies overlays to OpenAPI descriptions as Jackson trees, with RFC 9535 JSONPath targets."
+description = "OpenAPI Overlay (1.0, 1.1, 1.2) for Java: applies overlays to OpenAPI descriptions as Jackson 2 trees, with RFC 9535 JSONPath targets."
 
 treetrail {
     coverage(line = 0.97, branch = 0.92)

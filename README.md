@@ -230,7 +230,8 @@ with their paths.
 ## OpenAPI Overlays
 
 `openapi-overlay` applies [OpenAPI Overlays](https://spec.openapis.org/overlay/latest.html) (versions 1.0, 1.1
-and 1.2) to OpenAPI descriptions, or any other JSON or YAML document, as Jackson 2 trees. An overlay is a list of
+and 1.2) to OpenAPI descriptions, or any other JSON or YAML document, as Jackson 2 trees (Jackson 3 on request:
+[#98](https://github.com/treetrail/treetrail/issues/98)). An overlay is a list of
 actions, each with an RFC 9535 query as its target, that update, remove or copy parts of a description: for
 example to add what a code generator needs to a description you do not own, or to remove internal operations
 before publishing one. The specification requires targets to be RFC 9535 queries; Treetrail evaluates them, so
