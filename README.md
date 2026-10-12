@@ -302,6 +302,9 @@ Each entry gets a task `apply<Name>Overlay`, cacheable and compatible with the c
 own class loader (configuration `openApiOverlay`, by default the plugin's version of `openapi-overlay`), so its
 Jackson does not meet the Jackson of other plugins. Tested with Gradle 9.8 and 8.14.
 
+[docs/openapi-overlays.md](docs/openapi-overlays.md) shows how to write RFC 9535 targets, recipes for common
+changes, how actions change a description, and what to watch for when coming from other tools.
+
 It passes every example of the specification and every compliant set and schema test of
 [OAI/Overlay-Specification](https://github.com/OAI/Overlay-Specification), except three schema tests whose
 target is not an RFC 9535 query
