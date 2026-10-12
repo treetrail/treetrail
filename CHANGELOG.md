@@ -15,6 +15,10 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
 - `NodeList.distinctPaths()`: the locations of the selected nodes, each once.
 - `JsonModelTestKit.contractTests` also checks that every node a query of the compliance suite selects is found
   again by its path.
+- New module `openapi-overlay`: applies OpenAPI Overlays 1.0, 1.1 and 1.2 to Jackson 2 trees, with RFC 9535
+  targets, validation that reports every problem, `OverlayOptions` (fail on targets that select nothing, lenient
+  merging, evaluation limits), the changes each action made, JSON and YAML I/O, and a command line
+  ([README](README.md#openapi-overlays)).
 
 ### Documentation
 

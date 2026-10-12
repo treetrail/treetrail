@@ -1,0 +1,7 @@
+overlay: 1.1.0
+info:
+  title: Remove a primitive array element
+  version: 1.0.0
+actions:
+  - target: $.paths.*.get.tags[?@ == 'dummy']
+    remove: true

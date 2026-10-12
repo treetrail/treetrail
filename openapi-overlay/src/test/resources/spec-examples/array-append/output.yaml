@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Arrays
+  version: 1.0.0
+paths:
+  /a:
+    get:
+      parameters:
+        - name: first
+          in: query
+        - name: newParam
+          in: query
+  /b:
+    get:
+      responses: {}
+  /c:
+    get:
+      parameters:
+        - name: newParam
+          in: query

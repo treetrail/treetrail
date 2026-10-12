@@ -20,6 +20,7 @@ include("jsonpath-assertj")
 include("jsonpath-spring-test")
 include("jsonpath-model-testkit")
 include("jsonpath-jayway-functions")
+include("openapi-overlay")
 include("jsonpath-rewrite")
 include("jsonpath-benchmarks")
 

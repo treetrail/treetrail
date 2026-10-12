@@ -50,8 +50,9 @@ dependencies {
 ```
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit` and
-`jsonpath-jayway-functions`. Every release is
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit`,
+`jsonpath-jayway-functions` and, not yet released, `openapi-overlay` ([OpenAPI Overlays](#openapi-overlays)).
+Every release is
 signed, ships a CycloneDX SBOM per module and has a build provenance attestation; see
 [docs/releasing.md](docs/releasing.md#what-a-release-contains). Changes are listed in
 [CHANGELOG.md](CHANGELOG.md).
@@ -225,6 +226,56 @@ webTestClient.get().uri("/store").exchange()
 A query always selects a list of nodes, so `value(x)` means exactly one node with value `x` and
 `values(...)` exactly these values in this order. Failures name the expression and show the values found
 with their paths.
+
+## OpenAPI Overlays
+
+`openapi-overlay` applies [OpenAPI Overlays](https://spec.openapis.org/overlay/latest.html) (versions 1.0, 1.1
+and 1.2) to OpenAPI descriptions, or any other JSON or YAML document, as Jackson 2 trees. An overlay is a list of
+actions, each with an RFC 9535 query as its target, that update, remove or copy parts of a description: for
+example to add what a code generator needs to a description you do not own, or to remove internal operations
+before publishing one. The specification requires targets to be RFC 9535 queries; Treetrail evaluates them, so
+overlays from the specification and from other standard tools work unchanged, and a typo in a target is an error
+instead of a silent change of other nodes. The module is new and not yet released.
+
+```java
+Overlay overlay = Overlay.read(Path.of("codegen.overlay.yaml"));
+JsonNode openApi = OverlayDocuments.read(Path.of("openapi.yaml"));
+OverlayResult result = overlay.applyTo(openApi, OverlayOptions.DEFAULT.withFailOnNoMatch(true));
+OverlayDocuments.write(result.document(), Path.of("build/openapi.yaml"));
+```
+
+```yaml
+overlay: 1.2.0
+info: {title: Prepare the API for code generation, version: 1.0.0}
+actions:
+  - target: $.paths.*[?@['x-internal'] == true]        # operations marked internal
+    remove: true
+  - target: $.paths.*.*.parameters[?!@.schema && !@.content]
+    update: {schema: {type: string}}
+  - target: $..[?search(@.description, '')].description  # string descriptions only
+    update: See the developer portal.
+```
+
+- **Validated before it runs:** `Overlay.read` checks the overlay against the specification of its version,
+  including every rule of its JSON Schema, and compiles every query; `InvalidOverlayException.problems()` lists
+  everything that is wrong, each with its location (`/actions/2/target`).
+- **The specification's merge rules:** an update for objects merges recursively, arrays are concatenated,
+  primitives replaced, any other combination is an error. The cases the specification leaves open, such as an
+  action with both `update` and `copy`, are decided as the Javadoc of `Overlay.applyTo` says.
+  `OverlayOptions.withLenientMerge(true)` replaces instead of failing, for overlays written for lenient tools.
+- **Explainable:** `OverlayResult.changes()` says what each action did at which node; `warnings()` lists actions
+  that changed nothing. `withFailOnNoMatch(true)` makes those errors, so that an overlay that no longer fits a
+  changed description fails the build.
+- **YAML as OpenAPI needs it:** only `true` and `false` are booleans (`NO` stays a country code), duplicate keys
+  are rejected, decimals keep their digits, and descriptions up to 256 MiB are read.
+- **In a build:** `OverlayCommand` applies overlays from the command line, for example with Maven's
+  `exec-maven-plugin` before `openapi-generator-maven-plugin`:
+  `--overlay codegen.overlay.yaml --output target/openapi.yaml --strict src/main/openapi/openapi.yaml`.
+
+It passes every example of the specification and every compliant set and schema test of
+[OAI/Overlay-Specification](https://github.com/OAI/Overlay-Specification), except three schema tests whose
+target is not an RFC 9535 query
+([OAI/Overlay-Specification#415](https://github.com/OAI/Overlay-Specification/issues/415)).
 
 ## Coming from Jayway JsonPath
 

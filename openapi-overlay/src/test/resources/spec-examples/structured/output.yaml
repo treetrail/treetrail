@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Pets
+  version: 1.0.0
+  x-overlay-applied: structured-overlay
+paths:
+  /:
+    summary: The root resource
+    get:
+      summary: Retrieve the root resource
+      x-rate-limit: 100
+      responses:
+        '200':
+          description: OK
+  /pets:
+    get:
+      summary: Retrieve a list of pets
+      x-rate-limit: 100
+      responses:
+        '200':
+          description: OK
+# The specification's example sets both to null; a description that has them gets an error instead (null is a
+# primitive, and a primitive cannot be merged into an object or array).
+components:
+tags:
