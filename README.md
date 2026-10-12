@@ -268,9 +268,39 @@ actions:
   changed description fails the build.
 - **YAML as OpenAPI needs it:** only `true` and `false` are booleans (`NO` stays a country code), duplicate keys
   are rejected, decimals keep their digits, and descriptions up to 256 MiB are read.
-- **In a build:** `OverlayCommand` applies overlays from the command line, for example with Maven's
-  `exec-maven-plugin` before `openapi-generator-maven-plugin`:
+- **On the command line:** `OverlayCommand` applies overlays, for example with Maven's `exec-maven-plugin`
+  before `openapi-generator-maven-plugin`:
   `--overlay codegen.overlay.yaml --output target/openapi.yaml --strict src/main/openapi/openapi.yaml`.
+
+The Gradle plugin `io.github.treetrail.openapi-overlay` (module `openapi-overlay-gradle-plugin`, not yet released)
+applies overlays in a build, for example before [openapi-generator](https://openapi-generator.tech):
+
+```kotlin
+plugins {
+    id("org.openapi.generator") version "7.26.0"
+    id("io.github.treetrail.openapi-overlay")
+}
+
+openApiOverlay {
+    register("pets") {
+        input = layout.projectDirectory.file("src/main/openapi/pets.yaml")
+        overlays.from("src/main/openapi/codegen.overlay.yaml")
+        failOnNoMatch = true   // an overlay that no longer fits the description fails the build
+    }
+}
+
+openApiGenerate {
+    generatorName = "java"
+    // The output of applyPetsOverlay, which therefore runs first.
+    inputSpec = tasks.named<io.github.treetrail.openapi.overlay.gradle.ApplyOverlay>("applyPetsOverlay")
+        .flatMap { it.output }
+}
+```
+
+Each entry gets a task `apply<Name>Overlay`, cacheable and compatible with the configuration cache, which writes
+`build/openapi-overlay/<name>/<input file name>`; `applyOverlays` runs them all. The overlay library runs in its
+own class loader (configuration `openApiOverlay`, by default the plugin's version of `openapi-overlay`), so its
+Jackson does not meet the Jackson of other plugins. Tested with Gradle 9.8 and 8.14.
 
 It passes every example of the specification and every compliant set and schema test of
 [OAI/Overlay-Specification](https://github.com/OAI/Overlay-Specification), except three schema tests whose

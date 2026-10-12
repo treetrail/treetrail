@@ -2,13 +2,13 @@
 
 Releases go to Maven Central under `io.github.treetrail` through
 [.github/workflows/release.yml](../.github/workflows/release.yml). Pushing a tag `vX.Y.Z` builds and tests
-everything, attests the files, waits for approval and publishes all eleven library modules.
+everything, attests the files, waits for approval and publishes all twelve library modules.
 
 ## What a release contains
 
 For each of `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
-`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit`
-and `jsonpath-jayway-functions`:
+`jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit`,
+`jsonpath-jayway-functions` and `openapi-overlay`:
 
 - the jar, the sources jar and the javadoc jar, each signed with GPG
 - the POM and the Gradle module metadata

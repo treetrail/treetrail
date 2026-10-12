@@ -21,6 +21,7 @@ include("jsonpath-spring-test")
 include("jsonpath-model-testkit")
 include("jsonpath-jayway-functions")
 include("openapi-overlay")
+include("openapi-overlay-gradle-plugin")
 include("jsonpath-rewrite")
 include("jsonpath-benchmarks")
 
