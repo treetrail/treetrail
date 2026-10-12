@@ -12,7 +12,9 @@ import io.github.treetrail.jsonpath.JsonKind;
 import io.github.treetrail.jsonpath.JsonModel;
 import io.github.treetrail.jsonpath.JsonPath;
 import io.github.treetrail.jsonpath.JsonPathSyntaxException;
+import io.github.treetrail.jsonpath.Node;
 import io.github.treetrail.jsonpath.NodeList;
+import io.github.treetrail.jsonpath.NormalizedPath;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -24,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -87,7 +90,8 @@ public final class JsonModelTestKit {
     /**
      * Returns tests of the {@link JsonModel} contract: kinds of all JSON values, members (including the
      * difference between a missing member and a member that is JSON null), array elements, strings, numbers
-     * and booleans, and equality with {@link JavaObjectModel} for every document of the compliance suite.
+     * and booleans, equality with {@link JavaObjectModel} for every document of the compliance suite, and
+     * finding every node a query of the suite selects again by its path ({@link NormalizedPath#resolve}).
      *
      * @param model the model under test
      * @param parse parses JSON text into the model's node type
@@ -102,7 +106,8 @@ public final class JsonModelTestKit {
                 DynamicTest.dynamicTest("strings", () -> checkStrings(model, parse)),
                 DynamicTest.dynamicTest("numbers", () -> checkNumbers(model, parse)),
                 DynamicTest.dynamicTest("booleans", () -> checkBooleans(model, parse)),
-                DynamicTest.dynamicTest("documents equal the reference model", () -> checkDocuments(model, parse)));
+                DynamicTest.dynamicTest("documents equal the reference model", () -> checkDocuments(model, parse)),
+                DynamicTest.dynamicTest("nodes are found again by their paths", () -> checkResolve(model, parse)));
     }
 
     // ---- compliance suite ----
@@ -379,5 +384,39 @@ public final class JsonModelTestKit {
             documents++;
         }
         assertTrue(documents > 0, "the suite has documents");
+    }
+
+    private static <N extends @Nullable Object> void checkResolve(JsonModel<N> model, Function<String, N> parse) {
+        int nodes = 0;
+        for (ComplianceCase test : complianceCases()) {
+            String json = test.documentJson();
+            if (json == null || test.invalidSelector()) {
+                continue;
+            }
+            N document = parse.apply(json);
+            for (Node<N> node : JsonPath.compile(test.selector()).query(document, model)) {
+                NormalizedPath path = node.normalizedPath();
+                Optional<Node<N>> found = path.resolve(document, model);
+                assertTrue(found.isPresent(), "resolve " + path + " in the document of '" + test.name() + "'");
+                assertEquals(path, found.get().normalizedPath(), "path of the resolved node");
+                assertTrue(
+                        JsonModel.jsonEquals(
+                                model, node.value(), model, found.get().value()),
+                        "value at " + path + " in the document of '" + test.name() + "'");
+                nodes++;
+            }
+        }
+        assertTrue(nodes > 600, "the suite selects nodes");
+
+        N document = parse.apply("{\"a\": [1, {\"b\": null}], \"s\": \"text\"}");
+        for (String missing :
+                List.of("$['x']", "$['a'][2]", "$['a']['0']", "$['a'][0][0]", "$['s']['x']", "$['s'][0]")) {
+            assertFalse(NormalizedPath.parse(missing).resolve(document, model).isPresent(), "resolve " + missing);
+        }
+        Optional<Node<N>> jsonNull = NormalizedPath.parse("$['a'][1]['b']").resolve(document, model);
+        assertTrue(jsonNull.isPresent(), "resolve a member that is JSON null");
+        assertEquals(JsonKind.NULL, model.kind(jsonNull.get().value()), "kind of a member that is JSON null");
+        Optional<Node<N>> root = NormalizedPath.root().resolve(document, model);
+        assertTrue(root.isPresent() && JsonModel.jsonEquals(model, root.get().value(), model, document), "resolve $");
     }
 }

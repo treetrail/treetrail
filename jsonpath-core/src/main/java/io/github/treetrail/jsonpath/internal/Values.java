@@ -73,7 +73,7 @@ public final class Values {
     }
 
     /** Compares strings by Unicode scalar values (UTF-16 order differs above U+FFFF). */
-    private static int compareCodePoints(String a, String b) {
+    public static int compareCodePoints(String a, String b) {
         int i = 0;
         int j = 0;
         while (i < a.length() && j < b.length()) {

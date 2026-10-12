@@ -6,6 +6,16 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
 
 ## Unreleased
 
+### Added
+
+- `NormalizedPath` finds and navigates nodes, for example to change a document at the nodes a query selected:
+  `resolve(document, model)` returns the node at a path (also if its value is JSON `null`), `parent()`,
+  `lastStep()`, `isRoot()` and `startsWith(ancestor)` navigate, and paths are `Comparable` in document order,
+  so that a reversed sort removes array elements and nested nodes safely.
+- `NodeList.distinctPaths()`: the locations of the selected nodes, each once.
+- `JsonModelTestKit.contractTests` also checks that every node a query of the compliance suite selects is found
+  again by its path.
+
 ### Documentation
 
 - [docs/support.md](docs/support.md#java): Java 17 stays the minimum for all 1.x releases; a higher minimum
