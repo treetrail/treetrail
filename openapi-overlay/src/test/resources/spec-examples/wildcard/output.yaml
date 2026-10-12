@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: Wildcards
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            $ref: '#/components/schemas/filterSchema'
+        - name: limit
+          in: query
+      x-safe: true
+    post:
+      parameters:
+        - name: filter
+          in: query
+  /owners:
+    get:
+      parameters:
+        - name: filter
+          in: header
+      x-safe: true
+  /health: {}

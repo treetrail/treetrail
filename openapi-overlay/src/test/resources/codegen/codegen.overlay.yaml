@@ -1,0 +1,33 @@
+overlay: 1.2.0
+info:
+  title: Prepare the pet API for code generation
+  version: 1.0.0
+components:
+  actions:
+    notFound:
+      description: Adds a 404 response
+      fields:
+        update:
+          '404':
+            description: Not found
+actions:
+  - target: $.paths.*[?@['x-internal'] == true]
+    description: Internal operations get no client methods
+    remove: true
+  - target: $.paths.*[?@.operationId == 'listPets'].operationId
+    update: findAllPets
+  - $ref: '#/components/actions/notFound'
+    target: $.paths.*.get.responses
+  - target: $.servers
+    remove: true
+  - target: $
+    update:
+      servers:
+        - url: http://localhost:8080
+  - target: $.paths.*.*.parameters[?!@.schema && !@.content]
+    description: The generator needs a schema for every parameter
+    update:
+      schema:
+        type: string
+  - target: $.paths.*.*['x-oai-traits']
+    remove: true

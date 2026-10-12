@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Targeted
+  version: 1.0.0
+paths:
+  /foo:
+    get:
+      description: This is the new description
+  /bar:
+    get:
+      description: This is the updated description
+    post:
+      description: This is an updated description of a child object
+      x-safe: false
+      requestBody:
+        content: {}
