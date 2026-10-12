@@ -1,9 +1,11 @@
 package io.github.treetrail.jsonpath;
 
 import io.github.treetrail.jsonpath.internal.Located;
+import io.github.treetrail.jsonpath.internal.Values;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -18,8 +20,22 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Every selected {@link Node} has one ({@link Node#normalizedPath()}). Instances are immutable; two paths
  * are equal if they have the same steps.
+ *
+ * <p>Paths sort in document order ({@link #compareTo}), and {@link #resolve} finds the node at a path again, for
+ * example to change a document at the nodes a query selected:
+ *
+ * <pre>{@code
+ * List<NormalizedPath> paths = new ArrayList<>(
+ *         JsonPath.compile("$..[?@.obsolete]").query(document, model).distinctPaths());
+ * // Later elements and inner nodes first, so that the paths of the others stay valid.
+ * paths.sort(Comparator.reverseOrder());
+ * for (NormalizedPath path : paths) {
+ *     Node<N> parent = path.parent().orElseThrow().resolve(document, model).orElseThrow();
+ *     // remove path.lastStep() from parent.value()
+ * }
+ * }</pre>
  */
-public final class NormalizedPath {
+public final class NormalizedPath implements Comparable<NormalizedPath> {
 
     /** A step of a normalized path: a member {@link Name} or an array {@link Index}. */
     public sealed interface Step permits Name, Index {}
@@ -91,6 +107,98 @@ public final class NormalizedPath {
     /** Returns the steps from the root to the node. */
     public List<Step> steps() {
         return steps;
+    }
+
+    /** Returns whether this is the path of the root, {@code $}. */
+    public boolean isRoot() {
+        return steps.isEmpty();
+    }
+
+    /** Returns the path of the node that contains the node at this path, or empty for the root. */
+    public Optional<NormalizedPath> parent() {
+        return steps.isEmpty() ? Optional.empty() : Optional.of(of(steps.subList(0, steps.size() - 1)));
+    }
+
+    /**
+     * Returns the last step: the member name or index of the node in its parent, or empty for the root. With
+     * {@link #parent()}, it says where to change the parent to replace or remove the node.
+     */
+    public Optional<Step> lastStep() {
+        return steps.isEmpty() ? Optional.empty() : Optional.of(steps.get(steps.size() - 1));
+    }
+
+    /**
+     * Returns whether this path is {@code ancestor} or leads to a node inside it, that is, whether its steps
+     * begin with the steps of {@code ancestor}. Every path starts with the root.
+     */
+    public boolean startsWith(NormalizedPath ancestor) {
+        List<Step> prefix = ancestor.steps;
+        return prefix.size() <= steps.size() && steps.subList(0, prefix.size()).equals(prefix);
+    }
+
+    /**
+     * Finds the node at this path in a document, or returns empty if the document has no node there: a member
+     * is missing, an index is out of bounds, or a step meets a value that is not an object or array. The node is
+     * returned even if its value is JSON {@code null}; see {@link NodeList#single()}.
+     *
+     * <pre>{@code
+     * NormalizedPath.parse("$['store']['book'][0]").resolve(document, Jackson2Model.INSTANCE)
+     *         .ifPresent(node -> ...);
+     * }</pre>
+     *
+     * @param <N> the node type of the object model
+     */
+    public <N extends @Nullable Object> Optional<Node<N>> resolve(N document, JsonModel<N> model) {
+        Objects.requireNonNull(model, "model");
+        N value = document;
+        Located location = Located.root(document);
+        for (Step step : steps) {
+            if (step instanceof Name name) {
+                if (model.kind(value) != JsonKind.OBJECT || !model.hasMember(value, name.name())) {
+                    return Optional.empty();
+                }
+                value = model.member(value, name.name());
+                location = location.child(value, name.name());
+            } else {
+                int index = ((Index) step).index();
+                if (model.kind(value) != JsonKind.ARRAY || index >= model.size(value)) {
+                    return Optional.empty();
+                }
+                value = model.element(value, index);
+                location = location.child(value, index);
+            }
+        }
+        return Optional.of(NodeList.of(location));
+    }
+
+    /**
+     * Compares paths in document order, the order in which a query visits the nodes of a document: a node
+     * before the nodes inside it, and array elements by index. So among the paths of one document, a reversed
+     * order removes nodes safely: later array elements before earlier ones, and nodes inside a node before the
+     * node itself. Member names have no order in JSON; they are ordered by their Unicode scalar values (as
+     * strings compare in filters), so that the order is total and consistent with {@link #equals}. Where two
+     * paths have an index and a name at the same step, which no two paths of one document have, the index
+     * comes first.
+     */
+    @Override
+    public int compareTo(NormalizedPath other) {
+        List<Step> a = steps;
+        List<Step> b = other.steps;
+        int common = Math.min(a.size(), b.size());
+        for (int i = 0; i < common; i++) {
+            int c = compare(a.get(i), b.get(i));
+            if (c != 0) {
+                return c;
+            }
+        }
+        return Integer.compare(a.size(), b.size());
+    }
+
+    private static int compare(Step a, Step b) {
+        if (a instanceof Index i) {
+            return b instanceof Index j ? Integer.compare(i.index(), j.index()) : -1;
+        }
+        return b instanceof Name n ? Values.compareCodePoints(((Name) a).name(), n.name()) : 1;
     }
 
     /** Returns the path to the member with the given name of the node at this path. */

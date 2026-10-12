@@ -5,6 +5,7 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -74,6 +75,20 @@ public final class NodeList<N extends @Nullable Object> extends AbstractList<Nod
             }
         }
         return Collections.unmodifiableList(Arrays.asList(paths));
+    }
+
+    /**
+     * Returns the locations of the selected nodes in order, each once: a node that a query selects more than once,
+     * as {@code $[0,0]} does, appears at its first place only. Use it to change a document at the selected nodes,
+     * where changing a node twice would be wrong; {@link NormalizedPath#compareTo} sorts the paths in document
+     * order.
+     */
+    public List<NormalizedPath> distinctPaths() {
+        LinkedHashSet<NormalizedPath> paths = new LinkedHashSet<>();
+        for (Located node : nodes) {
+            paths.add(node.toNormalizedPath());
+        }
+        return List.copyOf(paths);
     }
 
     /**
