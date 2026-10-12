@@ -25,6 +25,8 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
 
 ### Documentation
 
+- [docs/openapi-overlays.md](docs/openapi-overlays.md): writing RFC 9535 targets for OpenAPI Overlays, recipes,
+  the merge rules, builds, and coming from other tools; a test checks every overlay on the page.
 - [docs/support.md](docs/support.md#java): Java 17 stays the minimum for all 1.x releases; a higher minimum
   needs a new major version.
 - [docs/support.md](docs/support.md#versioning): an element is deprecated in at least one minor release before a
