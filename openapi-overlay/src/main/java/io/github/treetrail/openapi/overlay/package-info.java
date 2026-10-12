@@ -1,5 +1,6 @@
 /**
  * OpenAPI Overlay (Overlay Specification 1.0, 1.1 and 1.2) for Jackson 2 trees, with RFC 9535 JSONPath targets.
+ * Jackson 3 on request: <a href="https://github.com/treetrail/treetrail/issues/98">treetrail#98</a>.
  *
  * <pre>{@code
  * Overlay overlay = Overlay.read(Path.of("codegen.overlay.yaml"));

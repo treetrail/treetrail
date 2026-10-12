@@ -7,7 +7,8 @@ code generator needs, internal operations removed before publishing, servers for
 
 Since Overlay 1.1, targets are [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535) queries, and tools must
 implement RFC 9535 fully. This page shows how to write such targets, a few recipes, how the actions change a
-description, and how to use overlays in a build. The module is `openapi-overlay`, the Gradle plugin
+description, and how to use overlays in a build. The module is `openapi-overlay` (Jackson 2; Jackson 3 on request:
+[#98](https://github.com/treetrail/treetrail/issues/98)), the Gradle plugin
 `io.github.treetrail.openapi-overlay`; the [README](../README.md#openapi-overlays) shows how to set them up. Both are
 not yet released.
 

@@ -66,7 +66,7 @@ use your project's version. `jsonpath-jayway-functions` needs only the core.
 | `jsonpath-migration` | Jayway JsonPath | 2.10 and 3.0 |
 | `jsonpath-model-testkit` | JUnit Jupiter | 6.1 |
 | `jsonpath-rewrite` | OpenRewrite | rewrite-bom 8.90 |
-| `openapi-overlay` | Jackson Databind and Jackson YAML (SnakeYAML) 2.x | 2.22 |
+| `openapi-overlay` | Jackson Databind and Jackson YAML (SnakeYAML) 2.x; Jackson 3 on request ([#98](https://github.com/treetrail/treetrail/issues/98)) | 2.22 |
 
 Other versions of the same major line are likely to work but are not tested. Dependabot proposes updates
 of the tested versions every week.
