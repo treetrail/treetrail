@@ -22,7 +22,7 @@ parsson = "1.1.9"
 rewrite-bom = "8.90.4"
 micrometer = "1.17.1"
 maven-publish = "0.37.0"
-cyclonedx = "3.4.1"
+cyclonedx = "3.5.0"
 japicmp = "0.26.3"
 # JaCoCo, applied through Gradle's jacoco plugin (toolVersion); not a library, so Dependabot does not update it.
 jacoco = "0.8.15"
@@ -30,7 +30,7 @@ errorprone = "2.50.0"
 errorprone-plugin = "5.1.1"
 nullaway = "0.14.2"
 jspecify = "1.0.1"
-spotless = "8.10.3"
+spotless = "8.10.4"
 # The formatter Spotless runs; not a library, so Dependabot does not update it.
 palantir-java-format = "2.101.0"
 # Mutation testing: PIT and its JUnit Platform plugin.
