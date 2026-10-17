@@ -39,7 +39,7 @@ public final class Overlay {
     // Like the JSON Schemas' ^1\.1\.\d+$: no leading zeros in the minor version.
     private static final Pattern VERSION = Pattern.compile("1\\.(0|[1-9]\\d*)\\.\\d+");
     private static final int LATEST_MINOR = 2;
-    private static final Pattern ACTION_REFERENCE = Pattern.compile("#/components/actions/((?:[^~/]|~0|~1)+)");
+    private static final String ACTION_REFERENCE_PREFIX = "#/components/actions/";
 
     private final String version;
     private final String title;
@@ -384,6 +384,35 @@ public final class Overlay {
                     index, target, description, action.get("update"), copy, remove, null, extensions(action));
         }
 
+        /**
+         * The unescaped key of a reference {@code #/components/actions/<key>}, or null if the reference has another
+         * form. Checked without a regular expression: java.util.regex matches an alternation in a loop recursively, so
+         * a long reference overflowed the stack (found by fuzzing).
+         */
+        private static @Nullable String actionKey(String ref) {
+            if (!ref.startsWith(ACTION_REFERENCE_PREFIX) || ref.length() == ACTION_REFERENCE_PREFIX.length()) {
+                return null;
+            }
+            StringBuilder key = new StringBuilder(ref.length() - ACTION_REFERENCE_PREFIX.length());
+            for (int i = ACTION_REFERENCE_PREFIX.length(); i < ref.length(); i++) {
+                char c = ref.charAt(i);
+                if (c == '/') {
+                    return null;
+                }
+                if (c == '~') {
+                    char next = i + 1 < ref.length() ? ref.charAt(i + 1) : 0;
+                    if (next != '0' && next != '1') {
+                        return null;
+                    }
+                    key.append(next == '0' ? '~' : '/');
+                    i++;
+                } else {
+                    key.append(c);
+                }
+            }
+            return key.toString();
+        }
+
         /** A Reusable Action Reference Object (Overlay 1.2), resolved against {@code components.actions}. */
         private @Nullable OverlayAction reference(JsonNode reference, int index, Map<String, JsonNode> reusable) {
             String location = "/actions/" + index;
@@ -394,15 +423,14 @@ public final class Overlay {
             if (ref == null) {
                 return null;
             }
-            Matcher matcher = ACTION_REFERENCE.matcher(ref);
-            if (!matcher.matches()) {
+            String key = actionKey(ref);
+            if (key == null) {
                 problem(
                         location + "/$ref",
                         "must be '#/components/actions/' followed by an escaped key (~0 for ~, ~1 for /), not '" + ref
                                 + "'");
                 return null;
             }
-            String key = matcher.group(1).replace("~1", "/").replace("~0", "~");
             JsonNode action = reusable.get(key);
             if (action == null) {
                 problem(location + "/$ref", "there is no reusable action '" + key + "'");

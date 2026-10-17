@@ -378,6 +378,25 @@ class OverlayApplyTest {
         }
 
         @Test
+        void longKeys() {
+            // Found by fuzzing: a regular expression with an alternation in a loop overflowed the stack on long
+            // references.
+            // JSON, because YAML limits keys to 1024 characters; Jackson limits names to 50,000.
+            String key = "k".repeat(40_000);
+            String overlay = """
+                    {"overlay": "1.2.0", "info": {"title": "t", "version": "1"},
+                     "components": {"actions": {"KEY/x": {"fields": {"remove": true}}}},
+                     "actions": [{"$ref": "#/components/actions/REF", "target": "$.paths"}]}""".replace("KEY", key);
+            assertThat(Overlay.parse(overlay.replace("REF", key + "~1x")).actions())
+                    .extracting(OverlayAction::reusableAction)
+                    .containsExactly(key + "/x");
+            assertThatThrownBy(() -> Overlay.parse(overlay.replace("REF", key + "~2")))
+                    .isInstanceOf(OverlayException.class)
+                    .hasMessageStartingWith(
+                            "/actions/0/$ref: must be '#/components/actions/' followed by an escaped key");
+        }
+
+        @Test
         void unknownKey() {
             assertThatThrownBy(() -> Overlay.parse(
                             OVERLAY.replace("#/components/actions/removal", "#/components/actions/missing")))
