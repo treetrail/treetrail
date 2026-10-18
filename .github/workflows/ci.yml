@@ -18,7 +18,7 @@ jobs:
   # Shared CI, see https://github.com/christoph-sens/ci-workflows
   # `build` runs the JSONPath Compliance Test Suite; a single failing case fails the build.
   ci:
-    uses: christoph-sens/ci-workflows/.github/workflows/gradle-ci.yml@b0abb203fa122cb16f79dce863cf50c1e10dee01 # v1.3.6
+    uses: christoph-sens/ci-workflows/.github/workflows/gradle-ci.yml@60c595c00ed7d6f7e31488b7d00a0492ea25c982 # v1.3.7
     permissions:
       contents: write        # dependency submission on push to main
       security-events: write # CodeQL results
