@@ -8,7 +8,7 @@ that are not [I-JSON](https://www.rfc-editor.org/rfc/rfc7493).
 ## Compliance Test Suite
 
 Every build runs the [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
-at commit `9d1a415` (2026-09-17), 706 cases, on Java 17, 21 and 25. All cases pass with each object model:
+at commit `20ebdcc` (2026-10-13), 715 cases, on Java 17, 21 and 25. All cases pass with each object model:
 
 | Object model | Documents parsed by |
 | --- | --- |

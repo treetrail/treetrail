@@ -23,6 +23,14 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   overlays in a build, for example before openapi-generator, in an isolated class loader
   ([README](README.md#openapi-overlays)).
 
+### Testing
+
+- The JSONPath Compliance Test Suite is updated to `20ebdcc` (2026-10-13): 715 instead of 706 cases, new ones
+  for name shorthands with a hyphen or a supplementary-plane character, trailing commas, lower-case hex
+  escapes, escaped control characters and comparisons of booleans with numbers. `jsonpath-core` and every
+  `JsonModel` of the testkit pass all of them without changes.
+  ([#106](https://github.com/treetrail/treetrail/issues/106))
+
 ### Documentation
 
 - [docs/openapi-overlays.md](docs/openapi-overlays.md): writing RFC 9535 targets for OpenAPI Overlays, recipes,
