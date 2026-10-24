@@ -450,8 +450,14 @@ public final class Overlay {
                 }
                 update = fields.get("update");
                 JsonNode copyQuery = fields.get("copy");
-                // Validated with the reusable action; compiling again cannot fail.
-                copy = copyQuery != null && copyQuery.isTextual() ? JsonPath.compile(copyQuery.textValue()) : null;
+                if (copyQuery != null && copyQuery.isTextual()) {
+                    try {
+                        copy = JsonPath.compile(copyQuery.textValue());
+                    } catch (JsonPathSyntaxException e) {
+                        // Already reported with the reusable action.
+                        return null;
+                    }
+                }
                 remove = fields.path("remove").booleanValue();
             }
             return new OverlayAction(index, target, description, update, copy, remove, key, extensions(reference));

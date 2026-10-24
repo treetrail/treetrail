@@ -403,6 +403,25 @@ class OverlayApplyTest {
                     .isInstanceOf(OverlayException.class)
                     .hasMessage("/actions/2/$ref: there is no reusable action 'missing'");
         }
+
+        @Test
+        void invalidCopyQueryInReusableAction() {
+            // Found by fuzzing: referencing a reusable action whose copy query does not compile threw
+            // JsonPathSyntaxException instead of reporting the problem once.
+            String overlay = """
+                    overlay: 1.2.0
+                    info: {title: t, version: '1'}
+                    components:
+                      actions:
+                        copying: {fields: {copy: 'not a query'}}
+                    actions:
+                      - {$ref: '#/components/actions/copying', target: $.a}
+                    """;
+            assertThat(Overlay.validate(OverlayDocuments.parse(overlay)))
+                    .extracting(OverlayProblem::location)
+                    .containsExactly("/components/actions/copying/fields/copy");
+            assertThatThrownBy(() -> Overlay.parse(overlay)).isInstanceOf(InvalidOverlayException.class);
+        }
     }
 
     @Nested
