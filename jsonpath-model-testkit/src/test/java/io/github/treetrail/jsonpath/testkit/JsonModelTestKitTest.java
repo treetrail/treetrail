@@ -26,7 +26,7 @@ class JsonModelTestKitTest {
     void readsTheWholeComplianceSuiteWithoutJackson() {
         List<ComplianceCase> cases = JsonModelTestKit.complianceCases();
 
-        assertThat(cases).hasSize(706);
+        assertThat(cases).hasSize(715);
         assertThat(cases).filteredOn(ComplianceCase::invalidSelector).allMatch(c -> c.documentJson() == null);
         assertThat(cases)
                 .filteredOn(c -> !c.invalidSelector())
