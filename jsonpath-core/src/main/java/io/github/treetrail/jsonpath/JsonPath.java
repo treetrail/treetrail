@@ -5,6 +5,7 @@ import io.github.treetrail.jsonpath.internal.Evaluator;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition;
 import io.github.treetrail.jsonpath.internal.Located;
 import io.github.treetrail.jsonpath.internal.Parser;
+import io.github.treetrail.jsonpath.internal.ValuesEvaluator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,7 @@ public final class JsonPath {
      *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> NodeList<N> query(N document, JsonModel<N> model) {
-        return new NodeList<>(new Evaluator<>(document, model, limits, Evaluator.LOCATED).run(query));
+        return new NodeList<>(new Evaluator(document, model, limits).run(query));
     }
 
     /**
@@ -143,8 +144,8 @@ public final class JsonPath {
     public <N extends @Nullable Object> List<N> values(N document, JsonModel<N> model) {
         List<@Nullable Object> values;
         try {
-            values = new Evaluator<>(document, model, limits, Evaluator.VALUES).run(query);
-        } catch (Evaluator.LocationNeeded e) {
+            values = new ValuesEvaluator(document, model, limits).run(query);
+        } catch (ValuesEvaluator.LocationNeeded e) {
             // A failure at a node: the same run with locations fails there too, with the node's path.
             return query(document, model).values();
         }
@@ -174,10 +175,10 @@ public final class JsonPath {
      */
     public <N extends @Nullable Object> boolean exists(N document, JsonModel<N> model) {
         try {
-            return new Evaluator<>(document, model, limits, Evaluator.VALUES).exists(query);
-        } catch (Evaluator.LocationNeeded e) {
+            return new ValuesEvaluator(document, model, limits).exists(query);
+        } catch (ValuesEvaluator.LocationNeeded e) {
             // A failure at a node: the same run with locations fails there too, with the node's path.
-            return new Evaluator<>(document, model, limits, Evaluator.LOCATED).exists(query);
+            return !query(document, model).isEmpty();
         }
     }
 
@@ -201,7 +202,7 @@ public final class JsonPath {
      *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> Optional<Node<N>> first(N document, JsonModel<N> model) {
-        Located first = new Evaluator<>(document, model, limits, Evaluator.LOCATED).first(query);
+        Located first = new Evaluator(document, model, limits).first(query);
         return first == null ? Optional.empty() : Optional.of(NodeList.of(first));
     }
 
