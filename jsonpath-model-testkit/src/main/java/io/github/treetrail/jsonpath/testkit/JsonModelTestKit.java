@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -65,7 +66,9 @@ public final class JsonModelTestKit {
 
     /**
      * Returns one test per case of the JSONPath Compliance Test Suite: invalid selectors must be rejected,
-     * valid ones must select the expected values (compared as JSON values) at the expected paths.
+     * valid ones must select the expected values (compared as JSON values) at the expected paths, and
+     * {@link JsonPath#values(Object, JsonModel)} and {@link JsonPath#exists(Object, JsonModel)} must agree with
+     * {@link JsonPath#query(Object, JsonModel)}.
      *
      * @param model the model under test
      * @param parse parses JSON text into the model's node type
@@ -174,8 +177,15 @@ public final class JsonModelTestKit {
             return;
         }
         N document = parse.apply(requireDocument(test));
-        NodeList<N> nodes = JsonPath.compile(test.selector()).query(document, model);
+        JsonPath path = JsonPath.compile(test.selector());
+        NodeList<N> nodes = path.query(document, model);
         List<N> actual = nodes.values();
+        List<N> values = path.values(document, model);
+        assertEquals(actual.size(), values.size(), "values() should select as many values as query()");
+        for (int i = 0; i < actual.size(); i++) {
+            assertSame(actual.get(i), values.get(i), "values() should select the nodes query() selects");
+        }
+        assertEquals(!actual.isEmpty(), path.exists(document, model), "exists() should agree with query()");
         for (int i = 0; i < test.results().size(); i++) {
             boolean pathsMatch = test.resultPaths().isEmpty()
                     || nodes.paths().equals(test.resultPaths().get(i));

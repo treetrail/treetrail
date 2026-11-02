@@ -43,6 +43,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Executes a parsed query against a document (RFC 9535, sections 2.3 to 2.5).
  *
+ * <p>{@link ValuesEvaluator} is the same without locations, for queries that only need the values.
+ *
  * <p>An evaluator runs one query once. Absolute queries inside filters ({@code $[?@.a == $.b]}) do not
  * depend on the current node, so each is evaluated once per run and its result reused; otherwise
  * nesting them would multiply the work by the document size per level. Every node visit counts
@@ -91,16 +93,6 @@ public final class Evaluator {
             return true;
         });
         return result;
-    }
-
-    /** Whether the query selects at least one node; stops at the first. */
-    public boolean exists(Query query) {
-        boolean[] found = {false};
-        evaluate(query, root, node -> {
-            found[0] = true;
-            return false;
-        });
-        return found[0];
     }
 
     /** Returns the first node the query selects, or null; stops there. */

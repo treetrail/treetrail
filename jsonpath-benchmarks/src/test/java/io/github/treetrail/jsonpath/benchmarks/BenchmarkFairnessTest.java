@@ -46,6 +46,7 @@ class BenchmarkFairnessTest {
 
         List<?> theirList = theirResult instanceof List<?> list ? list : List.of(theirResult);
         assertThat(ourResult).asInstanceOf(LIST).isNotEmpty().isEqualTo(theirList);
+        assertThat(benchmark.rfc9535Values(ours)).isEqualTo(ourResult);
     }
 
     @ParameterizedTest

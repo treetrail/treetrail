@@ -69,6 +69,12 @@ public class QueryBenchmark {
         return state.path.query(state.document).values();
     }
 
+    /** The values only, without locations ({@code JsonPath.values}), as Jayway and SJF4J return them. */
+    @Benchmark
+    public Object rfc9535Values(Rfc9535 state) {
+        return state.path.values(state.document);
+    }
+
     @Benchmark
     public Object jayway(Jayway state) {
         return state.path.read(state.document, state.configuration);

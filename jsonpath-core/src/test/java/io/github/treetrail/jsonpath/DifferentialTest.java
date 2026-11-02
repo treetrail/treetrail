@@ -109,6 +109,9 @@ class DifferentialTest {
         if (!JavaObjectModel.jsonEquals(nodes.values(), values)) {
             return "values differ: " + nodes.values() + " vs reference " + values;
         }
+        if (!JavaObjectModel.jsonEquals(JsonPath.compile(query).values(document), values)) {
+            return "values() differs from the reference " + values;
+        }
         return null;
     }
 
