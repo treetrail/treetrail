@@ -5,6 +5,8 @@ import io.github.treetrail.jsonpath.internal.Evaluator;
 import io.github.treetrail.jsonpath.internal.FunctionDefinition;
 import io.github.treetrail.jsonpath.internal.Located;
 import io.github.treetrail.jsonpath.internal.Parser;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <pre>{@code
  * JsonPath path = JsonPath.compile("$.store.book[?@.price < 10].title");
- * List<Object> titles = path.query(document).values();
+ * List<Object> titles = path.values(document);
  * }</pre>
  *
  * <p>Instances are immutable and thread-safe; compile once and reuse.
@@ -108,7 +110,47 @@ public final class JsonPath {
      *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> NodeList<N> query(N document, JsonModel<N> model) {
-        return new NodeList<>(new Evaluator(document, model, limits).run(query));
+        return new NodeList<>(new Evaluator<>(document, model, limits, Evaluator.LOCATED).run(query));
+    }
+
+    /**
+     * Returns the values the query selects in a document made of plain Java objects, in the order of
+     * {@link #query(Object)}. The same values as {@code query(document).values()}, but cheaper: the locations of the
+     * nodes are not computed at all.
+     *
+     * <pre>{@code
+     * List<Object> titles = JsonPath.compile("$.store.book[*].title").values(document);
+     * }</pre>
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted; with the node's {@link JsonPathEvaluationException#path()
+     *     path}, as from {@link #query(Object)}
+     */
+    public List<@Nullable Object> values(@Nullable Object document) {
+        return values(document, JavaObjectModel.INSTANCE);
+    }
+
+    /**
+     * Returns the values the query selects in a document of the given model, in the order of
+     * {@link #query(Object, JsonModel)}, without computing their locations; see {@link #values(Object)}.
+     *
+     * @throws JsonPathLimitExceededException if the run exceeds the {@link #limits() limits}
+     * @throws JsonPathEvaluationException if the model or a function extension fails on a node, for example on a
+     *     value that is not JSON, or the thread is interrupted; with the node's path, as from
+     *     {@link #query(Object, JsonModel)}
+     */
+    public <N extends @Nullable Object> List<N> values(N document, JsonModel<N> model) {
+        List<@Nullable Object> values;
+        try {
+            values = new Evaluator<>(document, model, limits, Evaluator.VALUES).run(query);
+        } catch (Evaluator.LocationNeeded e) {
+            // A failure at a node: the same run with locations fails there too, with the node's path.
+            return query(document, model).values();
+        }
+        @SuppressWarnings("unchecked")
+        List<N> list = (List<N>) Collections.unmodifiableList(values);
+        return list;
     }
 
     /**
@@ -131,7 +173,12 @@ public final class JsonPath {
      *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> boolean exists(N document, JsonModel<N> model) {
-        return new Evaluator(document, model, limits).exists(query);
+        try {
+            return new Evaluator<>(document, model, limits, Evaluator.VALUES).exists(query);
+        } catch (Evaluator.LocationNeeded e) {
+            // A failure at a node: the same run with locations fails there too, with the node's path.
+            return new Evaluator<>(document, model, limits, Evaluator.LOCATED).exists(query);
+        }
     }
 
     /**
@@ -154,7 +201,7 @@ public final class JsonPath {
      *     value that is not JSON, or the thread is interrupted
      */
     public <N extends @Nullable Object> Optional<Node<N>> first(N document, JsonModel<N> model) {
-        Located first = new Evaluator(document, model, limits).first(query);
+        Located first = new Evaluator<>(document, model, limits, Evaluator.LOCATED).first(query);
         return first == null ? Optional.empty() : Optional.of(NodeList.of(first));
     }
 

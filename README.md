@@ -89,6 +89,17 @@ JsonPath.compile("$..[?@.status == 'failed']").exists(document); // true or fals
 JsonPath.compile("$.store.book[*]").first(document);              // Optional<Node<Object>>
 ```
 
+When only the values are needed, `values` returns them without computing the locations at all. It selects the
+same values as `query(document).values()` but allocates nothing per visited node, so it is faster, notably on
+large documents ([benchmarks](docs/benchmarks.md#values-only)):
+
+```java
+List<Object> titles = JsonPath.compile("$.store.book[*].title").values(document);
+```
+
+A failure at a node, such as a value the model rejects, is reported with the node's path as by `query`: the query
+then runs once more with locations to find it.
+
 JSON text needs no JSON library: `queryJson` parses it with a small, strict parser built into the core
 (`JavaObjectModel.parse`), which keeps exact numbers and rejects duplicate member names.
 
@@ -329,7 +340,7 @@ RFC 9535 standardizes JSONPath but differs from Jayway JsonPath in several place
 | Jayway JsonPath | Treetrail |
 | --- | --- |
 | `MockMvcResultMatchers.jsonPath("$.a").value(1)` | `TreetrailResultMatchers.jsonPath("$.a").value(1)` from `jsonpath-spring-test` |
-| `JsonPath.read(document, "$.a.b")` | `JsonPath.compile("$.a.b").query(document).single()` returns an `Optional<Node>`; `.map(Node::value)` gives the value |
+| `JsonPath.read(document, "$.a.b")` | `JsonPath.compile("$.a.b").query(document).single()` returns an `Optional<Node>`; `.map(Node::value)` gives the value. For a list of values, `JsonPath.compile("$.a[*]").values(document)` |
 | `JsonPath.parse(json).read("$.a", Integer.class)` | No type mapping: cast the value of plain Java objects, or use your library's mapping, e.g. `objectMapper.treeToValue(node, Integer.class)` with `Jackson2Model` |
 | `Option.ALWAYS_RETURN_LIST` | Always the case |
 | `Option.DEFAULT_PATH_LEAF_TO_NULL` | `single()` is empty for a missing member and holds a node with a `null` value for JSON `null`; `.map(Node::value).orElse(null)` returns `null` in both cases |
