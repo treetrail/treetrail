@@ -51,7 +51,8 @@ dependencies {
 
 Modules: `jsonpath-core`, `jsonpath-jackson2`, `jsonpath-jackson3`, `jsonpath-gson`, `jsonpath-jsonp`,
 `jsonpath-assertj`, `jsonpath-spring-test`, `jsonpath-migration`, `jsonpath-rewrite`, `jsonpath-model-testkit`,
-`jsonpath-jayway-functions` and, not yet released, `openapi-overlay` ([OpenAPI Overlays](#openapi-overlays)).
+`jsonpath-jayway-functions` and, not yet released, `openapi-overlay` and `openapi-overlay-jackson3`
+([OpenAPI Overlays](#openapi-overlays)).
 Every release is
 signed, ships a CycloneDX SBOM per module and has a build provenance attestation; see
 [docs/releasing.md](docs/releasing.md#what-a-release-contains). Changes are listed in
@@ -230,8 +231,7 @@ with their paths.
 ## OpenAPI Overlays
 
 `openapi-overlay` applies [OpenAPI Overlays](https://spec.openapis.org/overlay/latest.html) (versions 1.0, 1.1
-and 1.2) to OpenAPI descriptions, or any other JSON or YAML document, as Jackson 2 trees (Jackson 3 on request:
-[#98](https://github.com/treetrail/treetrail/issues/98)). An overlay is a list of
+and 1.2) to OpenAPI descriptions, or any other JSON or YAML document, as Jackson 2 trees, or as Jackson 3 trees with `openapi-overlay-jackson3`. An overlay is a list of
 actions, each with an RFC 9535 query as its target, that update, remove or copy parts of a description: for
 example to add what a code generator needs to a description you do not own, or to remove internal operations
 before publishing one. The specification requires targets to be RFC 9535 queries; Treetrail evaluates them, so
@@ -272,6 +272,16 @@ actions:
 - **On the command line:** `OverlayCommand` applies overlays, for example with Maven's `exec-maven-plugin`
   before `openapi-generator-maven-plugin`:
   `--overlay codegen.overlay.yaml --output target/openapi.yaml --strict src/main/openapi/openapi.yaml`.
+
+With Jackson 3, `openapi-overlay-jackson3` applies the same overlays to `tools.jackson.databind.JsonNode` trees, with
+the same rules, changes and warnings, and reads and writes documents with the same settings (it brings Jackson 2
+along, which runs side by side with Jackson 3):
+
+```java
+tools.jackson.databind.JsonNode openApi = Jackson3OverlayDocuments.read(Path.of("openapi.yaml"));
+Jackson3OverlayResult result = Jackson3Overlays.applyTo(overlay, openApi);
+Jackson3OverlayDocuments.write(result.document(), Path.of("build/openapi.yaml"));
+```
 
 The Gradle plugin `io.github.treetrail.openapi-overlay` (module `openapi-overlay-gradle-plugin`, not yet released)
 applies overlays in a build, for example before [openapi-generator](https://openapi-generator.tech):
