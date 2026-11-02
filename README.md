@@ -90,8 +90,8 @@ JsonPath.compile("$.store.book[*]").first(document);              // Optional<No
 ```
 
 When only the values are needed, `values` returns them without computing the locations at all. It selects the
-same values as `query(document).values()` but allocates nothing per visited node, so it is faster, notably on
-large documents ([benchmarks](docs/benchmarks.md#values-only)):
+same values as `query(document).values()` but allocates nothing per visited node, which makes wildcards and
+descendant segments faster ([benchmarks](docs/benchmarks.md#values-only)):
 
 ```java
 List<Object> titles = JsonPath.compile("$.store.book[*].title").values(document);

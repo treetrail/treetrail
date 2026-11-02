@@ -93,7 +93,7 @@ as this library. This library's times are from its later run (see above).
 
 SJF4J is faster on the four queries it answers, by 1.2× (wildcard) to 2.6× (definite). It returns the selected values only, while this library builds a node list
 in which every node carries its location (its normalized path), as RFC 9535 defines the result; the
-allocations below show the difference. ajp's times reflect its design on XSLT and XPath, not tuned for speed.
+allocations below show the difference. For values only, see [Values only](#values-only). ajp's times reflect its design on XSLT and XPath, not tuned for speed.
 
 ³ SJF4J 1.3.3 selects no nodes for this query: its `match()` matches nothing when the pattern contains a
 quantifier, even `'.*'`, so there is no comparable time. `BenchmarkFairnessTest` notices when that changes.
@@ -127,6 +127,27 @@ The other implementations on 1,000 books: SJF4J 48 B (definite), 15 KB (wildcard
 allocates one object for every node it visits, which holds the value and the link to its parent (the
 location), and creates `Node` objects only when they are asked for; `values()` copies the values into one
 array.
+
+## Values only
+
+`values(document)` returns the selected values without computing their locations: no object per visited node,
+no `Node` list. The same five queries on 1,000 books as plain Java objects, next to `query(document)` and SJF4J,
+which also returns values only. All three from one run on 2026-11-02 with `-prof gc`, 2 forks, otherwise the
+settings above ([jmh-values-2026-11-02.json](benchmarks/jmh-values-2026-11-02.json)).
+
+| Query | `values` (µs) | `query` (µs) | SJF4J (µs) | `values` | `query` | SJF4J |
+| --- | --- | --- | --- | --- | --- | --- |
+| definite | 0.031 ± 0.001 | 0.035 ± 0.000 | 0.014 ± 0.000 | 184 B | 360 B | 48 B |
+| wildcard | 8.2 ± 0.2 | 12.6 ± 0.1 | 11.5 ± 0.1 | 15 KB | 83 KB | 15 KB |
+| filter | 78.5 ± 1.1 | 73.8 ± 0.6 | 58.3 ± 0.5 | 244 KB | 325 KB | 163 KB |
+| descendant | 74.7 ± 2.8 | 92.6 ± 17.8 | 47.3 ± 3.3 | 23 KB | 326 KB | 151 KB |
+| regex | 33.6 ± 2.2 | 30.2 ± 0.9 | — ³ | 93 KB | 166 KB | — |
+
+`values` is faster where many nodes are selected or walked (wildcard, descendant) and allocates less on every
+query. With filters the time goes into evaluating the filter for each candidate, which locations do not
+change; there `values` is not faster than `query` in this run. The two run on separate evaluators, so that
+`query` keeps its speed: one evaluator for both was 15 to 24 % slower for `query`
+([#80](https://github.com/treetrail/treetrail/issues/80)).
 
 ## Compiling an expression
 
