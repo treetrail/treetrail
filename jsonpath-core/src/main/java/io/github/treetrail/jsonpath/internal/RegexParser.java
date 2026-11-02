@@ -107,15 +107,6 @@ final class RegexParser {
             }
             case '[' -> {
                 return new RegexTree.Chars(charClass());
-                // The I-Regexp grammar lists '^' and '$' as normal characters, but the Compliance
-                // Test Suite ("explicit caret", "explicit dollar") expects them to act as anchors,
-                // as in the regex dialects RFC 9485 section 5 maps to. We follow the test suite.
-            }
-            case '^' -> {
-                return new RegexTree.Begin();
-            }
-            case '$' -> {
-                return new RegexTree.End();
             }
             default -> {
                 if (!isNormalChar(c)) {
