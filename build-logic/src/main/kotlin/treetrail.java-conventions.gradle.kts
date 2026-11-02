@@ -42,6 +42,9 @@ spotless {
 // Error Prone checks every compilation; with -Werror its warnings fail the build too.
 dependencies {
     errorprone(libs.findLibrary("errorprone-core").get())
+    // Error Prone 2.50.0 brings Guava 33.5.0, which has a known vulnerability (see the version catalog).
+    // 2.52.0 brings a fixed one, but also commonmark, whose license the dependency review does not allow.
+    constraints { errorprone(libs.findLibrary("guava").get()) }
 }
 tasks.withType<JavaCompile>().configureEach {
     options.errorprone {

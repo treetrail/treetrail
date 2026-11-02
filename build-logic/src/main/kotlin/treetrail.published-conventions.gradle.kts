@@ -90,7 +90,11 @@ if (name !in unreleasedModules) {
             }
         }
     }
-    dependencies { "japicmp"(libs.findLibrary("japicmp").get()) }
+    dependencies {
+        "japicmp"(libs.findLibrary("japicmp").get())
+        // japicmp brings Guava 33.4.8, which has a known vulnerability (see the version catalog).
+        constraints { "japicmp"(libs.findLibrary("guava").get()) }
+    }
 
     // The released module, in a detached configuration: its root has its own identity, so the project can depend
     // on an older version of itself.
