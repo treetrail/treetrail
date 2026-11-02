@@ -24,9 +24,7 @@ public final class NodeListAssert extends AbstractListAssert<NodeListAssert, Lis
         public int compare(Object a, Object b) {
             return JavaObjectModel.jsonEquals(a, b)
                     ? 0
-                    : Integer.signum(Integer.compare(
-                                    Objects.hashCode(String.valueOf(a)), Objects.hashCode(String.valueOf(b))))
-                            | 1;
+                    : Integer.compare(Objects.hashCode(String.valueOf(a)), Objects.hashCode(String.valueOf(b))) | 1;
         }
 
         @Override

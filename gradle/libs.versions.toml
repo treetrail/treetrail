@@ -24,12 +24,12 @@ micrometer = "1.17.1"
 maven-publish = "0.37.0"
 cyclonedx = "3.5.1"
 japicmp = "0.26.5"
-# Not used directly: a constraint for the Guava that japicmp and the CycloneDX plugin bring (33.4.8, 33.7.1),
-# which have a known vulnerability up to 33.7.1. Build time only.
+# Not used directly: a constraint for the Guava that Error Prone, japicmp and the CycloneDX plugin bring
+# (33.5.0, 33.4.8, 33.7.1); Guava up to 33.7.1 has a known vulnerability. Build time only.
 guava = "33.7.2-jre"
 # JaCoCo, applied through Gradle's jacoco plugin (toolVersion); not a library, so Dependabot does not update it.
 jacoco = "0.8.15"
-errorprone = "2.52.0"
+errorprone = "2.50.0"
 errorprone-plugin = "5.1.1"
 nullaway = "0.14.2"
 jspecify = "1.0.1"
