@@ -1,3 +1,13 @@
+buildscript {
+    dependencies {
+        constraints {
+            // Gradle 9.8.2 embeds Kotlin 2.4.10, whose build cache metadata can be deserialized unsafely
+            // (GHSA-r937-wjx7-w2jp, fixed in 2.4.20). Build time only; remove when Gradle embeds 2.4.20 or later.
+            classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")
+        }
+    }
+}
+
 plugins {
     `kotlin-dsl`
 }
