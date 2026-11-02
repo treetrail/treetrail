@@ -3,13 +3,7 @@ package io.github.treetrail.jsonpath.internal;
 import java.util.List;
 
 /** Syntax tree of an I-Regexp (RFC 9485), as {@link RegexParser} builds it. */
-sealed interface RegexTree
-        permits RegexTree.Alternation,
-                RegexTree.Sequence,
-                RegexTree.Repeat,
-                RegexTree.Chars,
-                RegexTree.Begin,
-                RegexTree.End {
+sealed interface RegexTree permits RegexTree.Alternation, RegexTree.Sequence, RegexTree.Repeat, RegexTree.Chars {
 
     record Alternation(List<RegexTree> branches) implements RegexTree {}
 
@@ -19,8 +13,4 @@ sealed interface RegexTree
     record Repeat(RegexTree atom, int min, int max) implements RegexTree {}
 
     record Chars(CharSet set) implements RegexTree {}
-
-    record Begin() implements RegexTree {}
-
-    record End() implements RegexTree {}
 }

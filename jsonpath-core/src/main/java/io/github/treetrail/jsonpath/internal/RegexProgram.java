@@ -13,9 +13,7 @@ final class RegexProgram {
     static final int CHAR = 0;
     static final int SPLIT = 1;
     static final int JUMP = 2;
-    static final int BEGIN = 3;
-    static final int END = 4;
-    static final int MATCH = 5;
+    static final int MATCH = 3;
 
     final int[] ops;
     final int[] next;
@@ -85,10 +83,6 @@ final class RegexProgram {
                 }
             } else if (node instanceof RegexTree.Chars chars) {
                 add(CHAR, pc() + 1, -1, chars.set());
-            } else if (node instanceof RegexTree.Begin) {
-                add(BEGIN, pc() + 1, -1, NO_SET);
-            } else if (node instanceof RegexTree.End) {
-                add(END, pc() + 1, -1, NO_SET);
             } else if (node instanceof RegexTree.Alternation alternation) {
                 emitAlternation(alternation.branches());
             } else if (node instanceof RegexTree.Repeat repeat) {

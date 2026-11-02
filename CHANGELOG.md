@@ -23,6 +23,16 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   overlays in a build, for example before openapi-generator, in an isolated class loader
   ([README](README.md#openapi-overlays)).
 
+### Changed
+
+- `match()` and `search()` treat `^` and `$` as ordinary characters, as the I-Regexp grammar of
+  [RFC 9485](https://www.rfc-editor.org/rfc/rfc9485) does, and no longer as anchors. `match(@, 'a$b')` now
+  matches the string `a$b`, and `search(@, '^a')` finds a literal `^a`. Queries that relied on anchors lose
+  nothing: `match()` is anchored anyway, and `search(@, '^a')` becomes `match(@, 'a.*')`. This fixes the one
+  deviation from the RFC that docs/conformance.md listed; the author of RFC 9485 confirmed the reading in
+  [#46](https://github.com/treetrail/treetrail/issues/46), and the Compliance Test Suite follows in
+  [jsonpath-compliance-test-suite#125](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite/pull/125).
+
 ### Testing
 
 - The JSONPath Compliance Test Suite is updated to `20ebdcc` (2026-10-13): 715 instead of 706 cases, new ones
