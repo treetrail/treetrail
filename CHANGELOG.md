@@ -19,6 +19,9 @@ only a new major version changes the API incompatibly ([docs/support.md](docs/su
   targets, validation that reports every problem, `OverlayOptions` (fail on targets that select nothing, lenient
   merging, evaluation limits), the changes each action made, JSON and YAML I/O, and a command line
   ([README](README.md#openapi-overlays)).
+- New module `openapi-overlay-jackson3`: applies overlays to Jackson 3 trees with the same rules, changes and
+  warnings, and reads and writes them with the settings of `OverlayDocuments`. Trees are converted node by node,
+  keeping the type of every number and the scale of decimals ([#98](https://github.com/treetrail/treetrail/issues/98)).
 - New Gradle plugin `io.github.treetrail.openapi-overlay` (module `openapi-overlay-gradle-plugin`): applies
   overlays in a build, for example before openapi-generator, in an isolated class loader
   ([README](README.md#openapi-overlays)).
