@@ -23,17 +23,17 @@ rewrite-bom = "8.90.4"
 micrometer = "1.17.2"
 maven-publish = "0.37.0"
 cyclonedx = "3.5.1"
-japicmp = "0.26.5"
+japicmp = "0.27.0"
 # Not used directly: a constraint for the Guava that Error Prone, japicmp and the CycloneDX plugin bring
 # (33.5.0, 33.4.8, 33.7.1); Guava up to 33.7.1 has a known vulnerability. Build time only.
-guava = "33.7.2-jre"
+guava = "33.8.0-jre"
 # JaCoCo, applied through Gradle's jacoco plugin (toolVersion); not a library, so Dependabot does not update it.
 jacoco = "0.8.15"
-errorprone = "2.51.0"
-errorprone-plugin = "5.1.1"
+errorprone = "2.52.0"
+errorprone-plugin = "5.2.0"
 nullaway = "0.14.3"
 jspecify = "1.0.1"
-spotless = "8.10.4"
+spotless = "8.11.0"
 # The formatter Spotless runs; not a library, so Dependabot does not update it.
 palantir-java-format = "2.101.0"
 # Mutation testing: PIT and its JUnit Platform plugin.
