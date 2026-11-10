@@ -86,9 +86,13 @@ class IRegexpTest {
                 "a{2,}  ; aaaa  ; true",
                 "(ab|cd){2} ; abcd ; true",
                 "x*     ; ''    ; true",
-                // Regular-language semantics: the first pass matches the empty string at '^'.
-                // java.util.regex answers false here; RE2 and Rust's regex answer true.
-                "(^|a){2} ; a  ; true",
+                // '^' and '$' are ordinary characters (RFC 9485 section 3), not anchors.
+                "^a$    ; ^a$   ; true",
+                "^a$    ; a     ; false",
+                "a^b    ; a^b   ; true",
+                "a$b    ; a$b   ; true",
+                "(^|a){2} ; ^a ; true",
+                "(^|a){2} ; a  ; false",
             })
     void matchesWholeInput(String regexp, String input, boolean expected) {
         String subject = input.equals("''") ? "" : input.replace("\\n", "\n");
@@ -120,7 +124,9 @@ class IRegexpTest {
         assertThat(regexp.find("abbbc")).isTrue();
         assertThat(regexp.find("ac")).isFalse();
         assertThat(IRegexp.compile("^b").orElseThrow().find("ab")).isFalse();
-        assertThat(IRegexp.compile("b$").orElseThrow().find("ab")).isTrue();
+        assertThat(IRegexp.compile("^b").orElseThrow().find("a^b")).isTrue();
+        assertThat(IRegexp.compile("b$").orElseThrow().find("ab")).isFalse();
+        assertThat(IRegexp.compile("b$").orElseThrow().find("ab$c")).isTrue();
     }
 
     @Test
@@ -232,11 +238,7 @@ class IRegexpTest {
     private static void randomRegexp(Random random, int depth, StringBuilder iregexp, StringBuilder java) {
         int pieces = 1 + random.nextInt(3);
         for (int p = 0; p < pieces; p++) {
-            // Anchors only at the top level: java.util.regex mishandles empty loop passes over anchors.
-            int kind = random.nextInt(depth > 0 ? 9 : 5);
-            if (kind == 5 && depth < 3) {
-                kind = 0;
-            }
+            int kind = random.nextInt(depth > 0 ? 9 : 6);
             switch (kind) {
                 case 0, 1 -> {
                     String c = random.nextBoolean() ? "a" : "b";
@@ -256,10 +258,10 @@ class IRegexpTest {
                     java.append("[^a]");
                 }
                 case 5 -> {
-                    boolean begin = random.nextBoolean();
-                    iregexp.append(begin ? "^" : "$");
-                    java.append(begin ? "\\A" : "\\z");
-                    continue;
+                    // '^' and '$' are ordinary characters.
+                    boolean caret = random.nextBoolean();
+                    iregexp.append(caret ? "^" : "$");
+                    java.append(caret ? "\\^" : "\\$");
                 }
                 default -> {
                     iregexp.append('(');
@@ -284,7 +286,7 @@ class IRegexpTest {
         StringBuilder sb = new StringBuilder();
         int length = random.nextInt(9);
         for (int i = 0; i < length; i++) {
-            sb.append("aabbc\n".charAt(random.nextInt(6)));
+            sb.append("aabbc\n^$".charAt(random.nextInt(8)));
         }
         return sb.toString();
     }

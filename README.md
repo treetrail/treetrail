@@ -408,10 +408,9 @@ is used.
 
 ## Conformance
 
-[docs/conformance.md](docs/conformance.md) describes the details: the one deviation from the RFC
-(`^` and `$` act as anchors in regular expressions, as the Compliance Test Suite expects), how numbers
-and strings are compared, all limits, and what happens with documents that are not I-JSON, such as
-`NaN`, cycles in Java objects or Java types other than `Map` and `List`.
+[docs/conformance.md](docs/conformance.md) describes the details: how numbers and strings are compared,
+all limits, and what happens with documents that are not I-JSON, such as `NaN`, cycles in Java objects or
+Java types other than `Map` and `List`.
 
 ## Testing
 

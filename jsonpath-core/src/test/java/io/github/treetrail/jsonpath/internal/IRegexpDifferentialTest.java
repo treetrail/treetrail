@@ -11,9 +11,6 @@ import org.junit.jupiter.api.Test;
  * Differential test of I-Regexp against java.util.regex (RFC 9485, section 5): random expressions from
  * the part of I-Regexp that maps directly to Java, random inputs, and both must agree on {@code match()}
  * and {@code search()}.
- *
- * <p>Anchors are only generated at the start and end of an expression: java.util.regex mishandles empty
- * loop iterations over anchors, see {@code IRegexpTest} for {@code (^|a){2}}.
  */
 class IRegexpDifferentialTest {
 
@@ -34,15 +31,7 @@ class IRegexpDifferentialTest {
         for (int i = 0; i < EXPRESSIONS; i++) {
             StringBuilder iregexp = new StringBuilder();
             StringBuilder java = new StringBuilder();
-            if (random.nextInt(8) == 0) {
-                iregexp.append('^');
-                java.append("\\A");
-            }
             alternation(random, 3, iregexp, java);
-            if (random.nextInt(8) == 0) {
-                iregexp.append('$');
-                java.append("\\z");
-            }
             IRegexp ours = IRegexp.compile(iregexp.toString())
                     .orElseThrow(() -> new AssertionError("rejected valid I-Regexp " + iregexp));
             Pattern theirs = Pattern.compile(java.toString());
@@ -79,9 +68,9 @@ class IRegexpDifferentialTest {
         switch (random.nextInt(depth > 0 ? 7 : 6)) {
             case 0, 1 -> {
                 int c = ALPHABET[random.nextInt(ALPHABET.length)];
-                if (c == '$') {
-                    // '$' cannot be escaped in I-Regexp, and a bare '$' is an anchor here: use a class.
-                    iregexp.append("[$]");
+                if (c == '$' || (c == '^' && random.nextBoolean())) {
+                    // Ordinary characters (RFC 9485 section 3); '$' has no escape, '^' also has "\\^".
+                    iregexp.appendCodePoint(c);
                 } else if (isMeta(c)) {
                     iregexp.append('\\').appendCodePoint(c);
                 } else if (c == '\n' || c == '\r' || c == '\t') {
