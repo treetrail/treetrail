@@ -3,8 +3,8 @@ jazzer = "0.30.0"
 jqwik = "1.10.2"
 junit = "6.1.3"
 assertj = "3.27.7"
-jackson2 = "2.22.4"
-jackson3 = "3.2.4"
+jackson2 = "2.23.0"
+jackson3 = "3.3.0"
 gson = "2.15.0"
 # Two versions of the same artifact: Dependabot cannot tell them apart and sets both to the same
 # version. jsonpath-migration's build fails if jayway is not 3.x or jayway2 not 2.x; fix such updates by hand.
@@ -13,7 +13,7 @@ jayway = "3.0.0"
 jayway2 = "2.10.0"
 jmh = "1.37"
 # Other RFC 9535 implementations for Java, compared in jsonpath-benchmarks only.
-sjf4j = "1.3.3"
+sjf4j = "1.5.0"
 ajp = "0.0.7"
 spring = "7.0.10"
 jakarta-servlet = "6.1.0"
@@ -37,7 +37,7 @@ spotless = "8.11.0"
 # The formatter Spotless runs; not a library, so Dependabot does not update it.
 palantir-java-format = "2.101.0"
 # Mutation testing: PIT and its JUnit Platform plugin.
-pitest = "1.30.1"
+pitest = "1.30.2"
 pitest-junit5 = "1.2.3"
 
 [libraries]
