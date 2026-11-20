@@ -1,8 +1,6 @@
 package io.github.treetrail.jsonpath.internal;
 
-import static io.github.treetrail.jsonpath.internal.RegexProgram.BEGIN;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.CHAR;
-import static io.github.treetrail.jsonpath.internal.RegexProgram.END;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.JUMP;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.MATCH;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.SPLIT;
@@ -85,16 +83,6 @@ final class RegexSimulation {
                     stack[top++] = program.next[pc];
                 }
                 case JUMP -> stack[top++] = program.next[pc];
-                case BEGIN -> {
-                    if (pos == 0) {
-                        stack[top++] = program.next[pc];
-                    }
-                }
-                case END -> {
-                    if (pos == input.length()) {
-                        stack[top++] = program.next[pc];
-                    }
-                }
                 case MATCH -> {
                     if (search || pos == input.length()) {
                         matched = true;
@@ -117,8 +105,7 @@ final class RegexSimulation {
 
     /**
      * Continues where {@link LazyDfa} stopped: at {@code pos}, before the end of the input, with the CHAR
-     * instructions of its current state as the threads. Its pending END instructions cannot pass before the
-     * end, and a match up to {@code pos} has already been reported.
+     * instructions of its current state as the threads. A match up to {@code pos} has already been reported.
      */
     static boolean resume(RegexProgram program, String input, boolean search, int[] chars, int pos) {
         RegexSimulation sim = new RegexSimulation(program, input, search);

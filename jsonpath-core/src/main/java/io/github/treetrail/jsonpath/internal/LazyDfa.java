@@ -1,8 +1,6 @@
 package io.github.treetrail.jsonpath.internal;
 
-import static io.github.treetrail.jsonpath.internal.RegexProgram.BEGIN;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.CHAR;
-import static io.github.treetrail.jsonpath.internal.RegexProgram.END;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.JUMP;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.MATCH;
 import static io.github.treetrail.jsonpath.internal.RegexProgram.SPLIT;
@@ -14,8 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Lazily built deterministic automaton for non-empty inputs. Each state is a set of CHAR
- * instructions waiting for the next code point, plus END instructions that only pass at the end
- * of the input, plus whether MATCH was reached. States and transitions are shared between threads:
+ * instructions waiting for the next code point, plus whether MATCH was reached. States and transitions are shared between threads:
  * states are immutable apart from their transition caches, whose entries are published racily but
  * safely (all fields of a state are final).
  */
@@ -44,7 +41,7 @@ final class LazyDfa {
         this.program = program;
         this.search = search;
         this.generation = generation;
-        this.start = closureState(null, -1, true, new Scratch(program));
+        this.start = closureState(null, -1, new Scratch(program));
     }
 
     /**
@@ -103,7 +100,7 @@ final class LazyDfa {
                 if (scratch == null) {
                     scratch = new Scratch(program);
                 }
-                following = closureState(state, cp, false, scratch);
+                following = closureState(state, cp, scratch);
                 if (following == null) {
                     return RegexSimulation.resume(program, input, search, state.chars, at);
                 }
@@ -117,7 +114,7 @@ final class LazyDfa {
                 return false;
             }
         }
-        return state.match || state.acceptsAtEnd();
+        return state.match;
     }
 
     /**
@@ -128,9 +125,7 @@ final class LazyDfa {
         final int[] visited;
         int mark;
         final int[] chars;
-        final int[] ends;
         int charCount;
-        int endCount;
         boolean match;
         final int[] stack;
 
@@ -138,7 +133,6 @@ final class LazyDfa {
             int size = program.ops.length;
             visited = new int[size];
             chars = new int[size];
-            ends = new int[size];
             stack = new int[2 * size + 2];
         }
     }
@@ -147,25 +141,23 @@ final class LazyDfa {
      * Computes the state after reading {@code cp} in {@code from}, or the start state if
      * {@code from} is null. Returns null if the state budget is exhausted.
      */
-    private @Nullable State closureState(@Nullable State from, int cp, boolean atStart, Scratch scratch) {
+    private @Nullable State closureState(@Nullable State from, int cp, Scratch scratch) {
         scratch.mark++;
         scratch.charCount = 0;
-        scratch.endCount = 0;
         scratch.match = false;
         if (from == null) {
-            closure(0, atStart, scratch);
+            closure(0, scratch);
         } else {
             for (int pc : from.chars) {
                 if (program.sets[pc].matches(cp)) {
-                    closure(program.next[pc], false, scratch);
+                    closure(program.next[pc], scratch);
                 }
             }
             if (search) {
-                closure(0, false, scratch);
+                closure(0, scratch);
             }
         }
-        StateKey key = new StateKey(
-                sorted(scratch.chars, scratch.charCount), sorted(scratch.ends, scratch.endCount), scratch.match);
+        StateKey key = new StateKey(sorted(scratch.chars, scratch.charCount), scratch.match);
         State state = states.get(key);
         if (state != null) {
             return state;
@@ -173,11 +165,11 @@ final class LazyDfa {
         if (states.size() >= MAX_STATES) {
             return null;
         }
-        long cost = STATE_OVERHEAD + 4L * (key.chars.length + key.ends.length + ASCII);
+        long cost = STATE_OVERHEAD + 4L * (key.chars.length + ASCII);
         if (!reserve(cost)) {
             return null;
         }
-        State created = new State(key.chars, key.ends, key.match);
+        State created = new State(key.chars, key.match);
         State existing = states.putIfAbsent(key, created);
         if (existing != null) {
             release(cost);
@@ -186,7 +178,7 @@ final class LazyDfa {
         return created;
     }
 
-    private void closure(int startPc, boolean atStart, Scratch scratch) {
+    private void closure(int startPc, Scratch scratch) {
         int[] visited = scratch.visited;
         int[] stack = scratch.stack;
         int mark = scratch.mark;
@@ -200,13 +192,7 @@ final class LazyDfa {
             visited[pc] = mark;
             switch (program.ops[pc]) {
                 case CHAR -> scratch.chars[scratch.charCount++] = pc;
-                case END -> scratch.ends[scratch.endCount++] = pc;
                 case MATCH -> scratch.match = true;
-                case BEGIN -> {
-                    if (atStart) {
-                        stack[top++] = program.next[pc];
-                    }
-                }
                 case SPLIT -> {
                     stack[top++] = program.alt[pc];
                     stack[top++] = program.next[pc];
@@ -223,38 +209,8 @@ final class LazyDfa {
         return copy;
     }
 
-    /** Whether MATCH is reachable from a pending END instruction once the input is exhausted. */
-    private boolean reachesMatchAtEnd(int startPc) {
-        boolean[] visited = new boolean[program.ops.length];
-        int[] stack = new int[2 * program.ops.length + 2];
-        int top = 0;
-        stack[top++] = startPc;
-        while (top > 0) {
-            int pc = stack[--top];
-            if (visited[pc]) {
-                continue;
-            }
-            visited[pc] = true;
-            switch (program.ops[pc]) {
-                case MATCH -> {
-                    return true;
-                }
-                case END, JUMP -> stack[top++] = program.next[pc];
-                case SPLIT -> {
-                    stack[top++] = program.alt[pc];
-                    stack[top++] = program.next[pc];
-                }
-                default -> {
-                    // CHAR needs input; BEGIN fails because the input is not empty.
-                }
-            }
-        }
-        return false;
-    }
-
     private final class State {
         final int[] chars;
-        final int[] ends;
         final boolean match;
         final boolean dead;
         /** Transitions on ASCII characters, indexed directly: one lookup per step. */
@@ -262,13 +218,10 @@ final class LazyDfa {
         /** Transitions on other code points, created on first use. */
         volatile @Nullable Map<Integer, State> other;
 
-        volatile @Nullable Boolean acceptsAtEnd;
-
-        State(int[] chars, int[] ends, boolean match) {
+        State(int[] chars, boolean match) {
             this.chars = chars;
-            this.ends = ends;
             this.match = match;
-            this.dead = chars.length == 0 && ends.length == 0 && !match;
+            this.dead = chars.length == 0 && !match;
         }
 
         @Nullable
@@ -304,22 +257,6 @@ final class LazyDfa {
                 }
             }
         }
-
-        boolean acceptsAtEnd() {
-            Boolean cached = acceptsAtEnd;
-            if (cached == null) {
-                boolean accepts = false;
-                for (int pc : ends) {
-                    if (reachesMatchAtEnd(program.next[pc])) {
-                        accepts = true;
-                        break;
-                    }
-                }
-                cached = accepts;
-                acceptsAtEnd = cached;
-            }
-            return cached;
-        }
     }
 
     int generation() {
@@ -334,16 +271,13 @@ final class LazyDfa {
     /** Identity of a deterministic state. */
     private static final class StateKey {
         final int[] chars;
-        final int[] ends;
         final boolean match;
         private final int hash;
 
-        StateKey(int[] chars, int[] ends, boolean match) {
+        StateKey(int[] chars, boolean match) {
             this.chars = chars;
-            this.ends = ends;
             this.match = match;
-            this.hash = 31 * (31 * java.util.Arrays.hashCode(chars) + java.util.Arrays.hashCode(ends))
-                    + Boolean.hashCode(match);
+            this.hash = 31 * java.util.Arrays.hashCode(chars) + Boolean.hashCode(match);
         }
 
         @Override
@@ -352,9 +286,7 @@ final class LazyDfa {
                 return false;
             }
 
-            return match == other.match
-                    && java.util.Arrays.equals(chars, other.chars)
-                    && java.util.Arrays.equals(ends, other.ends);
+            return match == other.match && java.util.Arrays.equals(chars, other.chars);
         }
 
         @Override
