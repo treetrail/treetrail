@@ -22,7 +22,6 @@ at commit `20ebdcc` (2026-10-13), 715 cases, on Java 17, 21 and 25. All cases pa
 
 | Topic | RFC | Treetrail |
 | --- | --- | --- |
-| `^` and `$` in `match()` and `search()` | I-Regexp ([RFC 9485](https://www.rfc-editor.org/rfc/rfc9485)) lists them as ordinary characters | Anchors, as the Compliance Test Suite expects |
 | Function extensions | Section 2.4 allows more functions | The five functions of the RFC; more only where a `JsonPathCompiler` is given them as `FunctionExtension`s |
 
 ## Decisions where the RFC leaves room
